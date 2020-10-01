@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source "$(dirname $0)"/sonar_automation_tools.sh
+
+{% for user in sonar_server_config.users %}
+create_user -a {{ sonar_server_config.admin.username }} -p {{ sonar_server_config.admin.password }} {{ user.username }} {{ user.password }}
+{% endfor %}
+

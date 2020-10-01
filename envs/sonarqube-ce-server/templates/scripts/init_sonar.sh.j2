@@ -1,0 +1,49 @@
+#!/bin/bash
+
+######################################################
+
+# Utilities:
+function is_database_configured() {
+  # shellcheck disable=SC2010
+  local has_postgresql_conf
+  has_postgresql_conf="$(ls /var/lib/postgresql/10/data/ | grep postgresql.conf | wc -l)"
+  echo "$has_postgresql_conf"
+}
+
+function init_database() {
+  su - postgres -c "initdb --auth-host=md5 -D /var/lib/postgresql/10/data -U postgres"
+}
+
+function link_configs() {
+  find /var/lib/postgresql/10/data/ -name '*.conf' -exec ln -s {} /etc/postgresql-10/ \;
+}
+
+function start_database() {
+  systemctl start postgresql-10
+}
+
+function sonar_database_exists() {
+  local database_exists
+  database_exists=$(echo "SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('{{ sonar_server_config.sonar_db_name }}');" | su - postgres -c psql {{ sonar_server_config.sonar_db_name }} | grep -c "0 rows")
+  echo "$database_exists"
+}
+
+function create_sonar_database() {
+  echo "CREATE DATABASE {{ sonar_server_config.sonar_db_name }}; CREATE USER {{ sonar_server_config.sonar_db_user }} WITH PASSWORD '{{ sonar_server_config.sonar_db_pass }}'; GRANT ALL PRIVILEGES ON DATABASE {{ sonar_server_config.sonar_db_name }} TO {{ sonar_server_config.sonar_db_user }};" | su - postgres -c psql
+}
+######################################################
+
+# Main code:
+is_configured=$(is_database_configured)
+if [[ "$is_configured" == "0" ]]; then
+  init_database
+  link_configs
+  start_database
+fi
+
+sonar_exists=$(sonar_database_exists)
+if [[ "$sonar_exists" == "1" ]]; then
+  create_sonar_database
+fi
+######################################################
+

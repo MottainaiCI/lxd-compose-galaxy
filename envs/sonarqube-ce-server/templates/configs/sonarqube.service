@@ -1,0 +1,23 @@
+[Unit]
+Description=SonarQube Community
+#After=network.target network-online.target
+After=network.target
+#Wants=network-online.target
+
+[Service]
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+ExecReload=/opt/sonarqube/bin/linux-x86-64/sonar.sh restart
+PIDFile=/opt/sonarqube/bin/linux-x86-64/./SonarQube.pid
+Type=forking
+User=sonarqube
+Group=sonarqube
+LimitNOFILE=65535
+LimitNPROC=infinity
+
+[Install]
+WantedBy=multi-user.target
+
+#ReadWriteDirectories=/opt/sonarqube/
+#ReadWriteDirectories=/var/log/sonarqube
+

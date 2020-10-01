@@ -1,0 +1,85 @@
+version: "1"
+
+# Choice the template engine to use.
+# Supported engines are:
+#   - mottainai (customized golang template engine)
+#   - jinja2 (use j2cli engine)
+template_engine:
+  engine: "jinja2"
+  # Additional template engine options
+  # opts:
+  #   - "--undefined"
+  # For jinja2 there are a lot filter in ansible package
+  # that could be loaded with:
+  opts:
+    # Enable to_yaml, to_json, etc.
+    - "--filters"
+    - "/usr/lib64/python3.6/site-packages/ansible/plugins/filter/core.py"
+
+# Override LXD_CONF_DIR. Default use $HOME/.config/lxc/
+# lxd_config_dir: ""
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+  - name: net-mottainai0
+    config: {}
+    description: ""
+    devices:
+      eth0:
+        name: eth0
+        nictype: bridged
+        parent: mottainai0
+        type: nic
+
+projects:
+
+  - name: "sonarqube-ce"
+    description: "SonarQube Community Edition Service"
+    # WARNING NOTE!!!
+    # This is required on LXD host manager.
+    # cat /etc/sysctl.d/10-elastic.conf
+    #
+    # https://github.com/lxc/lxd/issues/2206
+    # vm.max_map_count = 262144
+    #
+    # and LXD must be configured with: LimitNOFILE=70000
+
+    # Temporary directory for files created locally from templates to
+    # push on container. Must be created manually or already present.
+
+
+
+    # vars:
+    #   - envs:
+    #       custom_key: "custom_value"
+
+    # Define optional directory where retrieve the groups
+    # of the environment. The relative path is based on
+    # directory of the environment file.
+    include_groups_files:
+     - groups/sonar-ce.yaml
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+     - vars/sonar-ce.yml
+
+    # This hooks are executed to all nodes of all groups
+    hooks:
+      - event: post-node-creation
+        commands:
+          - sleep 1
+#          - mkdir -p /var/run/sonarqube
+#          - chown sonarqube:sonarqube /var/run/sonarqube
+#          - mkdir -p /var/log/sonarqube
+#          - chown sonarqube:sonarqube /var/log/sonarqube
+#          - mkdir -p /var/lib/sonar
+#          - chown sonarqube:sonarqube /var/lib/sonar
+#          - mkdir -p /var/lib/sonar/downloads
+#          - chown sonarqube:sonarqube /var/lib/sonar/downloads
+#          - ln -s /opt/sonarqube/extensions/downloads /var/lib/sonar/downloads
+
+    # groups:
+    #   - name: "custom_group"

@@ -1,1 +1,6 @@
+.idea/
 *.swp
+envs/sonarqube-ce-server/templates/configs/sonar.properties
+envs/sonarqube-ce-server/templates/scripts/create_users.sh
+envs/sonarqube-ce-server/templates/scripts/init_sonar.sh
+envs/sonarqube-ce-server/templates/scripts/update_admin_credentials.sh

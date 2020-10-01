@@ -1,0 +1,97 @@
+name: "sonarqube-ce-server"
+description: "SonarQube server"
+
+# Define the LXD Remote to use and where
+# create the environment.
+connection: "local"
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - default
+  # - net-mottainai0
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+hooks:
+  - event: post-node-sync
+    commands:
+      # Run services
+      - mkdir -p /var/lib/postgresql/10/data/
+      - chown -R postgres:postgres /var/lib/postgresql
+      - chmod +x /scripts/init_sonar.sh
+      - cd /scripts && ./init_sonar.sh
+      - systemctl enable postgresql-10
+      - systemctl restart postgresql-10
+      - eval 'if [ ! -d /tmp/sonar ]; then mkdir -p /tmp/sonar ; else echo /tmp/sonar already present ; fi'
+      - chown sonarqube:sonarqube /tmp/sonar
+      - chown sonarqube:sonarqube -R /opt/sonarqube
+      - systemctl daemon-reload
+      - systemctl enable sonarqube
+      - systemctl restart sonarqube
+      # - eval "ln -s -f /var/run/sonarqube/SonarQube.pid /opt/sonarqube/bin/linux-x86-64/SonarQube.pid | true"
+      # - su sonarqube -c '/opt/sonarqube/bin/linux-x86-64/sonar.sh start'
+      - sleep 5
+      - chmod +x /scripts/automation_tools.sh
+      - chmod +x /scripts/update_admin_credentials.sh
+      - chmod +x /scripts/create_users.sh
+  - event: post-node-sync
+    commands:
+      # Sonarqube provisioning:
+      - cd /scripts && ./update_admin_credentials.sh
+      # - cd /scripts && ./create_users.sh
+      - rm /scripts/update_admin_credentials.sh
+      # - rm /scripts/create_users.sh
+
+
+nodes:
+  - name: sonarqube-ce-server1
+    image_source: "lxd-compose/sonarqube-ce-server"
+    image_remote_server: "mottainai"
+
+    # Specify directory where build path of templates.
+    # Directory could be an absolute path or a relative path based
+    # on env base dir.
+    source_dir: "./templates"
+
+    #entrypoint:
+    #  - "/bin/bash"
+    #  - "-c"
+
+    # Define the list of LXD Profile to use in additional
+    # to group profiles for create the containers
+    # profiles:
+    #  - mynode-profile
+
+    # List of commands executed just after the creation of the
+    # container.
+    # hooks:
+
+    # List of templates files to compiles before push the
+    # result inside container.
+    config_templates:
+      - source: configs/sonar.properties.j2
+        dst: configs/sonar.properties
+      - source: scripts/init_sonar.sh.j2
+        dst: scripts/init_sonar.sh
+      - source: scripts/update_admin_credentials.sh.j2
+        dst: scripts/update_admin_credentials.sh
+      - source: scripts/create_users.sh.j2
+        dst: scripts/create_users.sh
+
+    sync_resources:
+      # source: File or directory to push
+      # dst: File or directory target. For directory is needed "/" at the end
+      - source: scripts/init_sonar.sh
+        dst: /scripts/init_sonar.sh
+      - source: scripts/automation_tools.sh
+        dst: /scripts/autonation_tools.sh
+      - source: scripts/update_admin_credentials.sh
+        dst: /scripts/update_admin_credentials.sh
+      - source: scripts/create_users.sh
+        dst: /scripts/create_users.sh
+      - source: configs/sonar.properties
+        dst: /opt/sonarqube/conf/sonar.properties
+      - source: configs/sonarqube.service
+        dst: /etc/systemd/system/sonarqube.service
+

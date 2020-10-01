@@ -1,0 +1,19 @@
+envs:
+
+  sonar_server_config:
+
+    sonar_db_host: 127.0.0.1
+    sonar_db_name: sonar
+    sonar_db_user: sonar
+    sonar_db_pass: sonar
+
+    # NOTE: if password fields are void on admin or users, password will be generated automatically.
+    # Passwords are used only initially anyway, in favor of API Tokens
+    admin:
+      username: "admin"
+      previous_password: "admin"
+      password: ""
+
+    users:
+      - username: "mottainai_api"
+        password: ""
