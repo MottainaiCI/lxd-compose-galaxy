@@ -17,3 +17,5 @@ envs:
     users:
       - username: "mottainai_api"
         password: ""
+      - username: "other_api"
+        password: ""

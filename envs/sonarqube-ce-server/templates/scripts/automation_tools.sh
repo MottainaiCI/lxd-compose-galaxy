@@ -87,7 +87,7 @@ create_user() {
       echo "Cannot create user=$user on Sonar, got HTTP status=$status_code" >&2
       return 1
     else
-      echo "Created user=$user on Sonar"
+      echo -n "Created user=$user on Sonar"
     fi
     return 0
   fi
@@ -105,7 +105,7 @@ usage_generate_password() {
 generate_password() {
   local OPTIND o
   local abort=false
-  local password="${1:-$(openssl rand -base64 25)}"
+  local password="${1:-$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-32};echo;)}"
 
   echo "$password"
   return 0
@@ -126,7 +126,7 @@ usage_change_password() {
 
 change_password() {
   local OPTIND o
-  local status_code
+  local response body status_code
   local user old_password new_password
   local admin_or_token
   local admin_password=""
@@ -187,8 +187,9 @@ change_password() {
       echo "NOTE: No Admin Password set. Admin Username Field will be used as API Token..."
     fi
 
-    status_code=$(
+    response=$(
       curl \
+        -q \
         -X POST \
         -H "Content-Type: application/json" \
         -w "%{http_code}" \
@@ -196,22 +197,34 @@ change_password() {
         -k \
         -o /dev/null "$protocol"://"$admin_or_token":"$admin_password"@"$host":"$port"/"$url"?"$query"
     )
+    # shellcheck disable=SC2206
+    response=(${response[@]})              # convert to array
+    status_code=${response[-1]}            # get last element (last line)
+    # shellcheck disable=SC2124s
+    body=${response[@]::${#response[@]}-1} # get all elements except last
     if [[ "$status_code" -ne 200 ]] && [[ $status_code -ne 201 ]] && [[ $status_code -ne 204 ]]; then
       echo "Cannot change user=$user password on Sonar, got HTTP status=$status_code" >&2
+      # echo "Cannot change user=$user old_password=$old_password to new_password=$new_password on Sonar, got HTTP status=$status_code and body=$body" >&2
       return 1
     else
-      echo "Changed password for user=$user on Sonar"
+      echo -n "For Sonar user=$user, correctly set password=$new_password"
     fi
     return 0
   fi
 }
 
+# Same as change_password, but his function will be used directly by automation frameworks bypassing other logs
+change_password_simple() {
+  local result=$({ change_password "$@"; } 2>&1)
+  local password=$(echo "$result" | grep -oP 'password=\K.*' | sed '/^[[:space:]]*$/d')
+  echo -n "$password"
+}
 
 
 # CREATE USER TOKEN FUNCTIONS
 
 usage_create_user_token() {
-  echo "Usage: create_user_token <-u string> <-p string> [-H string] [-P number] [-S] user token_name" 1>&2
+  echo "Usage: create_user_token <-a string> <-c string> [-H string] [-P number] [-S] user token_name" 1>&2
   echo "  - a     Sonar Admin Credential Username or Token (Mandatory)"
   echo "  - c     Sonar Admin Credential Password (Mandatory only if Username is used instead of Token)"
   echo "  - H     Sonar Host Address"
@@ -295,16 +308,16 @@ create_user_token() {
       echo "Cannot create token with name=$token_name for Sonar user=$user, got HTTP status=$status_code" >&2
       return 1
     else
-      echo "Correctly created token with name=$token_name for Sonar user=$user. Please, take note of token=$token"
+      echo -n "Correctly created token with name=$token_name for Sonar user=$user. Please, take note of token=$token"
     fi
     return 0
 
   fi
 }
 
-# Same as create_user_token, but his function will be used directly by automation frameworks bypassing all logs
+# Same as create_user_token, but his function will be used directly by automation frameworks bypassing other logs
 create_user_token_simple() {
   local result=$({ create_user_token "$@"; } 2>&1)
-  local token=$(echo "$result" | grep -oP 'token=\K.*')
-  echo "$token"
+  local token=$(echo "$result" | grep -oP 'token=\K.*' | sed '/^[[:space:]]*$/d')
+  echo -n "$token"
 }

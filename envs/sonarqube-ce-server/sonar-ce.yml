@@ -70,16 +70,16 @@ projects:
     hooks:
       - event: post-node-creation
         commands:
-          - sleep 1
-#          - mkdir -p /var/run/sonarqube
-#          - chown sonarqube:sonarqube /var/run/sonarqube
-#          - mkdir -p /var/log/sonarqube
-#          - chown sonarqube:sonarqube /var/log/sonarqube
-#          - mkdir -p /var/lib/sonar
-#          - chown sonarqube:sonarqube /var/lib/sonar
-#          - mkdir -p /var/lib/sonar/downloads
-#          - chown sonarqube:sonarqube /var/lib/sonar/downloads
-#          - ln -s /opt/sonarqube/extensions/downloads /var/lib/sonar/downloads
+          - mkdir -p /var/log/sonarqube
+          - chown sonarqube:sonarqube /var/log/sonarqube
+          - mkdir -p /var/lib/sonar
+          - chown sonarqube:sonarqube /var/lib/sonar
+          - mkdir -p /var/lib/sonar/downloads
+          - chown sonarqube:sonarqube /var/lib/sonar/downloads
+          - ln -s /opt/sonarqube/extensions/downloads /var/lib/sonar/downloads
+          - cd /etc/entropy/repositories.conf.d/ && for i in `grep dispatcher * -r -l --color=none`; do echo $i; sed -e 's|https://dispatcher.sabayon.org/sbi/namespace/|https://downloads.svc.sabayon.org/|g' $i -i ; done
+          - equo update
+          - ACCEPT_LICENSE=\* equo install --nodeps app-misc/jq
 
     # groups:
     #   - name: "custom_group"

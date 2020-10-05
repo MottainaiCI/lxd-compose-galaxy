@@ -14,9 +14,10 @@ common_profiles:
 ephemeral: true
 
 hooks:
+
+  # Prepare and Run services
   - event: post-node-sync
     commands:
-      # Run services
       - mkdir -p /var/lib/postgresql/10/data/
       - chown -R postgres:postgres /var/lib/postgresql
       - chmod +x /scripts/init_sonar.sh
@@ -27,22 +28,27 @@ hooks:
       - chown sonarqube:sonarqube /tmp/sonar
       - chown sonarqube:sonarqube -R /opt/sonarqube
       - systemctl daemon-reload
-      - systemctl enable sonarqube
       - systemctl restart sonarqube
+      - systemctl enable sonarqube
       # - eval "ln -s -f /var/run/sonarqube/SonarQube.pid /opt/sonarqube/bin/linux-x86-64/SonarQube.pid | true"
       # - su sonarqube -c '/opt/sonarqube/bin/linux-x86-64/sonar.sh start'
-      - sleep 5
       - chmod +x /scripts/automation_tools.sh
       - chmod +x /scripts/update_admin_credentials.sh
       - chmod +x /scripts/create_users.sh
+      - sleep 60
+
+  # Sonarqube provisioning:
   - event: post-node-sync
     commands:
-      # Sonarqube provisioning:
       - cd /scripts && ./update_admin_credentials.sh
-      # - cd /scripts && ./create_users.sh
+    out2var: "sonar_admin_token"
+  - event: post-node-sync
+    commands:
+      - echo "$sonar_admin_token" > /tmp/sonar_admin_token
+      - cd /scripts && ./create_users.sh
+      - cd /scripts && ./init_tokens.sh
       - rm /scripts/update_admin_credentials.sh
       # - rm /scripts/create_users.sh
-
 
 nodes:
   - name: sonarqube-ce-server1
@@ -78,6 +84,8 @@ nodes:
         dst: scripts/update_admin_credentials.sh
       - source: scripts/create_users.sh.j2
         dst: scripts/create_users.sh
+      - source: scripts/init_tokens.sh.j2
+        dst: scripts/init_tokens.sh
 
     sync_resources:
       # source: File or directory to push
@@ -85,11 +93,13 @@ nodes:
       - source: scripts/init_sonar.sh
         dst: /scripts/init_sonar.sh
       - source: scripts/automation_tools.sh
-        dst: /scripts/autonation_tools.sh
+        dst: /scripts/automation_tools.sh
       - source: scripts/update_admin_credentials.sh
         dst: /scripts/update_admin_credentials.sh
       - source: scripts/create_users.sh
         dst: /scripts/create_users.sh
+      - source: scripts/init_tokens.sh
+        dst: /scripts/init_tokens.sh
       - source: configs/sonar.properties
         dst: /opt/sonarqube/conf/sonar.properties
       - source: configs/sonarqube.service
