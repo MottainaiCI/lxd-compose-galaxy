@@ -12,9 +12,4 @@ else
    echo "An Admin Token or Password should be provided" >&2
 fi
 
-{% for user in sonar_server_config.users %}
-static_password={{ user.password }}
-generated_password=$(generate_password)
-user_password=${static_password:-$generated_password}
-create_user -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} "$user_password"
-{% endfor %}
+set_options -a "$admin_user_or_token" -c "$admin_password" {% for option in sonar_server_config.options %} {{ option.key }}={{ option.value }} {% endfor %}
