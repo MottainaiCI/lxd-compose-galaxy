@@ -19,6 +19,8 @@ envs:
         password: ""
       - username: "other_api"
         password: ""
+#      - username: "additional_user"
+#        password: ""
 
     # Sonar configuration options. Always use string values to avoid python type coercion
     options:

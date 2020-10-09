@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 source "$(dirname $0)"/automation_tools.sh
 
 if [[ -z "$sonar_admin_password" ]]; then
@@ -12,9 +13,27 @@ else
    echo "An Admin Token or Password should be provided" >&2
 fi
 
+temp_jq_array=()
+
 {% for user in sonar_server_config.users %}
-static_password={{ user.password }}
-generated_password=$(generate_password)
-user_password=${static_password:-$generated_password}
-create_user -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} "$user_password"
+if [[ $(check_user_exists -u {{ user.username }}) == "0" ]]; then
+   echo "Creating user {{ user.username }}..."
+   static_password={{ user.password }}
+   generated_password=$(generate_password)
+   user_password=${static_password:-$generated_password}
+   create_user -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} "$user_password"
+   temp_jq_array+=("$(jq -n --arg username '{{ user.username }}' --arg password $user_password --arg token_name '' --arg token '' '{username: $username, password: $password, token_name: $token_name, token: $token}')")
+   echo "Created user {{ user.username }}."
+else
+   echo "User {{ user.username }} already exists, skipping creation..."
+fi
 {% endfor %}
+
+mkdir -p "$SONAR_CREDENTIALS_DIR"
+touch "$SONAR_CREDENTIALS_DIR"/users.json
+echo "${temp_jq_array[@]}"| jq -n '.users |= [inputs]' > $SONAR_CREDENTIALS_DIR/new_users.json
+#jq -s '[.[][]]' "$SONAR_CREDENTIALS_DIR"/users*.json > "$SONAR_CREDENTIALS_DIR"/users.json
+#rm "$SONAR_CREDENTIALS_DIR"/users_new.json
+# NOTE: join new users to old users
+jq --argjson arr1 $(cat "$SONAR_CREDENTIALS_DIR"/users.json | jq '.users') --argjson arr2 $(cat "$SONAR_CREDENTIALS_DIR"/new_users.json| jq '.users') -n '$arr2 + $arr1' | jq -n '.users |= inputs' > "$SONAR_CREDENTIALS_DIR"/users.json
+rm "$SONAR_CREDENTIALS_DIR"/new_users.json

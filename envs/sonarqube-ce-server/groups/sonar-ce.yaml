@@ -40,11 +40,13 @@ hooks:
   - event: post-node-sync
     commands:
       - echo "$sonar_admin_token" > /tmp/sonar_admin_token
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./config_sonar_options.sh ; fi'
+      - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./config_sonar_options.sh ; fi'
       # NOTE: flag sonar as started after configuration of admin user and application options
-      - source /scripts/automation_tools.sh && set_sonar_started
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./create_users.sh ; fi'
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./init_tokens.sh ; fi'
+      - cd /scripts && source automation_tools.sh && set_sonar_started
+      # - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./create_users.sh ; fi'
+      # - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./init_tokens.sh ; fi'
+      - cd /scripts && ./create_users.sh
+      - cd /scripts && ./init_tokens.sh
       - rm /scripts/prepare_admin_credentials.sh
       # - rm /scripts/create_users.sh
 

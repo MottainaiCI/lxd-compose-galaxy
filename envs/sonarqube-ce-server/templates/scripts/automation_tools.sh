@@ -4,6 +4,7 @@
 SONAR_HOST="localhost"
 SONAR_PORT=9000
 SONAR_START_DIR="/sonar"
+SONAR_CREDENTIALS_DIR="/sonar/credentials"
 
 ### DATABASE (POSTGRESQL) FUNCTIONS #######################
 
@@ -527,6 +528,48 @@ set_options() {
 
 }
 
+usage_check_user_exists() {
+  echo "Usage: check_user_exists <-u string>" 1>&2
+  echo "  - u     Sonar user name to check"
+}
+
+check_user_exists() {
+  local OPTIND o
+  local abort
+  local user existing_users exists
+
+  mkdir -p $SONAR_CREDENTIALS_DIR
+  touch $SONAR_CREDENTIALS_DIR/users.json
+  existing_users=("$(cat $SONAR_CREDENTIALS_DIR/users.json | jq -r '.users[].username')")
+
+  while getopts ":u:" o; do
+    case "${o}" in
+    u) user=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ -z "$user" ]]; then
+    echo "ERROR: Missing User's Username"
+    usage_check_user_exists
+    return 1
+  elif [[ "$abort" == true ]]; then
+    usage_create_user_token
+    return 1
+  else
+    echo "$(array_contains $user ${existing_users[@]})"
+  fi
+  return 0
+}
+
 # OTHER UTILITIES
 
 has_sonar_already_started() {
@@ -540,4 +583,16 @@ has_sonar_already_started() {
 set_sonar_started() {
   mkdir -p $SONAR_START_DIR
   touch $SONAR_START_DIR/started
+}
+
+array_contains () {
+  local seeking=$1; shift
+  local in=0
+  for element; do
+    if [[ $element == "$seeking" ]]; then
+      in=1
+      break
+    fi
+  done
+  echo "$in"
 }
