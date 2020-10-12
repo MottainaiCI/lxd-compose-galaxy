@@ -5,6 +5,8 @@ SONAR_HOST="localhost"
 SONAR_PORT=9000
 SONAR_START_DIR="/sonar"
 SONAR_CREDENTIALS_DIR="/sonar/credentials"
+SONAR_USERS_FILE="$SONAR_CREDENTIALS_DIR"/users.json
+SONAR_NEW_USERS_FILE="$SONAR_CREDENTIALS_DIR"/new_users.json
 
 ### DATABASE (POSTGRESQL) FUNCTIONS #######################
 
@@ -539,8 +541,8 @@ check_user_exists() {
   local user existing_users exists
 
   mkdir -p $SONAR_CREDENTIALS_DIR
-  touch $SONAR_CREDENTIALS_DIR/users.json
-  existing_users=("$(cat $SONAR_CREDENTIALS_DIR/users.json | jq -r '.users[].username')")
+  test -f $SONAR_USERS_FILE || echo $(jq -Rn '{users: []}') > $SONAR_USERS_FILE
+  existing_users=("$(cat $SONAR_USERS_FILE | jq -r '.users[].username')")
 
   while getopts ":u:" o; do
     case "${o}" in
