@@ -15,6 +15,12 @@ ephemeral: true
 
 hooks:
 
+  # DEBUG: Prepare env vars using trick
+  - event: post-node-sync
+    commands:
+      - cat /scripts/debug_init_vars.json
+    out2var: "sonar_server_config"
+
   # Prepare and Run services
   - event: post-node-sync
     commands:
@@ -43,12 +49,8 @@ hooks:
       - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./config_sonar_options.sh ; fi'
       # NOTE: flag sonar as started after configuration of admin user and application options
       - cd /scripts && source automation_tools.sh && set_sonar_started
-      # - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./create_users.sh ; fi'
-      # - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./init_tokens.sh ; fi'
       - cd /scripts && ./create_users.sh
       - cd /scripts && ./init_tokens.sh
-      - rm /scripts/prepare_admin_credentials.sh
-      # - rm /scripts/create_users.sh
 
 nodes:
   - name: sonarqube-ce-server1
@@ -76,14 +78,12 @@ nodes:
     # List of templates files to compiles before push the
     # result inside container.
     config_templates:
+      - source: scripts/debug_init_vars.json.j2
+        dst: scripts/debug_init_vars.json
       - source: configs/sonar.properties.j2
         dst: configs/sonar.properties
       - source: scripts/init_sonar.sh.j2
         dst: scripts/init_sonar.sh
-      - source: scripts/prepare_admin_credentials.sh.j2
-        dst: scripts/prepare_admin_credentials.sh
-      - source: scripts/config_sonar_options.sh.j2
-        dst: scripts/config_sonar_options.sh
       - source: scripts/create_users.sh.j2
         dst: scripts/create_users.sh
       - source: scripts/init_tokens.sh.j2
@@ -92,6 +92,8 @@ nodes:
     sync_resources:
       # source: File or directory to push
       # dst: File or directory target. For directory is needed "/" at the end
+      - source: scripts/debug_init_vars.json
+        dst: scripts/debug_init_vars.json
       - source: scripts/init_sonar.sh
         dst: /scripts/init_sonar.sh
       - source: scripts/automation_tools.sh

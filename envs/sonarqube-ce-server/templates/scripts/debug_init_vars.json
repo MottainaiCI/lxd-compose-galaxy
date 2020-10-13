@@ -1,0 +1,27 @@
+{
+    "admin": {
+        "password": "",
+        "previous_password": "admin",
+        "username": "admin"
+    },
+    "options": [
+        {
+            "key": "sonar.forceAuthentication",
+            "value": "true"
+        }
+    ],
+    "sonar_db_host": "127.0.0.1",
+    "sonar_db_name": "sonar",
+    "sonar_db_pass": "sonar",
+    "sonar_db_user": "sonar",
+    "users": [
+        {
+            "password": "",
+            "username": "mottainai_api"
+        },
+        {
+            "password": "",
+            "username": "other_api"
+        }
+    ]
+}

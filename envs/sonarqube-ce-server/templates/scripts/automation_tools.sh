@@ -208,7 +208,7 @@ create_user() {
 # SIMPLE CREATE RANDOM PASSWORD (no configurability)
 
 usage_generate_password() {
-  echo "Usage: create_user <override_password>" 1>&2
+  echo "Usage: generate_password <override_password>" 1>&2
   echo "  <override_password>     Force return of provided override password (Optional). Useful for using in scripts"
 }
 
