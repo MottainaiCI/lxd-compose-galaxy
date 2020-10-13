@@ -13,6 +13,14 @@ else
 fi
 
 {% for user in sonar_server_config.users %}
-generated_token=$(create_user_token_simple -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} {{ user.username }}-token)
-echo "$generated_token" > "$(dirname $0)"/{{ user.username }}.token
+if [[ $(check_user_has_token -u {{ user.username }}) == "0" ]]; then
+   echo "Generating token for user {{ user.username }}..."
+   generated_token=$(create_user_token_simple -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} {{ user.username }}-token)
+   token_credentials="{\"token_name\": \"{{ user.username }}-token\", \"token\": \"$generated_token\"}"
+   echo $(jq "walk (if type==\"object\" and .username==\"{{ user.username }}\" then . +=$token_credentials else . end)" -M -r "$SONAR_USERS_FILE") | jq -M -r > $SONAR_USERS_FILE.tmp
+   mv "$SONAR_USERS_FILE".tmp "$SONAR_USERS_FILE"
+   echo "Generated token for user {{ user.username }}."
+else
+   echo "User {{ user.username }} already has token, skipping generation..."
+fi
 {% endfor %}

@@ -564,11 +564,59 @@ check_user_exists() {
     usage_check_user_exists
     return 1
   elif [[ "$abort" == true ]]; then
-    usage_create_user_token
+    usage_check_user_exists
     return 1
   else
     echo "$(array_contains $user ${existing_users[@]})"
   fi
+  return 0
+}
+
+usage_check_user_has_token() {
+  echo "Usage: check_has_token <-u string>" 1>&2
+  echo "  - u     Sonar user name to check"
+}
+
+check_user_has_token() {
+  local OPTIND o
+  local abort
+  local user existing_users has_token
+
+  mkdir -p $SONAR_CREDENTIALS_DIR
+  test -f $SONAR_USERS_FILE || echo $(jq -Rn '{users: []}') > $SONAR_USERS_FILE
+  existing_users=("$(cat $SONAR_USERS_FILE | jq -r '.users[].username')")
+  has_token="0"
+
+  while getopts ":u:" o; do
+    case "${o}" in
+    u) user=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ -z "$user" ]]; then
+    echo "ERROR: Missing User's Username"
+    usage_check_user_has_token
+    return 1
+  elif [[ "$abort" == true ]]; then
+    usage_check_user_has_token
+    return 1
+  elif [[ "$(array_contains $user ${existing_users[@]})" == "0" ]]; then
+    echo "ERROR: Provided User does not exist"
+    return 1
+  else
+    user_obj=$(jq  ".users[] | select(.username==\"$user\")" -M -r "$SONAR_USERS_FILE")
+    [[ $(echo "$user_obj" | jq -M -r '.token') != null ]] && has_token="1" || has_token="0"
+  fi
+  echo "$has_token"
   return 0
 }
 

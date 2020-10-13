@@ -24,6 +24,7 @@ if [[ $(check_user_exists -u {{ user.username }}) == "0" ]]; then
    create_user -a "$admin_user_or_token" -c "$admin_password" {{ user.username }} "$user_password"
    user_credentials=$(echo "{\"username\": \"{{ user.username }}\", \"password\": \"$user_password\"}" | jq -M -r)
    temp_json_array+=("$user_credentials")
+   echo "Created user {{ user.username }}."
 else
    echo "User {{ user.username }} already exists, skipping creation..."
 fi
@@ -34,7 +35,7 @@ fi
 mkdir -p "$SONAR_CREDENTIALS_DIR"
 test -f "$SONAR_USERS_FILE" || echo '{"users": []}' | jq -M -r > "$SONAR_USERS_FILE"
 echo "${temp_json_array[@]}"| jq -n '.users |= [inputs]' > "$SONAR_NEW_USERS_FILE"
-for i in $(jq  '.users[] | .username ' -M -r "$SONAR_NEW_USERS_FILE") ; do
+for i in $(jq '.users[] | .username ' -M -r "$SONAR_NEW_USERS_FILE") ; do
    user_obj=$(jq  ".users[] | select(.username==\"$i\")" -M -r "$SONAR_NEW_USERS_FILE")
    # NOTE: using tmp file, not a good idea using same file as input and output in a single pipeline
    jq -M ".users + [${user_obj}]" "$SONAR_USERS_FILE" | jq -n '.users |= inputs' > "$SONAR_USERS_FILE".tmp
