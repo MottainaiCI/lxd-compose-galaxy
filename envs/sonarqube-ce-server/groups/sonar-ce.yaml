@@ -25,6 +25,26 @@ hooks:
       - cd /scripts && ./users_provisioning.sh
       - cd /scripts && ./tokens_provisioning.sh
 
+  - event: post-node-sync
+    out2var: "admin_credentials_json"
+    commands:
+      - cd /scripts && source automation_tools.sh && cat "$SONAR_ADMIN_FILE"
+
+  - event: post-node-sync
+    out2var: "users_credentials_json"
+    commands:
+      - cd /scripts && source automation_tools.sh && cat "$SONAR_USERS_FILE"
+
+  - event: post-node-sync
+    node: "host"
+    entrypoint:
+      - /bin/bash
+      - -c
+    commands:
+      - echo "${admin_credentials_json}" > /tmp/sonarqube_ce_admin.json
+      - echo "${users_credentials_json}" > /tmp/sonarqube_ce_users.json
+
+
 nodes:
   - name: sonarqube-ce-server1
     image_source: "lxd-compose/sonarqube-ce-server"

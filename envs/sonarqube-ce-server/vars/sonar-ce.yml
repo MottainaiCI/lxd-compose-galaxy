@@ -27,8 +27,8 @@ envs:
 
     # Sonar configuration options. Always use string values to avoid python type coercion
     log:
-        level: "DEBUG"
-        level_web: "DEBUG"
+      level: "DEBUG"
+      level_web: "DEBUG"
 
     options:
       - key: "sonar.forceAuthentication"

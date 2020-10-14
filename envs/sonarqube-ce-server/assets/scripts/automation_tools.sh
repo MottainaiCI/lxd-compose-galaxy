@@ -71,71 +71,13 @@ init_database() {
     usage_init_database
     return 1
   else
+    # Fixing folder and permissions. This should be better fixed on distro packet (ex. ebuild)
+    mkdir -p "/var/lib/postgresql/$database_version/data/"
+    chown postgres:postgres -R /var/lib/postgresql
+
+    # Init DB and linking configurations
     su - postgres -c "initdb --auth-host=md5 -D /var/lib/postgresql/$database_version/data -U postgres"
-  fi
-}
-
-usage_link_database_configs() {
-  echo "Usage: link_database_configs <-v string>" 1>&2
-  echo "  - v     Postgresql Database version to use"
-}
-
-link_database_configs() {
-  local OPTIND o
-  local database_version=$POSTGRESQL_VERSION
-
-  while getopts ":v:" o; do
-    case "${o}" in
-    v) database_version=${OPTARG} ;;
-    :)
-      echo "ERROR: Option -$OPTARG requires an argument"
-      abort=true
-      ;;
-    \?)
-      echo "ERROR: Invalid option -$OPTARG"
-      abort=true
-      ;;
-    esac
-  done
-  shift $((OPTIND - 1))
-
-  if [[ "$abort" == true ]]; then
-    usage_link_database_configs
-    return 1
-  else
     find "/var/lib/postgresql/$database_version/data/" -name '*.conf' -exec ln -s {} "/etc/postgresql-$database_version/" \;
-  fi
-}
-
-usage_start_database() {
-  echo "Usage: start_database <-v string>" 1>&2
-  echo "  - v     Postgresql Database version to use"
-}
-
-start_database() {
-  local OPTIND o
-  local database_version=$POSTGRESQL_VERSION
-
-  while getopts ":v:" o; do
-    case "${o}" in
-    v) database_version=${OPTARG} ;;
-    :)
-      echo "ERROR: Option -$OPTARG requires an argument"
-      abort=true
-      ;;
-    \?)
-      echo "ERROR: Invalid option -$OPTARG"
-      abort=true
-      ;;
-    esac
-  done
-  shift $((OPTIND - 1))
-
-  if [[ "$abort" == true ]]; then
-    usage_link_database_configs
-    return 1
-  else
-    systemctl start "postgresql-$database_version"
   fi
 }
 

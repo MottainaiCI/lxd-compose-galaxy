@@ -71,7 +71,6 @@ projects:
       # TEMPORARY pre-configure image, patching missing parts from ebuilds. These will not be necessary anymore when source image is fixed
       - event: post-node-creation
         commands:
-
           - cd /etc/entropy/repositories.conf.d/ && for i in `grep dispatcher * -r -l --color=none`; do echo $i; sed -e 's|https://dispatcher.sabayon.org/sbi/namespace/|https://downloads.svc.sabayon.org/|g' $i -i ; done
           - equo update
           - ACCEPT_LICENSE=\* equo install --nodeps app-misc/jq

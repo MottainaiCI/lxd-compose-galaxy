@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC1090
 set -e
-source "$(dirname $0)"/automation_tools.sh
+source ./automation_tools.sh
 
 main() {
   load_sonar_admin_credentials
