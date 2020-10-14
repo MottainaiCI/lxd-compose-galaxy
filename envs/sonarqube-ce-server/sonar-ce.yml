@@ -71,18 +71,7 @@ projects:
       # TEMPORARY pre-configure image, patching missing parts from ebuilds. These will not be necessary anymore when source image is fixed
       - event: post-node-creation
         commands:
-          - mkdir -p /var/lib/postgresql/10/data/
-          - mkdir -p /var/log/sonarqube
-          - mkdir -p /var/lib/sonar
-          - mkdir -p /var/lib/sonar/downloads
-          - eval 'if [ ! -d /tmp/sonar ]; then mkdir -p /tmp/sonar ; else echo /tmp/sonar already present ; fi'
-          - chown postgres:postgres -R /var/lib/postgresql
-          - chown sonarqube:sonarqube -R /opt/sonarqube
-          - chown sonarqube:sonarqube /var/log/sonarqube
-          - chown sonarqube:sonarqube /var/lib/sonar
-          - chown sonarqube:sonarqube /var/lib/sonar/downloads
-          - chown sonarqube:sonarqube /tmp/sonar
-          - ln -s /opt/sonarqube/extensions/downloads /var/lib/sonar/downloads
+
           - cd /etc/entropy/repositories.conf.d/ && for i in `grep dispatcher * -r -l --color=none`; do echo $i; sed -e 's|https://dispatcher.sabayon.org/sbi/namespace/|https://downloads.svc.sabayon.org/|g' $i -i ; done
           - equo update
           - ACCEPT_LICENSE=\* equo install --nodeps app-misc/jq

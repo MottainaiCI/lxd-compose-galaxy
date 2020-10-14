@@ -2,10 +2,13 @@ envs:
 
   sonar_server_config:
 
-    sonar_db_host: 127.0.0.1
-    sonar_db_name: sonar
-    sonar_db_user: sonar
-    sonar_db_pass: sonar
+    # Postgresql configs
+    db:
+      version: 10
+      host: 127.0.0.1
+      name: sonar
+      username: sonar
+      password: sonar
 
     # NOTE: if password fields are void on admin or users, password will be generated automatically.
     # Passwords are used only initially anyway, in favor of API Tokens
@@ -23,6 +26,10 @@ envs:
 #        password: ""
 
     # Sonar configuration options. Always use string values to avoid python type coercion
+    log:
+        level: "DEBUG"
+        level_web: "DEBUG"
+
     options:
       - key: "sonar.forceAuthentication"
         value: "true"

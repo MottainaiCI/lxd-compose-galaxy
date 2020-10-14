@@ -3,30 +3,140 @@
 # DEFAULTS
 SONAR_HOST="localhost"
 SONAR_PORT=9000
-SONAR_START_DIR="/sonar"
+SONAR_READY_DIR="/sonar"
 SONAR_CREDENTIALS_DIR="/sonar/credentials"
 SONAR_USERS_FILE="$SONAR_CREDENTIALS_DIR"/users.json
-SONAR_NEW_USERS_FILE="$SONAR_CREDENTIALS_DIR"/new_users.json
+SONAR_ADMIN_FILE="$SONAR_CREDENTIALS_DIR"/admin.json
+POSTGRESQL_VERSION=10
 
 ### DATABASE (POSTGRESQL) FUNCTIONS #######################
 
+usage_is_database_configured() {
+  echo "Usage: is_database_configured <-v string>" 1>&2
+  echo "  - v     Postgresql Database version to use"
+}
+
 is_database_configured() {
-  # shellcheck disable=SC2010
-  local has_postgresql_conf
-  has_postgresql_conf="$(ls /var/lib/postgresql/10/data/ | grep postgresql.conf | wc -l)"
-  echo "$has_postgresql_conf"
+  local OPTIND o
+  local database_version=$POSTGRESQL_VERSION
+
+  while getopts ":v:" o; do
+    case "${o}" in
+    v) database_version=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ "$abort" == true ]]; then
+    usage_is_database_configured
+    return 1
+  else
+    echo "$(ls /var/lib/postgresql/$database_version/data/ | grep postgresql.conf | wc -l)"
+  fi
+}
+
+usage_init_database() {
+  echo "Usage: init_database <-v string>" 1>&2
+  echo "  - v     Postgresql Database version to use"
 }
 
 init_database() {
-  su - postgres -c "initdb --auth-host=md5 -D /var/lib/postgresql/10/data -U postgres"
+  local OPTIND o
+  local database_version=$POSTGRESQL_VERSION
+
+  while getopts ":v:" o; do
+    case "${o}" in
+    v) database_version=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ "$abort" == true ]]; then
+    usage_init_database
+    return 1
+  else
+    su - postgres -c "initdb --auth-host=md5 -D /var/lib/postgresql/$database_version/data -U postgres"
+  fi
+}
+
+usage_link_database_configs() {
+  echo "Usage: link_database_configs <-v string>" 1>&2
+  echo "  - v     Postgresql Database version to use"
 }
 
 link_database_configs() {
-  find /var/lib/postgresql/10/data/ -name '*.conf' -exec ln -s {} /etc/postgresql-10/ \;
+  local OPTIND o
+  local database_version=$POSTGRESQL_VERSION
+
+  while getopts ":v:" o; do
+    case "${o}" in
+    v) database_version=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ "$abort" == true ]]; then
+    usage_link_database_configs
+    return 1
+  else
+    find "/var/lib/postgresql/$database_version/data/" -name '*.conf' -exec ln -s {} "/etc/postgresql-$database_version/" \;
+  fi
+}
+
+usage_start_database() {
+  echo "Usage: start_database <-v string>" 1>&2
+  echo "  - v     Postgresql Database version to use"
 }
 
 start_database() {
-  systemctl start postgresql-10
+  local OPTIND o
+  local database_version=$POSTGRESQL_VERSION
+
+  while getopts ":v:" o; do
+    case "${o}" in
+    v) database_version=${OPTARG} ;;
+    :)
+      echo "ERROR: Option -$OPTARG requires an argument"
+      abort=true
+      ;;
+    \?)
+      echo "ERROR: Invalid option -$OPTARG"
+      abort=true
+      ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ "$abort" == true ]]; then
+    usage_link_database_configs
+    return 1
+  else
+    systemctl start "postgresql-$database_version"
+  fi
 }
 
 usage_check_database_exists() {
@@ -55,6 +165,9 @@ check_database_exists() {
 
   if [[ -z "$database_name" ]]; then
     echo "ERROR: Missing Database name"
+    usage_check_database_exists
+    return 1
+  elif [[ "$abort" == true ]]; then
     usage_check_database_exists
     return 1
   else
@@ -104,6 +217,9 @@ function create_database() {
     return 1
   elif [[ -z "$database_password" ]]; then
     echo "ERROR: Missing Database password"
+    usage_create_database
+    return 1
+  elif [[ "$abort" == true ]]; then
     usage_create_database
     return 1
   else
@@ -199,7 +315,7 @@ create_user() {
       echo "Cannot create user=$user on Sonar, got HTTP status=$status_code" >&2
       return 1
     else
-      echo -n "Created user=$user on Sonar"
+      echo "Created user=$user on Sonar"
     fi
     return 0
   fi
@@ -318,7 +434,7 @@ change_password() {
       # echo "Cannot change user=$user old_password=$old_password to new_password=$new_password on Sonar, got HTTP status=$status_code and body=$body" >&2
       return 1
     else
-      echo -n "For Sonar user=$user, correctly set password=$new_password"
+      echo "For Sonar user=$user, correctly set password=$new_password"
     fi
     return 0
   fi
@@ -418,7 +534,7 @@ create_user_token() {
       echo "Cannot create token with name=$token_name for Sonar user=$user, got HTTP status=$status_code" >&2
       return 1
     else
-      echo -n "Correctly created token with name=$token_name for Sonar user=$user. Please, take note of token=$token"
+      echo "Correctly created token with name=$token_name for Sonar user=$user. Please, take note of token=$token"
     fi
     return 0
 
@@ -522,7 +638,7 @@ set_options() {
       echo "Cannot set options for Sonar, got HTTP status=$status_code" >&2
       return 1
     else
-      echo -n "Correctly set options for Sonar."
+      echo "Correctly set options for Sonar."
     fi
     return 0
 
@@ -622,17 +738,33 @@ check_user_has_token() {
 
 # OTHER UTILITIES
 
-has_sonar_already_started() {
-  # shellcheck disable=SC2010
-  local has_started
-  mkdir -p $SONAR_START_DIR
-  has_started="$(ls $SONAR_START_DIR | grep started | wc -l)"
-  echo "$has_started"
+load_sonar_admin_credentials() {
+
+  # Prepare vars, using token if available or username+password if token is not set
+  sonar_admin_username=$(jq -M -r '.username' "$SONAR_ADMIN_FILE")
+  sonar_admin_token=$(jq -M -r '.token' "$SONAR_ADMIN_FILE")
+  sonar_admin_password=$(jq -M -r '.password' "$SONAR_ADMIN_FILE")
+
+  if [[ -n "$sonar_admin_token" ]]; then
+    admin_user_or_token="$sonar_admin_token"
+    admin_password=""
+  elif [[ -n "$sonar_admin_username" || -n "$sonar_admin_password" ]]; then
+    admin_user_or_token="$sonar_admin_username"
+    admin_password="$sonar_admin_password"
+  else
+     echo "An Admin Token or Admin User and Password should be provided" >&2
+  fi
 }
 
-set_sonar_started() {
-  mkdir -p $SONAR_START_DIR
-  touch $SONAR_START_DIR/started
+is_sonar_ready() {
+  # shellcheck disable=SC2010
+  mkdir -p $SONAR_READY_DIR
+  echo "$(ls $SONAR_READY_DIR | grep ready | wc -l)"
+}
+
+set_sonar_ready() {
+  mkdir -p $SONAR_READY_DIR
+  touch $SONAR_READY_DIR/ready
 }
 
 array_contains () {

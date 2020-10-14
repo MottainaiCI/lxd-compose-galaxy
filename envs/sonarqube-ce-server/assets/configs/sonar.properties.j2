@@ -1,0 +1,11 @@
+sonar.jdbc.username={{sonar_server_config.db.username}}
+sonar.jdbc.password={{sonar_server_config.db.password}}
+sonar.jdbc.url=jdbc:postgresql://{{sonar_server_config.db.host}}/{{sonar_server_config.db.name}}
+sonar.log.level={{sonar_server_config.log.level}}
+sonar.log.level.web={{sonar_server_config.log.level_web}}
+sonar.path.logs=/var/log/sonarqube
+sonar.log.rollingPolicy=time:yyyy-MM-dd
+sonar.log.maxFiles=1
+sonar.web.accessLogs.enable=true
+sonar.path.data=/var/lib/sonar
+sonar.path.temp=/tmp/sonar

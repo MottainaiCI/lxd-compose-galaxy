@@ -15,42 +15,15 @@ ephemeral: true
 
 hooks:
 
-  # DEBUG: Prepare env vars using trick
   - event: post-node-sync
     commands:
-      - cat /scripts/debug_init_vars.json
-    out2var: "sonar_server_config"
-
-  # Prepare and Run services
-  - event: post-node-sync
-    commands:
-      - chmod +x /scripts/automation_tools.sh
-      - chmod +x /scripts/init_sonar.sh
-      - chmod +x /scripts/config_sonar_options.sh
-      - chmod +x /scripts/prepare_admin_credentials.sh
-      - chmod +x /scripts/create_users.sh
-      - chmod +x /scripts/init_tokens.sh
-      - cd /scripts && ./init_sonar.sh
-      - systemctl enable postgresql-10
-      - systemctl enable sonarqube
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then systemctl daemon-reload ; fi'
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then systemctl restart postgresql-10 ; fi'
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then systemctl restart sonarqube ; fi'
-      - source /scripts/automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then sleep 60 ; fi'
-
-  # Sonarqube provisioning:
-  - event: post-node-sync
-    commands:
-      - cd /scripts && ./prepare_admin_credentials.sh
-    out2var: "sonar_admin_token"
-  - event: post-node-sync
-    commands:
-      - echo "$sonar_admin_token" > /tmp/sonar_admin_token
-      - cd /scripts && source automation_tools.sh && eval 'if [ $(has_sonar_already_started) == "0" ]; then ./config_sonar_options.sh ; fi'
-      # NOTE: flag sonar as started after configuration of admin user and application options
-      - cd /scripts && source automation_tools.sh && set_sonar_started
-      - cd /scripts && ./create_users.sh
-      - cd /scripts && ./init_tokens.sh
+      - chmod +x /scripts/*.sh
+      - cd /scripts && ./init_sonar_database.sh
+      - cd /scripts && ./start_services.sh
+      - cd /scripts && ./admin_provisioning.sh
+      - cd /scripts && ./config_sonar_options.sh
+      - cd /scripts && ./users_provisioning.sh
+      - cd /scripts && ./tokens_provisioning.sh
 
 nodes:
   - name: sonarqube-ce-server1
@@ -60,7 +33,7 @@ nodes:
     # Specify directory where build path of templates.
     # Directory could be an absolute path or a relative path based
     # on env base dir.
-    source_dir: "./templates"
+    source_dir: "./assets"
 
     #entrypoint:
     #  - "/bin/bash"
@@ -78,34 +51,14 @@ nodes:
     # List of templates files to compiles before push the
     # result inside container.
     config_templates:
-      - source: scripts/debug_init_vars.json.j2
-        dst: scripts/debug_init_vars.json
       - source: configs/sonar.properties.j2
         dst: configs/sonar.properties
-      - source: scripts/init_sonar.sh.j2
-        dst: scripts/init_sonar.sh
-      - source: scripts/create_users.sh.j2
-        dst: scripts/create_users.sh
-      - source: scripts/init_tokens.sh.j2
-        dst: scripts/init_tokens.sh
 
     sync_resources:
       # source: File or directory to push
       # dst: File or directory target. For directory is needed "/" at the end
-      - source: scripts/debug_init_vars.json
-        dst: scripts/debug_init_vars.json
-      - source: scripts/init_sonar.sh
-        dst: /scripts/init_sonar.sh
-      - source: scripts/automation_tools.sh
-        dst: /scripts/automation_tools.sh
-      - source: scripts/prepare_admin_credentials.sh
-        dst: /scripts/prepare_admin_credentials.sh
-      - source: scripts/config_sonar_options.sh
-        dst: /scripts/config_sonar_options.sh
-      - source: scripts/create_users.sh
-        dst: /scripts/create_users.sh
-      - source: scripts/init_tokens.sh
-        dst: /scripts/init_tokens.sh
+      - source: scripts/
+        dst: /
       - source: configs/sonar.properties
         dst: /opt/sonarqube/conf/sonar.properties
       - source: configs/sonarqube.service
