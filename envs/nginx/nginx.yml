@@ -1,0 +1,128 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup NGINX Proxy with custom reverse balancer and web contents.
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+projects:
+
+  - name: "nginx-proxy"
+    description: |
+      Setup NGINX proxy with custom reverse balancer,
+      integrated with letencrypt.
+
+    include_env_files:
+      - vars/main.yml
+
+    vars:
+      - envs:
+          mypublic_domain: example1.com
+          letencrypt_server: https://acme-v02.api.letsencrypt.org/directory
+          letencrypt_email: myemail@example.com
+
+    groups:
+      - name: "proxy1"
+        description: "Nginx Proxy"
+
+        connection: "local"
+
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-local
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: false
+
+        nodes:
+          - name: nginx1
+            # ARM images or AMD64
+            image_source: "ubuntu/20.10/armhf"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y nginx certbot apache2-utils
+                  - systemctl stop nginx
+
+              - event: pre-node-sync
+                flags:
+                  - certbot
+                commands:
+                  - rm -rf /certbot
+              - event: post-node-sync
+                flags:
+                  - certbot
+                commands:
+                  - |
+                    cd /certbot && \
+                    certbot --work-dir . --config-dir . --logs-dir ./logs \
+                    certificates
+                  - systemctl stop nginx
+                  - |
+                    cd /certbot && \
+                    certbot --work-dir . --config-dir . --logs-dir ./logs \
+                    --email ${letencrypt_email} \
+                    --server ${letencrypt_server} \
+                    --agree-tos \
+                    -d ${mypublic_domain} --standalone \
+                    certonly
+              - event: post-node-sync
+                node: "host"
+                flags:
+                  - certbot
+                entrypoint:
+                  - "/bin/bash"
+                  - "-c"
+                commands:
+                  - mv envs/files/certbot envs/files/certbot-$(date '+%Y-%m-%d')
+                  - lxc file pull --recursive local:nginx1/certbot envs/files/
+              - event: post-node-sync
+                flags:
+                  - nginx
+                commands:
+                  - sed -i -e "s:\trotate.*:\trotate ${nginx_logrotate_days}:g" /etc/logrotate.d/nginx
+                  - chown root:www-data -R /certbot/live/
+                  - systemctl restart nginx
+
+              - event: post-node-sync
+                flags:
+                  - nginx
+                commands:
+                  - chmod a+x /tmp/nginx_auth.sh
+                  - /tmp/nginx_auth.sh
+                  - rm /tmp/nginx_auth.sh
+
+            # List of templates files to compiles before push the
+            # result inside container.
+            config_templates:
+              - source: files/nginx.conf.tmpl
+                dst: /tmp/nginx/nginx.conf
+
+            sync_resources:
+              # I have an already initialized certbot tree. See certbot documentation
+              # for the detail.
+              - source: files/certbot/
+                dst: /
+              - source: /tmp/nginx/nginx.conf
+                dst: /etc/nginx/nginx.conf
+              - source: files/nginx_auth.sh
+                dst: /tmp/nginx_auth.sh
+              - source: /local/website/dir
+                dst: /var/www/html/

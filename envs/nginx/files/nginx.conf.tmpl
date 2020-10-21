@@ -1,0 +1,93 @@
+user {{ .nginx_user }};
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+  worker_connections 1024;
+  use epoll;
+}
+
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  log_format main
+    '$remote_addr - $remote_user [$time_local] '
+    '"$request" $status $bytes_sent '
+    '"$http_referer" "$http_user_agent" '
+    '"$gzip_ratio"';
+
+  client_header_timeout 10m;
+  client_body_timeout 10m;
+  send_timeout 10m;
+
+  connection_pool_size 256;
+  client_header_buffer_size 1k;
+  large_client_header_buffers 4 2k;
+  request_pool_size 4k;
+
+  gzip off;
+
+  output_buffers 1 32k;
+  postpone_output 1460;
+
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  keepalive_timeout 75 20;
+
+  ignore_invalid_headers on;
+
+  index index.html;
+
+  proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
+
+  {{ range $index, $upstream := .nginx_upstreams }}
+  upstream {{ index $upstream "name" }} {
+    server {{ index $upstream "server" }};
+    keepalive {{ index $upstream "keepalive" }};
+  }
+  {{ end }}
+
+
+  server {
+    listen 80;
+    server_name    {{ .mypublic_domain }};
+    server_tokens off;
+
+    access_log /var/log/nginx/access_log main;
+    error_log /var/log/nginx/error_log info;
+
+    {{ range $index, $loc := .nginx_location_http }}
+
+    location {{ index $loc "path" }} {
+      {{ index $loc "content" }}
+    }
+    {{ end }}
+  }
+
+  server {
+     listen 443 ssl;
+     server_name    {{ .mypublic_domain }};
+     server_tokens off;
+
+     ssl_certificate /certbot/live/{{ .mypublic_domain }}/fullchain.pem;
+     #ssl_certificate /certbot/live/{{ .mypublic_domain }}/cert.pem;
+     ssl_certificate_key /certbot/live/{{ .mypublic_domain }}/privkey.pem;
+
+     access_log /var/log/nginx/ssl_access_log main;
+     error_log /var/log/nginx/ssl_error_log info;
+
+     {{ range $index, $loc := .nginx_location_ssl }}
+
+     location {{ index $loc "path" }} {
+        {{ index $loc "content" | nindent 10 }}
+     }
+     {{ end }}
+
+     root   /var/www/html;
+  }
+}
+
