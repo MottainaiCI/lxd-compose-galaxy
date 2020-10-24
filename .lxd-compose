@@ -9,4 +9,6 @@ logging:
 env_dirs:
 - ./envs/sonarqube-ce-server
 - ./envs/nginx
+# Arm project
+- ./envs-arm/mottainai-agent
 

@@ -1,0 +1,189 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+- name: "default"
+  description: "Default profile"
+  devices:
+    root:
+      path: /
+      pool: pool-btrfs
+      type: disk
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
+- name: loop
+  config:
+    security.privileged: "true"
+  description: Mount /dev/loop* stuff
+  devices:
+    loop-control:
+      path: /dev/loop-control
+      type: unix-char
+    loop0:
+      path: /dev/loop0
+      type: unix-block
+    loop1:
+      path: /dev/loop1
+      type: unix-block
+    loop2:
+      path: /dev/loop2
+      type: unix-block
+    loop3:
+      path: /dev/loop3
+      type: unix-block
+    loop4:
+      path: /dev/loop4
+      type: unix-block
+    loop5:
+      path: /dev/loop5
+      type: unix-block
+    loop6:
+      path: /dev/loop6
+      type: unix-block
+    loop7:
+      path: /dev/loop7
+      type: unix-block
+
+- name: privileged
+  config:
+    security.privileged: "true"
+  description: Privileged profile
+  devices:
+    fuse:
+      path: /dev/fuse
+      type: unix-char
+    tuntap:
+      path: /dev/net/tun
+      type: unix-char
+    # Comment this if zfs is not available.
+    zfs:
+      path: /dev/zfs
+      type: unix-char
+
+- name: net-local
+  description: Net lxdbr0
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: lxdbr0
+      type: nic
+
+projects:
+
+  - name: "arm::ubuntu::mottainai-agent"
+    description: |
+      Setup Mottaina Agent as LXD Container.
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/mottainai-agent-pi4.yml
+
+    groups:
+      - name: "mottainai-agents"
+        description: "Mottainai Agent pi4 ARM64"
+
+        connection: "ironman"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-local
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: false
+
+        nodes:
+          - name: mottainai-agent-arm64-pi4-1
+            image_source: "ubuntu/20.10/arm64"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            # Specify directory where build path of templates.
+            # Directory could be an absolute path or a relative path based
+            # on env base dir.
+            # source_dir: "."
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # Define the list of LXD Profile to use in additional
+            # to group profiles for create the containers
+            profiles:
+              - docker
+              - privileged
+              - loop
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y docker.io bridge-utils jq wget
+                  #- systemctl start docker
+
+              - event: post-node-creation
+                commands:
+                  - groupadd -f mottainai
+                  - useradd mottainai-agent
+                  - gpasswd -a mottainai-agent mottainai
+                  - gpasswd -a mottainai-agent docker
+                  - mkdir /etc/mottainai
+                  - mkdir /srv/mottainai/build -p
+                  - chown mottainai-agent:mottainai /srv/mottainai/
+                  - |
+                    wget -q -O /lib/systemd/system/mottainai-agent.service \
+                    https://raw.githubusercontent.com/MottainaiCI/mottainai-agent/master/contrib/systemd/mottainai-agent.service
+                  - |
+                    wget -q -O /lib/systemd/system/mottainai-agent-health.service \
+                    https://raw.githubusercontent.com/MottainaiCI/mottainai-agent/master/contrib/systemd/mottainai-agent-health.service
+                  - |
+                    wget -q -O /lib/systemd/system/mottainai-agent-health.timer \
+                    https://raw.githubusercontent.com/MottainaiCI/mottainai-agent/master/contrib/systemd/mottainai-agent-health.timer
+                  - |
+                    wget -q -O /usr/bin/yq \
+                    https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_arm
+                  - chmod a+x /usr/bin/yq
+                  - systemctl daemon-reload
+                  - systemctl start docker
+
+              - event: pre-node-sync
+                flags:
+                  - update-mottainai
+                commands:
+                  - wget -q -O /usr/bin/mottainai-agent https://downloads.svc.sabayon.org/mottainai-dev-cross-bin/mottainai-agent-7d7bd34-linux-arm
+                  - chmod a+x /usr/bin/mottainai-agent
+                  - rm -rf /srv/mottainai/lxc || true
+
+              - event: post-node-sync
+                flags:
+                  - update-mottainai
+                  - update-config
+                commands:
+                  - echo "${agent_config}" | yq r -P -
+                  - echo "${agent_config}" | yq r -P - > /tmp/mottainai-agent.yaml
+                  - mv /tmp/mottainai-agent.yaml /etc/mottainai/
+                  - mv /srv/mottainai/lxd-conf /srv/mottainai/lxc
+                  - chown mottainai-agent:mottainai -R /srv/mottainai/lxc
+                  - chown mottainai-agent:mottainai -R /etc/mottainai
+                  - systemctl restart mottainai-agent
+
+            sync_resources:
+              # Default source path is the directory of the env file.
+              - source: ../lxd-conf/
+                dst: /srv/mottainai/

@@ -1,0 +1,108 @@
+envs:
+  #  See https://github.com/MottainaiCI/mottainai-server/blob/master/contrib/config/mottainai-server.yaml.example
+  #  for all params.
+  #
+  agent_config:
+    general:
+      debug: false
+      # Default 
+      logfile: '/var/log/mottainai/mottainai-agent.log'
+      loglevel: 'INFO'
+
+      # TLS options
+      # tls_cert:
+      # tls_key
+
+      # Others logrus options / providers
+      client_timeout: 0
+
+    web:
+      url: "/"
+
+      application_url: "https://mottainai.local"
+
+    broker:
+      type: 'redis'
+      result_backend: 'redis://<credential>@redis.mottainai.local:6379/2'
+      broker: 'redis://<credential>@redis.mottainai.loca:6379/1'
+      default_queue: "standard"
+      exchange: "jobs"
+      results_expire_in: 3600
+      max_idle: 4
+      max_active: 10
+      max_idle_timeout: 120
+      delayed_tasks_poll_period: 10000
+      connect_timeout: 30
+      idle_timeout: 120
+      write_timeout: 10
+      read_timeout: 10
+
+    agent:
+
+      # Agent key
+      agent_key: '<agent-key>'
+      # API Key
+      api_key: '<api-key>'
+
+      # Standalone mode. Agent task only specific task
+      standalone: true
+
+      # Directory where store building data
+      build_path: '/srv/mottainai/build'
+
+      concurrency: 1
+      executor:
+        - lxd
+        - docker
+
+      # Define Size of private queue
+      private_queue: 3
+
+      # Define download speed limit. 0 means no limit
+      # download_speed_limit: 0
+      # Define upload speed limit. 0 means no limit
+      # upload_speed_limit: 0
+
+      # Define Queues handled by Agent and number of concurrency tasks
+      queues:
+         arm_lxd: 1
+         arm64_lxd: 1
+
+
+      # Define operations executed by Agent Healtcheck
+      health_check_exec:
+        #- docker system prune --force --all --volumes
+      # health_check_clean_path: 
+
+      #pre_task_hook_exec:
+      #    - sleep 5
+      #   - /usr/bin/sudo /usr/bin/wakeup_storage.sh
+
+      # ----------------------------------
+      # Docker executor options
+      # ----------------------------------
+      # Define Docker CAPS
+      docker_caps:
+        - 'SYS_PTRACE'
+        - 'MKNOD'
+
+      docker_keepimg: True
+
+      # ----------------------------------
+
+      # Set here the remote defined on your LXD configuration file.
+      lxd_endpoint: "ironman"
+      lxd_config_dir: "/srv/mottainai/lxc"
+      lxd_profiles:
+        - default
+        - privileged
+        - net-local
+        - docker
+      lxd_ephemeral_containers: true
+      lxd_cache_registry:
+        type: "p2p"
+        remote: "ironman"
+        compression_algorithm: "xz"
+        wait_sleep: 5
+
+
