@@ -4,6 +4,7 @@
 set -e
 
 RESET_HTPASS="${nginx_reset_htpasswd:-0}"
+HTPASSWD_OPTS="${HTPASSWD_OPTS:-}"
 
 create_user () {
   local file=$1
@@ -15,7 +16,7 @@ create_user () {
     touch ${file}
   }
 
-  htpasswd -b ${file} ${user} ${pwd} || return 1
+  htpasswd ${HTPASSWD_OPTS} -b ${file} ${user} ${pwd} || return 1
 
   return 0
 }
