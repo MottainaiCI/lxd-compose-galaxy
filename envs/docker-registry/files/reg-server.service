@@ -1,0 +1,10 @@
+[Unit]
+Description=Reg Docker Registry UI
+Requires=docker.socket
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/reg server $REG_OPTS -r $DOCKER_REGISTRY
+User=reg
+WorkingDirectory=/var/lib/reg

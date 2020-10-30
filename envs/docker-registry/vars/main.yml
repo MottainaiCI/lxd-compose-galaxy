@@ -1,0 +1,66 @@
+envs:
+  nginx_reset_htpasswd: "1"
+  nginx_auth_basic_files:
+    - path: /etc/registry
+      users:
+        - user: "geaaru"
+          pwd: "xxxxxxx"
+
+  reg_server_systemd_override: |
+
+    [Service]
+    Environment=DOCKER_REGISTRY=docker-registry1.mottainai.local:5000
+    Environment=REG_OPTS=-f -p 8080
+
+
+  # It seems that this doesn't work. 8-|
+  docker_containers_conf: |
+    # Registries that do not use TLS when pulling images or
+    # uses self-signed certificates.
+    [registries.insecure]
+    registries = ['docker-registry1.mottainai.local:5000']
+
+  docker_registry_config:
+    version: 0.1
+    log:
+      accesslog:
+        disabled: false
+      level: debug
+      formater: text
+      fields:
+        service: registry
+        environment: staging
+    storage:
+      cache:
+        blobdescriptor: inmemory
+      filesystem:
+        rootdirectory: /var/lib/registry
+        maxthreads: 100
+      # Enable this to permit delete of the images
+      # from registry
+      delete:
+        enabled: true
+      maintenance:
+        uploadpurging:
+          enabled: true
+          age: 1h
+          interval: 5m
+          dryrun: false
+        readonly:
+          enabled: false
+    http:
+      addr: :5000
+      headers:
+        X-Content-Type-Options: [nosniff]
+    auth:
+      htpasswd:
+        realm: basic-realm
+        path: /etc/registry
+    health:
+      storagedriver:
+        enabled: true
+        interval: 10s
+        threshold: 3
+
+    prometheus:
+      enabled: true

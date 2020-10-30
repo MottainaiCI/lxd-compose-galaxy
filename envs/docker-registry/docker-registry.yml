@@ -1,0 +1,185 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Docker Registry Server and WebUI
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+projects:
+
+  - name: "docker-registry-standalone"
+    description: |
+      Setup Docker Registry Server and GUI
+
+    include_env_files:
+      - vars/main.yml
+
+    vars:
+      - envs:
+          ACCEPT_LICENSE: "*"
+          HTPASSWD_OPTS: "-B"
+          lxd_domain: "mottainai.local"
+          yq_version: "3.4.1"
+          reg_version: "0.16.1"
+
+    hooks:
+      - event: post-node-creation
+        commands:
+          # DHCP seems slow
+          - sleep 5
+          - ip a show eth0
+          - equo i app-misc/jq app-emulation/docker
+          - |
+            wget -q -O /usr/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
+          - |
+            wget -q -O /usr/bin/reg \
+            https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
+          - chmod a+x /usr/bin/yq /usr/bin/reg
+
+      - event: post-node-sync
+        flags:
+          - setup_docker
+        commands:
+          - mkdir -p /etc/containers/ || true
+          - echo "${docker_containers_conf}"
+          - |
+            echo "${docker_containers_conf}" > /etc/containers/registries.conf
+
+    groups:
+      - name: "registry-group"
+        description: "Docker Registry group"
+
+        connection: "local"
+
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - sdpool
+          - net-mottainai0
+          - privileged
+          - docker
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+
+        nodes:
+          - name: docker-registry1
+            image_source: "sabayon/base"
+            # By deafult it use remote images"
+            image_remote_server: "dso"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  - equo i docker-registry app-admin/apache-tools
+
+              - event: post-node-sync
+                flags:
+                  - auth
+                commands:
+                  - chmod a+x /tmp/nginx_auth.sh
+                  - /tmp/nginx_auth.sh
+                  - rm /tmp/nginx_auth.sh
+
+              - event: post-node-sync
+                flags:
+                  - update_config
+                  - registry
+                commands:
+                  - echo "${docker_registry_config}" | yq r -P -
+                  - echo "${docker_registry_config}" | yq r -P - > /tmp/config.yml
+                  - rm /etc/docker/registry/config.yml || true
+                  - mv /tmp/config.yml /etc/docker/registry/
+                  - systemctl restart registry
+
+            sync_resources:
+              - source: ../nginx/files/nginx_auth.sh
+                dst: /tmp/nginx_auth.sh
+
+      - name: "registry-ui"
+        description: "Docker Registry UI group"
+
+        connection: "local"
+
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - sdpool
+          - net-mottainai0
+          - privileged
+          - docker
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+
+        nodes:
+          - name: docker-registry-webui
+            image_source: "sabayon/base"
+            # By deafult it use remote images"
+            image_remote_server: "dso"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # Create user for reg
+                  - useradd reg -m -d /var/lib/reg -g docker
+
+              - event: post-node-sync
+                flags:
+                  - update_reg
+                  - download_reg
+                commands:
+                  - |
+                    wget -q -O /usr/bin/reg \
+                    https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
+                  - chmod a+x /usr/bin/yq /usr/bin/reg
+
+              - event: post-node-sync
+                flags:
+                  - update_reg
+                commands:
+                  - |
+                    mkdir /etc/docker -p && \
+                    echo '{ "insecure-registries": [ "docker-registry1.mottainai.local:5000" ] }' > /etc/docker/daemon.json
+                  # It seems that docker client ignore insecure-registries option without docker server.
+                  - systemctl restart docker
+                  - |
+                    user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
+                    pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
+                    docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000
+                  # Test reg connection
+                  - reg ls -f docker-registry1.${lxd_domain}:5000
+
+                  # Create docker auth file for reg
+                  - |
+                    user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
+                    pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
+                    su reg -c "docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000"
+
+                  - mkdir -p /etc/systemd/system/reg-server.service.d/ || true
+                  - |
+                    echo "${reg_server_systemd_override}" > /etc/systemd/system/reg-server.service.d/override.conf
+                  - cat /etc/systemd/system/reg-server.service.d/override.conf
+                  - systemctl daemon-reload
+                  - systemctl restart reg-server
+                  - systemctl status reg-server
+
+            sync_resources:
+              - source: files/reg-server.service
+                dst: /lib/systemd/system/
