@@ -77,6 +77,11 @@ profiles:
       parent: lxdbr0
       type: nic
 
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
 projects:
 
   - name: "arm::ubuntu::mottainai-agent"
