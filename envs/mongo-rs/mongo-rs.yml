@@ -1,0 +1,170 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+#  - name: "profile1"
+#    description: "xxx"
+    # config and devices are field like describe here: https://godoc.org/github.com/lxc/lxd/shared/api#ProfilePut
+#    config:
+      # map[string]string 
+#    devices:
+      # map[string]map[string]string
+
+projects:
+
+  - name: "mongo-replica-set"
+    description: |
+      Setup MongoDB Replica Set with 3 or more nodes.
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/mongo.yml
+
+    vars:
+      - envs:
+          packages:
+            - apt-transport-https
+            - language-pack-en
+            - openssh-client
+            - vim
+            - systemd
+
+            # net tools
+            - net-tools
+            - iproute2
+            - iputils-ping
+
+            - mongodb-org-server
+            - mongodb-org-shell
+            - mongodb-org-mongos
+            - mongodb-org-tools
+
+    groups:
+      - name: "mongo-databases"
+        description: "MongoDB Databases"
+
+        connection: "local"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          #- net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+
+        hooks:
+          - event: post-group
+            node: mongo-rs1
+            flags:
+              - cluster_setup
+            commands:
+              - chmod a+x /tmp/mongo-setup.sh
+              - sleep 5
+              - echo "rs.initiate()" | mongo
+              - echo "db.disableFreeMonitoring()" | mongo
+              - /tmp/mongo-setup.sh "admin"
+              - /tmp/mongo-setup.sh "join"
+              - /tmp/mongo-setup.sh "users"
+              - rm /tmp/mongo-setup.sh
+
+          - event: post-group
+            node: mongo-rs1
+            flags:
+              - cluster_status
+            commands:
+              - |
+                user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) && \
+                pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) && \
+                echo "printjson(rs.status())" | mongo -u "${user}" -p "${pass}" admin
+
+        nodes:
+          - &mongors1
+            name: mongo-rs1
+            image_source: "ubuntu/18.04"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # Define the list of LXD Profile to use in additional
+            # to group profiles for create the containers
+            #profiles:
+            #  - privileged
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install wget gpg ca-certificates jq -y
+                  - |
+                    wget -q -O /usr/bin/yq \
+                    https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_amd64
+                  - chmod a+x /usr/bin/yq
+                  - apt-get clean
+
+              - event: post-node-creation
+                commands:
+                  # Setup MongoDB repository
+                  - |
+                    echo "${mongodb_gpg_key}" > /tmp/mongo-gpg.key
+                  - cat /tmp/mongo-gpg.key
+                  - apt-key add /tmp/mongo-gpg.key && rm /tmp/mongo-gpg.key
+                  - |
+                    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+                  - apt-get update
+
+              - event: post-node-creation
+                commands:
+                  - apt-get install -y $(echo ${packages} | jq '.[]' -r)
+                  - apt-get clean
+
+              - event: post-node-sync
+                commands:
+                  - |
+                    echo "${mongo_key}" > /tmp/mongodb.key
+                  - |
+                    echo "${mongo_config}" | yq r -P - > /tmp/config.yml
+                  - |
+                    domain=$(echo "${mongodb_replica_set}" | jq '.net_domain' -r) && \
+                    yq w /tmp/config.yml net.bindIp "localhost, $(hostname).${domain}" > /etc/mongod.conf
+                  - cat /etc/mongod.conf
+                  - mv /tmp/mongodb.key /etc/mongodb.key
+                  - chown mongodb:mongodb /etc/mongodb.key
+                  - chmod go-rwx /etc/mongodb.key
+                  - systemctl enable mongod
+                  - systemctl restart mongod
+                  - tail -n 10 /var/log/mongodb/mongod.log
+                  - systemctl status mongod
+
+              - event: pre-node-sync
+                flags:
+                  - clean_sync
+                commands:
+                  - rm /tmp/mongo-setup.sh
+
+
+            sync_resources:
+              - source: files/mongo-setup.sh
+                dst: /tmp/mongo-setup.sh
+
+
+          - <<: *mongors1
+            name: mongo-rs2
+
+          - <<: *mongors1
+            name: mongo-rs3

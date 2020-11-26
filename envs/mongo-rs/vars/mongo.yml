@@ -1,0 +1,98 @@
+envs:
+
+  mongodb_gpg_key: |
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    Version: GnuPG v1.4.11 (GNU/Linux)
+
+
+    mQINBFrXrqYBEACscLj2qgPpHBCQtgW1Yh29Ddgv6jssyWLAYmj0qngFLKoQMMbt
+    SNBZylIKxfS+pUD9J5xfRZwfZOmtMIOFVWS9tcpeQXsiwC126tRyoFCIpoTmH7+R
+    8/FfPrCYyXLP+ftEZfRV60wTwr5drR0S5pVIST3oaXXGkHkFC35U++udUG2Tl4Cs
+    OPSCp1tsK6UOTjHFDH8PnasImJgD37QC8OOMIJS0jCtDZywJW6OCdpIRbuTWPK3P
+    P48NLwGUJHixhVCmOgPPu9kDAfG3wLxiN85S2UbaaSXsdA4fF4SSwWNHTIYAg0yT
+    xGepVyW4lkfcvng4jva24rQ9j1cm1b7bWeOkMH1aAcSyFzKCeNCNxbVOYVrcWNP4
+    zrSUvsTKhwX8rPFMq9LkcKirDL9bRILvn/24VU6NdJfGbRjR6+Q7ooj7hYKLXtO5
+    q0Q4nhjigpTWIoU6jdfbM9YqpKSELNnkDRAU+bRYSrNaFuizYgDZQvcVT6gbq26f
+    JbgihoeJogEfim3kqRRJ3EUhE+EaVijl9iLDKkpurod26P2QSq9RKSuOCeauPjQv
+    3BIiEMXco8O3v8W1y4TbnSQ3d28W9pN28IgAhmN2EU2sKqWPzNeG0V+L6mE5pA4o
+    nD3z3JRpxAUFw08+9LnLRZ4D1u54OrHADsU8UpYZJCm1xw6T0e4dlxW6rQARAQAB
+    tDdNb25nb0RCIDQuMiBSZWxlYXNlIFNpZ25pbmcgS2V5IDxwYWNrYWdpbmdAbW9u
+    Z29kYi5jb20+iQI+BBMBAgAoBQJa166mAhsDBQkJZgGABgsJCAcDAgYVCAIJCgsE
+    FgIDAQIeAQIXgAAKCRBLfFSaBY+LaxdXEACJMvkgr3Nt2xme9/6brGMbrEy6mQn7
+    DZP98DXuS0tWvO5vkEO5IfRIvzG3zA0pATSBDVA0BvGnebQrGXZZ7Xfh0gz+zxlt
+    TXv4eCyb6T4gRJuuQSFPTyDnZ3MbPESqj0UpIALmcLDJ01nqvbNPKxx5r08XQOtE
+    i44Kcwc1Px5cPcYP9nmpDNLZjz3gkTm+zBygdE9beP02qXq7WcyghFmQZoLBW53e
+    TqNPnMrrm5+6vgq+r/ttyiYTo7Zw8MrifN5okevzB0JhhSAW9g+4ZOp1QYbV8u8V
+    pksJQDOIaBWIw8zosIQJTCVyd4hOyl8Ib2s2R0/grT51RgLYCNbUG6WTpKGgYBtr
+    Mng10gozyDrnA3B+RiDx5uq+dNzuuMXWMit2nbcdanXdKNkaPmC6WVeU0rG5K1Wz
+    jQMDvAInTszLcqH6zfEsjCoXj0z8UwcC4jahFDNMDBk3OhjMSL+fnvIhW84nKVHf
+    AWL5jjSQdkrM/M8QRpRqls5apuIYHQwo6Oyd2Nk0n9T/GOMJ1jilxiPw9ihusf+k
+    DfU0JI7T8fgxIv/wHNXUg7FOaaDJIfgGlCPUgtsNUDZZ9lFq+Zc5H8Wff3LNo7Se
+    2xnzzoy2e+C3tsxAmVUTs+q0lyIzEK24lf71cp074KVV7rIYBELYtO2hAlJYjXJU
+    bscTTjCKLf9leA==
+    =UXPP
+    -----END PGP PUBLIC KEY BLOCK-----
+
+  mongodb_replica_set:
+
+    net_domain: "mottainai.local"
+
+    name: "rs0"
+
+    superuser:
+      db: "admin"
+      user: "admin"
+      pwd: "pass"
+      roles:
+        - role: "root"
+          db: "admin"
+
+    users:
+      - db: "admin"
+        user: "user"
+        pwd: "user0"
+        roles:
+          - role: "readWrite"
+            db: "mydb"
+      - db: "admin"
+        user: "user2"
+        pwd: "user0"
+        roles:
+          - role: "readWrite"
+            db: "mydb"
+
+  mongo_key: |
+    KNClV4herimCMYP2srq7WIJdNrkef5+Q/qNmOvFjFFR4QHV/nRvJAuqEkvafmRVK
+    iKGZZmR9MCmIXYxb4g7m1j4jSUF4IREspcr1gBWevPMm+TZ02U0hoh2te65D/6q6
+    xQqQXuqsYzblN9Qo+cR/7839LrvKmlmobNvI6osCwM8cacHCq9uW4/5aEbLsKPUU
+    JqHwKhH6r8KxL9JeLPJ38KZwqGQ/yzQJT/mPNcXoQnXtswCbaCYQYBGVAOy8p1K6
+    pWjzs3abRfO86aW58y3DwkuiSCSx4jMrNTMAIPZrgpEd4xYUmBkbxt3s96jpq02w
+    hJyFH0CBiQNqDvaGrgtyV3eWlUMRgWxceOtK9UA7vh2mCHX9tqGs0FFCRIOKxZR9
+    exWj1BITMm0v7dy8o/VD99uN1tuk5iKlY+YADj/01JBU+uh10dWw3vQ5Q2vB9Pbm
+    izcmRVgevDyKwvuhKsNImULlFfYRPJT6yZfHdvQc2Ru1b2dCw3MO69/CTpKh1XCk
+    5U2uC7k6vPKftea6T4thuRYap/R1Gc5YiEmnKkzpzdtEMjFtckK3tOj5Eu9cyxAP
+    hwCZ+0EEQqYtD7yBNQUEBiWrFNFYFv+bvAm5zmEh81PdmW+yu7Gw3U5VXhRKNVG9
+    nxi4VXQgXWLZxjMSg4ZCWox7/6QWbbY+/lUM5M6LvFkSf5GxYySkTrqS9JJFF7l7
+    M9dYfcqE8EyG022aKxR7PdAnYzcSbteJBVZJmEewNKfViBBAW+ZT+OWy6eayDnVp
+    5zzrDXNG5gBY+OIj/yZXuRKqRjGUsZGyPtz0TGG3P+0RIH/me62XNkgXRmfvwTL2
+    TGbBoDT0q6wmm92sMPCYSoIJXiryGz2AdBmuwRrZ0L5Jog82dy9HHspZYipRFW3k
+    dEQrzq1XCSJWkunpCTaNPSjD8jET93OD/NeexDgZDWjfzjvIOsXHhYrao2fN0qoR
+    J/UkPzU8aclzPr1fTRQH5mYRtZOCmZACzocJVA5sZtJwU99P
+
+  mongo_config:
+    storage:
+      dbPath: "/var/lib/mongodb"
+
+    net:
+      port: 27017
+
+    security:
+      keyFile: "/etc/mongodb.key"
+
+    systemLog:
+      destination: file
+      logAppend: true
+      path: "/var/log/mongodb/mongod.log"
+
+    replication:
+      replSetName: "rs0"
