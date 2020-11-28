@@ -155,7 +155,7 @@ projects:
                 flags:
                   - clean_sync
                 commands:
-                  - rm /tmp/mongo-setup.sh
+                  - rm /tmp/mongo-setup.sh || true
 
 
             sync_resources:
