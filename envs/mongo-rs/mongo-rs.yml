@@ -68,10 +68,13 @@ projects:
               - chmod a+x /tmp/mongo-setup.sh
               - sleep 5
               - echo "rs.initiate()" | mongo
-              - echo "db.disableFreeMonitoring()" | mongo
               - /tmp/mongo-setup.sh "admin"
               - /tmp/mongo-setup.sh "join"
               - /tmp/mongo-setup.sh "users"
+              - |
+                user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) && \
+                pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) && \
+                echo "db.disableFreeMonitoring()" | mongo -u "${user}" -p "${pass}" admin
               - rm /tmp/mongo-setup.sh
 
           - event: post-group
