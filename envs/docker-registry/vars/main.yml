@@ -4,7 +4,7 @@ envs:
     - path: /etc/registry
       users:
         - user: "geaaru"
-          pwd: "xxxxxxx"
+          pwd: "pass"
 
   reg_server_systemd_override: |
 
@@ -19,6 +19,44 @@ envs:
     # uses self-signed certificates.
     [registries.insecure]
     registries = ['docker-registry1.mottainai.local:5000']
+
+  docker_registry_ssl_cert_conf: |
+
+    HOME = envs/docker-registry/files
+    RANDFILE = /tmp/rnd
+
+    [ req ]
+    #default_bits = 4096
+    #default_keyfile = privkey.pem
+    distinguished_name = req_distinguished_name
+    req_extensions = v3_req
+    #x509_extensions = v3_ca
+    prompt = no
+    # string_mask = utf8only
+
+    [ req_distinguished_name ]
+    #countryName_default = IT
+    C = IT
+    #stateOrProvinceName_default = Earth
+    ST = Earth
+    L = Italy
+    OU = MottainaiCI Organization
+    CN = COMMON_NAME
+    #organizationName_default = MottainaiCI Organization
+    #organizationalUnitName_default = LXD Compose Unit
+    #commonName_default = COMMON_NAME
+    #emailAddress_default = geaaru@sabayonlinux.org
+
+    [ v3_req ]
+    # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+    keyUsage = keyEncipherment, dataEncipherment
+    extendedKeyUsage = serverAuth, clientAuth
+    subjectAltName = @alt_names
+
+    [alt_names]
+    DNS.1 = COMMON_NAME
+
+
 
   docker_registry_config:
     version: 0.1
@@ -52,6 +90,9 @@ envs:
       addr: :5000
       headers:
         X-Content-Type-Options: [nosniff]
+      tls:
+        certificate: /etc/docker/registry-ssl/dr.crt
+        key: /etc/docker/registry-ssl/dr.key
     auth:
       htpasswd:
         realm: basic-realm
@@ -64,3 +105,4 @@ envs:
 
     prometheus:
       enabled: true
+

@@ -73,6 +73,31 @@ projects:
           reg_version: "0.16.1"
 
     hooks:
+
+      # Create docker registry self signed certificate
+      - event: pre-group
+        node: host
+        flags:
+          - certificate_selfsigned_creation
+        commands:
+          - echo "${docker_registry_ssl_cert_conf}" > /tmp/openssl.cnf
+          - sed -i -e "s:COMMON_NAME:docker-registry1.mottainai.local:g" /tmp/openssl.cnf
+          - openssl rand -out /tmp/rnd -writerand /tmp/rnd
+
+
+      - event: pre-group
+        node: host
+        flags:
+          - certificate_selfsigned_creation
+        commands:
+          - >
+            keyfile=envs/docker-registry/files/dr.key ;
+            crtfile=envs/docker-registry/files/dr.crt ;
+            if [ ! -e ${keyfile} ] ; then
+            openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl.cnf ;
+            fi
+          - openssl x509 -in envs/docker-registry/files/dr.crt -text -noout
+
       - event: post-node-creation
         commands:
           # DHCP seems slow
@@ -128,6 +153,11 @@ projects:
             # container.
             hooks:
 
+              - event: pre-node-sync
+                commands:
+                  - rm -v /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
+                  - rm -v /tmp/nginx_auth.sh 2>/dev/null || true
+
               - event: post-node-creation
                 commands:
                   - equo i docker-registry app-admin/apache-tools
@@ -149,9 +179,17 @@ projects:
                   - echo "${docker_registry_config}" | yq r -P - > /tmp/config.yml
                   - rm /etc/docker/registry/config.yml || true
                   - mv /tmp/config.yml /etc/docker/registry/
+                  - mkdir -p //etc/docker/registry-ssl/ || true
+                  - mv /tmp/dr.key /etc/docker/registry-ssl/dr.key
+                  - mv /tmp/dr.crt /etc/docker/registry-ssl/dr.crt
+                  - chown registry:registry -R /etc/docker/registry-ssl
                   - systemctl restart registry
 
             sync_resources:
+              - source: files/dr.key
+                dst: /tmp/dr.key
+              - source: files/dr.crt
+                dst: /tmp/dr.crt
               - source: ../nginx/files/nginx_auth.sh
                 dst: /tmp/nginx_auth.sh
 
