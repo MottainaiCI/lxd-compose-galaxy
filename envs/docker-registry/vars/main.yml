@@ -10,7 +10,7 @@ envs:
 
     [Service]
     Environment=DOCKER_REGISTRY=docker-registry1.mottainai.local:5000
-    Environment=REG_OPTS=-f -p 8080
+    Environment=REG_OPTS=-k -p 8080
 
 
   # It seems that this doesn't work. 8-|
@@ -55,8 +55,6 @@ envs:
 
     [alt_names]
     DNS.1 = COMMON_NAME
-
-
 
   docker_registry_config:
     version: 0.1

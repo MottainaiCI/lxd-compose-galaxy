@@ -229,6 +229,10 @@ projects:
                   # Create user for reg
                   - useradd reg -m -d /var/lib/reg -g docker
 
+              - event: pre-node-sync
+                commands:
+                  - rm /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
+
               - event: post-node-sync
                 flags:
                   - update_reg
@@ -238,6 +242,15 @@ projects:
                     wget -q -O /usr/bin/reg \
                     https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
                   - chmod a+x /usr/bin/yq /usr/bin/reg
+
+              - event: post-node-sync
+                flags:
+                  - update_reg
+                commands:
+                  - mkdir -p "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000"
+                  - cp /tmp/dr.crt "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000/ca.crt"
+                  - cp /tmp/dr.crt /usr/share/ca-certificates/
+                  - update-ca-certificates
 
               - event: post-node-sync
                 flags:
@@ -253,7 +266,7 @@ projects:
                     pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
                     docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000
                   # Test reg connection
-                  - reg ls -f docker-registry1.${lxd_domain}:5000
+                  - reg ls -k docker-registry1.${lxd_domain}:5000
 
                   # Create docker auth file for reg
                   - |
@@ -272,3 +285,5 @@ projects:
             sync_resources:
               - source: files/reg-server.service
                 dst: /lib/systemd/system/
+              - source: files/dr.crt
+                dst: /tmp/dr.crt
