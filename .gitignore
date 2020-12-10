@@ -1,6 +1,6 @@
 .idea/
 *.swp
 
-envs/docker-registry/files/dr.crt
-envs/docker-registrystry/files/dr.key
+envs/docker-registry/files/*.crt
+envs/docker-registry/files/*.key
 
