@@ -1,0 +1,52 @@
+name: "registry-proxy"
+description: "Docker Registry Pull-through Mirror"
+connection: "local"
+
+common_profiles:
+  - default
+  - net-mottainai0
+  - privileged
+  - docker
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+  - name: docker-registry-mirror
+    image_source: "sabayon/base"
+    # By deafult it use remote images"
+    image_remote_server: "dso"
+
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+      - event: post-node-creation
+        commands:
+          - equo i docker-registry app-admin/apache-tools
+          - equo cleanup
+
+      - event: post-node-sync
+        flags:
+          - update_config
+          - registry
+        commands:
+          - echo "${docker_cache_mirror_config}" | yq r -P -
+          - echo "${docker_cache_mirror_config}" | yq r -P - > /tmp/config.yml
+          - rm /etc/docker/registry/config.yml || true
+          - mv /tmp/config.yml /etc/docker/registry/
+          - mkdir -p //etc/docker/registry-ssl/ || true
+          - mv /tmp/dr.key /etc/docker/registry-ssl/dr.key
+          - mv /tmp/dr.crt /etc/docker/registry-ssl/dr.crt
+          - chown registry:registry -R /etc/docker/registry-ssl
+          - systemctl restart registry
+
+    sync_resources:
+      - source: files/dr_mirror.key
+        dst: /tmp/dr.key
+      - source: files/dr_mirror.crt
+        dst: /tmp/dr.crt
+

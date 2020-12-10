@@ -1,0 +1,111 @@
+name: "registry-ui"
+description: "Docker Registry UI group"
+
+connection: "local"
+
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - default
+  - net-mottainai0
+  - privileged
+  - docker
+  - registry-ui
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+  - name: docker-registry-webui
+    image_source: "sabayon/base"
+    # By deafult it use remote images"
+    image_remote_server: "dso"
+
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+
+      - event: post-node-creation
+        commands:
+          # Create user for reg
+          - useradd reg -m -d /var/lib/reg -g docker
+
+      - event: pre-node-sync
+        commands:
+          - rm /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
+
+      - event: post-node-sync
+        flags:
+          - update_reg
+          - download_reg
+        commands:
+          - |
+            wget -q -O /usr/bin/reg \
+            https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
+          - chmod a+x /usr/bin/yq /usr/bin/reg
+
+#             - event: post-node-sync
+#                flags:
+#                  - update_reg
+#                commands:
+          # It seems that doesn't work or it isn't used.
+          #- mkdir -p "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000"
+          #- cp /tmp/dr.crt "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000/ca.crt"
+          # This doesn't work for self signed certificate
+          #- cp /tmp/dr.crt /usr/share/ca-certificates/
+          #- update-ca-certificates
+
+      - event: post-node-sync
+        flags:
+          - update_reg
+        commands:
+          - |
+            mkdir /etc/docker -p && \
+            echo "${docker_client_config}" > /etc/docker/daemon.json
+
+          # To use self signed cert we need for mirrors with distrobuilder
+          # we need copy cert under /etc/ssl/certs/ directory
+          - mv /tmp/dr_mirror.crt /etc/ssl/certs/
+          - mv /tmp/dr.crt /etc/ssl/certs/
+
+          # It seems that docker client ignore insecure-registries option without docker server.
+          - systemctl restart docker
+          - |
+            user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
+            pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
+            docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000
+          # Test reg connection
+          - reg ls -k docker-registry1.${lxd_domain}:5000
+
+          # Create docker auth file for reg
+          - |
+            user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
+            pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
+            su reg -c "docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000"
+
+          - mkdir -p /etc/systemd/system/reg-server.service.d/ || true
+          - |
+            echo "${reg_server_systemd_override}" > /etc/systemd/system/reg-server.service.d/override.conf
+          - cat /etc/systemd/system/reg-server.service.d/override.conf
+          - systemctl daemon-reload
+          - systemctl restart reg-server
+          - systemctl status reg-server
+
+          # Test tagging
+          - docker pull alpine
+          - docker tag alpine:latest docker-registry1.${lxd_domain}:5000/alpine
+          - docker push docker-registry1.${lxd_domain}:5000/alpine
+          # Test reg connection
+          - reg ls -k docker-registry1.${lxd_domain}:5000
+
+    sync_resources:
+      - source: files/reg-server.service
+        dst: /lib/systemd/system/
+      - source: files/dr_mirror.crt
+        dst: /tmp/dr_mirror.crt
+      - source: files/dr.crt
+        dst: /tmp/dr.crt

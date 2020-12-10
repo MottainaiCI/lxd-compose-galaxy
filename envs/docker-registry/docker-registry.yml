@@ -55,14 +55,27 @@ profiles:
       parent: mottainai0
       type: nic
 
+- name: default
+  description: Default Storage
+  root:
+    path: /
+    pool: default
+    type: disk
+
 projects:
 
-  - name: "docker-registry-standalone"
+  - name: "docker-registry-services"
     description: |
-      Setup Docker Registry Server and GUI
+      Setup Private Docker Registry, Docker Registry GUI
+      and a Docker Registry Mirror.
 
     include_env_files:
       - vars/main.yml
+
+    include_groups_files:
+      - groups/standalone.yaml
+      - groups/mirror.yaml
+      - groups/webui.yaml
 
     vars:
       - envs:
@@ -84,6 +97,15 @@ projects:
           - sed -i -e "s:COMMON_NAME:docker-registry1.mottainai.local:g" /tmp/openssl.cnf
           - openssl rand -out /tmp/rnd -writerand /tmp/rnd
 
+      # Create docker registry self signed certificate
+      - event: pre-group
+        node: host
+        flags:
+          - certificate_selfsigned_creation
+        commands:
+          - echo "${docker_registry_mirror_ssl_cert_conf}" > /tmp/openssl_mirror.cnf
+          - sed -i -e "s:COMMON_NAME:docker-registry-mirror.mottainai.local:g" /tmp/openssl_mirror.cnf
+          - openssl rand -out /tmp/rnd -writerand /tmp/rnd
 
       - event: pre-group
         node: host
@@ -98,6 +120,19 @@ projects:
             fi
           - openssl x509 -in envs/docker-registry/files/dr.crt -text -noout
 
+      - event: pre-group
+        node: host
+        flags:
+          - certificate_selfsigned_creation
+        commands:
+          - >
+            keyfile=envs/docker-registry/files/dr_mirror.key ;
+            crtfile=envs/docker-registry/files/dr_mirror.crt ;
+            if [ ! -e ${keyfile} ] ; then
+            openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl_mirror.cnf ;
+            fi
+          - openssl x509 -in envs/docker-registry/files/dr_mirror.crt -text -noout
+
       - event: post-node-creation
         commands:
           # DHCP seems slow
@@ -111,179 +146,3 @@ projects:
             wget -q -O /usr/bin/reg \
             https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
           - chmod a+x /usr/bin/yq /usr/bin/reg
-
-      - event: post-node-sync
-        flags:
-          - setup_docker
-        commands:
-          - mkdir -p /etc/containers/ || true
-          - echo "${docker_containers_conf}"
-          - |
-            echo "${docker_containers_conf}" > /etc/containers/registries.conf
-
-    groups:
-      - name: "registry-group"
-        description: "Docker Registry group"
-
-        connection: "local"
-
-        # Define the list of LXD Profile to use
-        # for create the containers
-        common_profiles:
-          - sdpool
-          - net-mottainai0
-          - privileged
-          - docker
-          - registry-port
-
-        # Create the environment container as ephemeral or not.
-        ephemeral: true
-
-        nodes:
-          - name: docker-registry1
-            image_source: "sabayon/base"
-            # By deafult it use remote images"
-            image_remote_server: "dso"
-
-            entrypoint:
-              - "/bin/bash"
-              - "-c"
-
-            # List of commands executed just after the creation of the
-            # container.
-            hooks:
-
-              - event: pre-node-sync
-                commands:
-                  - rm -v /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
-                  - rm -v /tmp/nginx_auth.sh 2>/dev/null || true
-
-              - event: post-node-creation
-                commands:
-                  - equo i docker-registry app-admin/apache-tools
-
-              - event: post-node-sync
-                flags:
-                  - auth
-                commands:
-                  - chmod a+x /tmp/nginx_auth.sh
-                  - /tmp/nginx_auth.sh
-                  - rm /tmp/nginx_auth.sh
-
-              - event: post-node-sync
-                flags:
-                  - update_config
-                  - registry
-                commands:
-                  - echo "${docker_registry_config}" | yq r -P -
-                  - echo "${docker_registry_config}" | yq r -P - > /tmp/config.yml
-                  - rm /etc/docker/registry/config.yml || true
-                  - mv /tmp/config.yml /etc/docker/registry/
-                  - mkdir -p //etc/docker/registry-ssl/ || true
-                  - mv /tmp/dr.key /etc/docker/registry-ssl/dr.key
-                  - mv /tmp/dr.crt /etc/docker/registry-ssl/dr.crt
-                  - chown registry:registry -R /etc/docker/registry-ssl
-                  - systemctl restart registry
-
-            sync_resources:
-              - source: files/dr.key
-                dst: /tmp/dr.key
-              - source: files/dr.crt
-                dst: /tmp/dr.crt
-              - source: ../nginx/files/nginx_auth.sh
-                dst: /tmp/nginx_auth.sh
-
-      - name: "registry-ui"
-        description: "Docker Registry UI group"
-
-        connection: "local"
-
-        # Define the list of LXD Profile to use
-        # for create the containers
-        common_profiles:
-          - sdpool
-          - net-mottainai0
-          - privileged
-          - docker
-          - registry-ui
-
-        # Create the environment container as ephemeral or not.
-        ephemeral: true
-
-        nodes:
-          - name: docker-registry-webui
-            image_source: "sabayon/base"
-            # By deafult it use remote images"
-            image_remote_server: "dso"
-
-            entrypoint:
-              - "/bin/bash"
-              - "-c"
-
-            # List of commands executed just after the creation of the
-            # container.
-            hooks:
-
-              - event: post-node-creation
-                commands:
-                  # Create user for reg
-                  - useradd reg -m -d /var/lib/reg -g docker
-
-              - event: pre-node-sync
-                commands:
-                  - rm /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
-
-              - event: post-node-sync
-                flags:
-                  - update_reg
-                  - download_reg
-                commands:
-                  - |
-                    wget -q -O /usr/bin/reg \
-                    https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
-                  - chmod a+x /usr/bin/yq /usr/bin/reg
-
-              - event: post-node-sync
-                flags:
-                  - update_reg
-                commands:
-                  - mkdir -p "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000"
-                  - cp /tmp/dr.crt "/etc/docker/cert.d/docker-registry1.${lxd_domain}:5000/ca.crt"
-                  - cp /tmp/dr.crt /usr/share/ca-certificates/
-                  - update-ca-certificates
-
-              - event: post-node-sync
-                flags:
-                  - update_reg
-                commands:
-                  - |
-                    mkdir /etc/docker -p && \
-                    echo '{ "insecure-registries": [ "docker-registry1.mottainai.local:5000" ] }' > /etc/docker/daemon.json
-                  # It seems that docker client ignore insecure-registries option without docker server.
-                  - systemctl restart docker
-                  - |
-                    user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
-                    pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
-                    docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000
-                  # Test reg connection
-                  - reg ls -k docker-registry1.${lxd_domain}:5000
-
-                  # Create docker auth file for reg
-                  - |
-                    user="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].user' -r)" && \
-                    pass="$(echo ${nginx_auth_basic_files} | jq '.[].users[0].pwd' -r)" && \
-                    su reg -c "docker login -u ${user} -p ${pass} docker-registry1.${lxd_domain}:5000"
-
-                  - mkdir -p /etc/systemd/system/reg-server.service.d/ || true
-                  - |
-                    echo "${reg_server_systemd_override}" > /etc/systemd/system/reg-server.service.d/override.conf
-                  - cat /etc/systemd/system/reg-server.service.d/override.conf
-                  - systemctl daemon-reload
-                  - systemctl restart reg-server
-                  - systemctl status reg-server
-
-            sync_resources:
-              - source: files/reg-server.service
-                dst: /lib/systemd/system/
-              - source: files/dr.crt
-                dst: /tmp/dr.crt

@@ -1,0 +1,72 @@
+name: "registry-group"
+description: "Docker Registry group"
+
+connection: "local"
+
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - default
+  - net-mottainai0
+  - privileged
+  - docker
+  - registry-port
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+  - name: docker-registry1
+    image_source: "sabayon/base"
+    # By deafult it use remote images"
+    image_remote_server: "dso"
+
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+
+      - event: pre-node-sync
+        commands:
+          - rm -v /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
+          - rm -v /tmp/nginx_auth.sh 2>/dev/null || true
+
+      - event: post-node-creation
+        commands:
+          - equo i docker-registry app-admin/apache-tools
+          - equo cleanup
+
+      - event: post-node-sync
+        flags:
+          - auth
+        commands:
+          - chmod a+x /tmp/nginx_auth.sh
+          - /tmp/nginx_auth.sh
+          - rm /tmp/nginx_auth.sh
+
+      - event: post-node-sync
+        flags:
+          - update_config
+          - registry
+        commands:
+          - echo "${docker_registry_config}" | yq r -P -
+          - echo "${docker_registry_config}" | yq r -P - > /tmp/config.yml
+          - rm /etc/docker/registry/config.yml || true
+          - mv /tmp/config.yml /etc/docker/registry/
+          - mkdir -p //etc/docker/registry-ssl/ || true
+          - mv /tmp/dr.key /etc/docker/registry-ssl/dr.key
+          - mv /tmp/dr.crt /etc/docker/registry-ssl/dr.crt
+          - chown registry:registry -R /etc/docker/registry-ssl
+          - systemctl restart registry
+
+    sync_resources:
+      - source: files/dr.key
+        dst: /tmp/dr.key
+      - source: files/dr.crt
+        dst: /tmp/dr.crt
+      - source: ../nginx/files/nginx_auth.sh
+        dst: /tmp/nginx_auth.sh
+
