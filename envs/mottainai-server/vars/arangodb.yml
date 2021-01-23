@@ -1,0 +1,56 @@
+envs:
+
+  arango_root_pwd: 'password'
+  arango_db: 'mottainai'
+  arango_user: 'mottainai'
+  arango_user_pwd: 'mottainai01'
+
+  arangod_conf_tmp: |
+    [database]
+    directory = /var/lib/arangodb3
+
+    [server]
+    endpoint = tcp://127.0.0.1:8529
+    storage-engine = auto
+
+    authentication = false
+    # gather server statistics
+    statistics = true
+
+    uid = arangodb
+
+    [javascript]
+    startup-directory = /usr/share/arangodb3/js
+    app-path = /var/lib/arangodb3-apps
+
+    [log]
+    level = info
+    file = /var/log/arangodb3/arangod.log
+
+
+  arangod_conf: |
+    [database]
+    directory = /var/lib/arangodb3
+
+    [server]
+    endpoint = tcp://0.0.0.0:8529
+    storage-engine = auto
+
+    authentication = true
+
+    # gather server statistics
+    statistics = true
+
+    uid = arangodb
+
+    [javascript]
+    startup-directory = /usr/share/arangodb3/js
+    app-path = /var/lib/arangodb3-apps
+
+    [log]
+    level = info
+    file = /var/log/arangodb3/arangod.log
+
+    [cluster]
+
+    [rocksdb]

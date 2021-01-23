@@ -1,0 +1,54 @@
+name: "mottainai-server"
+description: "Install Mottainai Server"
+connection: "local"
+
+common_profiles:
+- net-mottainai0
+- privileged
+- default
+#- disk-slow
+
+ephemeral: true
+
+nodes:
+- name: mottainai-server
+  image_source: "sabayon/base"
+  image_remote_server: "dso"
+
+# Group hooks
+hooks:
+  - event: post-node-creation
+    commands:
+      - equo repo mirrorsort sabayonlinux.org
+      - equo update && equo upgrade
+      - equo i enman app-misc/jq
+      - echo ${enman_repos} | jq '.[]' -r
+      - |
+        for i in $(echo ${enman_repos} | jq '.[]' -r) ; do \
+        enman add ${i} ; \
+        done
+      - equo update
+      - equo i $(echo ${server_packages} | jq '.[]' -r)
+      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+      - luet install repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable
+      - luet install dev-util/mottainai-server
+      - |
+        wget -O /etc/systemd/system/mottainai-server.service -q \
+        https://raw.githubusercontent.com/MottainaiCI/mottainai-server/master/contrib/systemd/mottainai-server.service
+      - systemctl daemon-reload
+      - systemctl enable mottainai-server
+
+  - event: post-node-sync
+    flags:
+      - upgrade
+    commands:
+      - luet upgrade
+
+  - event: post-node-sync
+    commands:
+      - echo "${server_config}" | yq r -P -
+      - |
+        echo "${server_config}" | yq r -P - > /etc/mottainai/mottainai-server.yaml
+      - systemctl restart mottainai-server
+
+

@@ -1,0 +1,60 @@
+name: "mottainai-database"
+description: "Install ArangoDB Backend for Mottainai Server"
+connection: "local"
+
+common_profiles:
+- net-mottainai0
+- privileged
+- default
+#- disk-slow
+
+ephemeral: true
+
+nodes:
+- name: mottainai-database
+  image_source: "sabayon/base"
+  image_remote_server: "dso"
+
+# Group hooks
+hooks:
+  - event: post-node-creation
+    commands:
+      - equo repo mirrorsort sabayonlinux.org
+      - equo update && equo upgrade
+      - equo i enman app-misc/jq
+      - echo ${enman_repos} | jq '.[]' -r
+      - |
+        for i in $(echo ${enman_repos} | jq '.[]' -r) ; do \
+        enman add ${i} ; \
+        done
+      - equo update
+      - equo i $(echo ${arangodb_packages} | jq '.[]' -r)
+      - systemctl enable arangodb3
+
+  - event: post-node-sync
+    commands:
+      - |
+        echo "${arangod_conf_tmp}" > /etc/arangodb3/arangod.conf
+      - systemctl restart arangodb3
+      - sleep 1
+      - |
+        echo "require(\"org/arangodb/users\").update(\"root\", \"${arango_root_pwd}\");" | arangosh --server.password "" --quiet true
+      - |
+        echo "db._createDatabase(\"${arango_db}\");" | arangosh --server.password "" --quiet true || true
+      - |
+        echo "require('@arangodb/users').save(\"${arango_user}\", \"${arango_user_pwd}\");" | arangosh --server.password "" --quiet true || true
+      - |
+        echo "require('@arangodb/users').grantCollection(\"${arango_user}\", \"${arango_db}\", '*', 'rw');" | arangosh --server.password "" --quiet true
+      - |
+        echo "require('@arangodb/users').grantDatabase(\"${arango_user}\", \"${arango_db}\", 'rw');" | arangosh --server.password "" --quiet true
+      - |
+        echo "require('@arangodb/users').permission(\"${arango_user}\", \"${arango_db}\")" | arangosh --server.password "" --quiet true
+
+  - event: post-node-sync
+    commands:
+      - echo "${arangod_conf}"
+      - |
+        echo "${arangod_conf}" > /etc/arangodb3/arangod.conf
+      - systemctl restart arangodb3
+
+

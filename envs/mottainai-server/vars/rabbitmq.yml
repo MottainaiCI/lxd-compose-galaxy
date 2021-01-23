@@ -1,0 +1,3 @@
+envs:
+  rabbitmq_conf: |
+    [{rabbit, [{loopback_users, []}]}].

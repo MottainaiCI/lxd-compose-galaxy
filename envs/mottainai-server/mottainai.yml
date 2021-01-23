@@ -1,0 +1,128 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Mottainai Server Infrastructure
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+- name: "mottainai-api"
+  description: "Profile for export Mottainai Server port to Host"
+  devices:
+    api:
+      bind: host
+      connect: tcp:127.0.0.1:19090
+      listen: tcp:0.0.0.0:19090
+      type: proxy
+
+- name: "mottainai-amqp"
+  description: "Profile for export RabbitMQ port to Host"
+  devices:
+    api:
+      bind: host
+      connect: tcp:127.0.0.1:5672
+      listen: tcp:0.0.0.0:5672
+      type: proxy
+
+- name: "privileged"
+  config:
+    security.privileged: "true"
+  description: Privileged profile
+  devices:
+    fuse:
+      path: /dev/fuse
+      type: unix-char
+    tuntap:
+      path: /dev/net/tun
+      type: unix-char
+    # Comment this if zfs is not available.
+    zfs:
+      path: /dev/zfs
+      type: unix-char
+
+- name: "net-mottainai0"
+  description: Net mottainai0
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: mottainai0
+      type: nic
+
+- name: default
+  description: Default Storage
+  root:
+    path: /
+    pool: default
+    type: disk
+
+networks:
+  - name: "mottainai0"
+    type: "bridge"
+    config:
+      bridge.driver: native
+      dns.domain: mottainai.local
+      dns.mode: managed
+      ipv4.address: 172.18.10.1/23
+      ipv4.dhcp: "true"
+      ipv4.firewall: "true"
+      ipv4.nat: "true"
+      ipv6.nat: "false"
+      ipv6.dhcp: "false"
+
+projects:
+
+  - name: "mottainai-server-services"
+    description: |
+      Setup Mottainai Server, RabbitMQ and Database.
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/arangodb.yml
+      - vars/rabbitmq.yml
+      - vars/mottainai.yml
+
+    include_groups_files:
+      - groups/arangodb.yaml
+      - groups/rabbitmq.yaml
+      - groups/server.yaml
+
+    vars:
+      - envs:
+          ACCEPT_LICENSE: "*"
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          yq_version: "3.4.1"
+          internal_domain: "mottainai.local"
+
+          enman_repos:
+            - https://get.mocaccino.org/scr/geaaru/geaaru
+            - https://get.mocaccino.org/scr/devel/devel
+
+          arangodb_packages:
+            - app-editors/vim
+            - dev-db/arangodb
+            - app-metrics/node_exporter
+
+          rabbitmq_packages:
+            - app-editors/vim
+            - net-misc/rabbitmq-server
+            - app-metrics/node_exporter
+
+          server_packages:
+            - app-editors/vim
+            - app-metrics/node_exporter
+
+    hooks:
+      - event: post-node-creation
+        commands:
+          - sleep 2
+          - |
+            wget -q -O /usr/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
+          - chmod a+x /usr/bin/yq
