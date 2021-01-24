@@ -16,6 +16,7 @@ nodes:
   image_remote_server: "dso"
   profiles:
     - mottainai-api
+    - mottainai-data
 
 # Group hooks
 hooks:
@@ -39,12 +40,13 @@ hooks:
         https://raw.githubusercontent.com/MottainaiCI/mottainai-server/master/contrib/systemd/mottainai-server.service
       - systemctl daemon-reload
       - systemctl enable mottainai-server
+      - equo cleanup && luet cleanup
 
   - event: post-node-sync
     flags:
       - upgrade
     commands:
-      - luet upgrade
+      - luet upgrade && luet cleanup
 
   - event: post-node-sync
     commands:
@@ -52,5 +54,4 @@ hooks:
       - |
         echo "${server_config}" | yq r -P - > /etc/mottainai/mottainai-server.yaml
       - systemctl restart mottainai-server
-
 

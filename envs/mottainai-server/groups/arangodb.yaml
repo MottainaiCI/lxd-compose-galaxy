@@ -14,6 +14,8 @@ nodes:
 - name: mottainai-database
   image_source: "sabayon/base"
   image_remote_server: "dso"
+  profiles:
+    - arangodb-data
 
 # Group hooks
 hooks:
@@ -30,6 +32,7 @@ hooks:
       - equo update
       - equo i $(echo ${arangodb_packages} | jq '.[]' -r)
       - systemctl enable arangodb3
+      - equo cleanup
 
   - event: post-node-sync
     commands:
@@ -37,6 +40,11 @@ hooks:
         echo "${arangod_conf_tmp}" > /etc/arangodb3/arangod.conf
       - systemctl restart arangodb3
       - sleep 1
+
+  - event: post-node-sync
+    flags:
+      - initdb
+    commands:
       - |
         echo "require(\"org/arangodb/users\").update(\"root\", \"${arango_root_pwd}\");" | arangosh --server.password "" --quiet true
       - |

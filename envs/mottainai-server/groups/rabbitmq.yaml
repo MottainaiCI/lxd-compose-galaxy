@@ -31,6 +31,7 @@ hooks:
         done
       - equo update
       - equo i $(echo ${rabbitmq_packages} | jq '.[]' -r)
+      - equo cleanup
 
   - event: post-node-sync
     commands:

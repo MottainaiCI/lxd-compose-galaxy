@@ -28,6 +28,37 @@ profiles:
       listen: tcp:0.0.0.0:5672
       type: proxy
 
+- name: "mottainai-data"
+  description: "Mount mottainai data from Host"
+  devices:
+    storage:
+      source: /srv/mottainai/web/storage/
+      path: /srv/mottainai/web/storage/
+      type: disk
+
+    namespace:
+      source: /srv/mottainai/web/namespace/
+      path: /srv/mottainai/web/namespace/
+      type: disk
+
+    artefacts:
+      source: /srv/mottainai/web/artefacts/
+      path: /srv/mottainai/web/artefacts/
+      type: disk
+
+- name: "arangodb-data"
+  description: "Mount ArangoDB data from Host"
+  devices:
+    arangodbdata:
+      source: /var/lib/arangodb3-apps/
+      path: /var/lib/arangodb3-apps/
+      type: disk
+
+    arangodb:
+      source: /var/lib/arangodb3/
+      path: /var/lib/arangodb3/
+      type: disk
+
 - name: "privileged"
   config:
     security.privileged: "true"
