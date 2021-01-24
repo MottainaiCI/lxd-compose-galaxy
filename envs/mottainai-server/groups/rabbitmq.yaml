@@ -15,7 +15,7 @@ nodes:
   image_source: "sabayon/base"
   image_remote_server: "dso"
   profiles:
-    - 
+    - mottainai-amqp
 
 # Group hooks
 hooks:
@@ -35,7 +35,7 @@ hooks:
   - event: post-node-sync
     commands:
       - |
-        echo ${rabbitmq_conf} > /etc/rabbitmq/enabled_plugins
+        echo ${rabbitmq_conf} > /etc/rabbitmq/rabbitmq.config
       - systemctl enable rabbitmq
       - systemctl restart rabbitmq
       - rabbitmq-plugins enable rabbitmq_management
