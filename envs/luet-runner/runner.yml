@@ -1,0 +1,174 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
+- name: loop
+  config:
+    security.privileged: "true"
+  description: Mount /dev/loop* stuff
+  devices:
+    loop-control:
+      path: /dev/loop-control
+      type: unix-char
+    loop0:
+      path: /dev/loop0
+      type: unix-block
+    loop1:
+      path: /dev/loop1
+      type: unix-block
+    loop2:
+      path: /dev/loop2
+      type: unix-block
+    loop3:
+      path: /dev/loop3
+      type: unix-block
+    loop4:
+      path: /dev/loop4
+      type: unix-block
+    loop5:
+      path: /dev/loop5
+      type: unix-block
+    loop6:
+      path: /dev/loop6
+      type: unix-block
+    loop7:
+      path: /dev/loop7
+      type: unix-block
+
+
+- name: "privileged"
+  config:
+    security.privileged: "true"
+  description: Privileged profile
+  devices:
+    fuse:
+      path: /dev/fuse
+      type: unix-char
+    tuntap:
+      path: /dev/net/tun
+      type: unix-char
+    # Comment this if zfs is not available.
+    zfs:
+      path: /dev/zfs
+      type: unix-char
+
+- name: "net-mottainai0"
+  description: Net mottainai0
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: mottainai0
+      type: nic
+
+- name: default
+  description: Default Storage
+  devices:
+    root:
+      path: /
+      pool: default
+      type: disk
+
+
+networks:
+  - name: "mottainai0"
+    type: "bridge"
+    config:
+      bridge.driver: native
+      dns.domain: mottainai.local
+      dns.mode: managed
+      ipv4.address: 172.18.10.1/23
+      ipv4.dhcp: "true"
+      ipv4.firewall: "true"
+      ipv4.nat: "true"
+      ipv6.nat: "false"
+      ipv6.dhcp: "false"
+
+projects:
+
+  - name: "luet-runner-amd64"
+    description: |
+      Setup a node to run Luet tasks.
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          yq_version: "3.4.1"
+          luet_repo: "https://github.com/mocaccinoOS/kernel-repo.git"
+          luet_branch: "master"
+          PACKAGES: "kernel/mocaccino-lts-full"
+          #REPO_CACHE: "mocaccinoos/micro-arm-cache"
+          #ARCH: "arm"
+          BUILD_ARGS: "--no-spinner --emoji=true --color=false --pull --only-target-package"
+
+    groups:
+      - name: "luet"
+        description: "Luet compilation node"
+
+        connection: "nevyl"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+
+        nodes:
+          - name: mocaccino-luet
+            image_source: "ubuntu/21.04"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            profiles:
+              - docker
+              - privileged
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y wget jq docker.io bridge-utils make curl
+                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+                  - luet install repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable
+                  - |
+                    wget -q -O /usr/bin/yq \
+                    https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
+                  - chmod a+x /usr/bin/yq
+
+              - event: post-node-sync
+                commands:
+                  - systemctl daemon-reload
+                  - systemctl start docker
+                  - luet upgrade
+
+              - event: post-node-sync
+                flags:
+                  - build
+                commands:
+                  - eval 'rm -rf /build || true'
+                  - git clone ${luet_repo} -b ${luet_branch} /build
+                  - cd /build && make rebuild
+
