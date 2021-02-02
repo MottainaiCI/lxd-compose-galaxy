@@ -36,7 +36,7 @@ nodes:
 
       - event: pre-node-sync
         commands:
-          - rm /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
+          - rm /tmp/dr.crt /tmp/dr_mirror.crt 2>/dev/null || true
 
       - event: post-node-sync
         flags:
