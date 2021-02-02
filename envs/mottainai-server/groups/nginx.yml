@@ -1,0 +1,79 @@
+name: "mottainai-proxy1"
+description: "Mottainai Nginx Proxy"
+connection: "local"
+
+hooks:
+  - event: pre-group
+    flags:
+      - certificate_selfsigned_creation
+    node: host
+    commands:
+      - mkdir -p envs/nginx/files/certs/ -p || true
+      - >
+        dhfile=envs/nginx/files/certs/dhparam.pem ;
+        if [ ! -e ${dhfile} ] ; then openssl dhparam -out ${dhfile} 4096 ; fi
+      - echo "${nginx_ssl_cert_conf}" > /tmp/openssl.cnf
+      - sed -i -e "s:COMMON_NAME:${mypublic_domain}:g" /tmp/openssl.cnf
+      - openssl rand -out /tmp/rnd -writerand /tmp/rnd
+      - >
+        keyfile=envs/nginx/files/certs/server.key ;
+        crtfile=envs/nginx/files/certs/server.crt ;
+        if [ ! -e ${keyfile} ] ; then
+        openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl.cnf ;
+        fi ;
+        openssl x509 -in ${crtfile} -text -noout
+
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - default
+  #- disk-slow
+  - net-mottainai0
+  - flavor-medium
+  - mottainai-https
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+  - name: mottainai-nginx
+    image_source: "ubuntu/20.10"
+    # By deafult it use remote images"
+    image_remote_server: "images"
+
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+
+      - event: post-node-creation
+        commands:
+          # DHCP seems slow
+          - sleep 2
+          - apt-get update
+          - apt-get upgrade -y
+          - apt-get install -y nginx certbot apache2-utils htop vim
+          - systemctl stop nginx
+
+      - event: post-node-sync
+        flags:
+          - nginx
+        commands:
+          - sed -i -e "s:\trotate.*:\trotate ${nginx_logrotate_days}:g" /etc/logrotate.d/nginx
+          - chown root:www-data -R /certs
+          - systemctl restart nginx
+
+    # List of templates files to compiles before push the
+    # result inside container.
+    config_templates:
+      - source: files/nginx.conf.tmpl
+        dst: /tmp/nginx/nginx.conf
+
+    sync_resources:
+      - source: files/certs/
+        dst: /
+      - source: /tmp/nginx/nginx.conf
+        dst: /etc/nginx/nginx.conf

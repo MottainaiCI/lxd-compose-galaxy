@@ -10,6 +10,17 @@ template_engine:
 # This profiles are not mandatory. An user could create and
 # handle his profiles without define the list here.
 profiles:
+- name: "mottainai-https"
+  description: "Profile for export HTTPS port to Host"
+  devices:
+    https:
+      bind: host
+      connect: tcp:0.0.0.0:443
+      listen: tcp:0.0.0.0:443
+      nat: false
+      proxy_protocol: true
+      type: proxy
+
 - name: "mottainai-api"
   description: "Profile for export Mottainai Server port to Host"
   devices:
@@ -91,6 +102,21 @@ profiles:
     pool: default
     type: disk
 
+- name: flavor-medium
+  description: "flavor with 2GB RAM"
+  config:
+    limits.memory: 2GB
+
+- name: flavor-big
+  description: "flavor with 3GB RAM"
+  config:
+    limits.memory: 3GB
+
+- name: flavor-thin
+  description: "flavor with 500MB RAM"
+  config:
+    limits.memory: 500MB
+
 networks:
   - name: "mottainai0"
     type: "bridge"
@@ -117,11 +143,16 @@ projects:
       - vars/arangodb.yml
       - vars/rabbitmq.yml
       - vars/mottainai.yml
+      # To enable mottainai-nginx
+      # - vars/cert.yml
+      # - vars/ngin
 
     include_groups_files:
       - groups/arangodb.yaml
       - groups/rabbitmq.yaml
       - groups/server.yaml
+      # Active mottainai-nginx frontend
+      # - groups/nginx.yml
 
     vars:
       - envs:
@@ -130,6 +161,7 @@ projects:
           LUET_YES: "true"
           yq_version: "3.4.1"
           internal_domain: "mottainai.local"
+          mypublic_domain: "example.com"
 
           enman_repos:
             - https://get.mocaccino.org/scr/geaaru/geaaru
