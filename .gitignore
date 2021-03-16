@@ -1,5 +1,9 @@
 .idea/
 *.swp
+*.rsp
+*.dbprof
+*.srv
+*.net
 
 envs/docker-registry/files/*.crt
 envs/docker-registry/files/*.key
