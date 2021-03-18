@@ -1,0 +1,321 @@
+name: "oracledb::12cr1"
+description: "DB Oracle 12c R1"
+
+# Define the LXD Remote to use and where
+# create the environment.
+connection: "local"
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - oracledb
+  - privileged
+  - memory4g
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+
+  - name: oracle12cr1
+    image_source: "oracle/7"
+    image_remote_server: "images"
+
+    # Specify directory where build path of templates.
+    # Directory could be an absolute path or a relative path based
+    # on env base dir.
+    source_dir: "12cr1/templates/"
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+      - event: pre-node-sync
+        flags:
+          - packets-install
+        commands:
+          # general packets
+          - yum install -y $(echo ${general_packages} | jq '.[]' -r)
+          # common packages specific for oracle
+          - yum install -y $(echo ${common_packages_ora} | jq '.[]' -r)
+          # specific packages for oracle database
+          - yum install -y $(echo ${specific_packages_ora} | jq '.[]' -r)
+      - event: pre-node-sync
+        flags:
+          - oradbinstance
+          - oraswdbinstall
+          - oralistener
+          - generalpost
+          - oradbpluggables
+        commands:
+          - rm -r /tmp/*.rsp || echo "NO FILE FOUND"
+          - rm -r /tmp/*.service || echo "NO FILE FOUND"
+          - rm -r /tmp/.profile* || echo "NO FILE FOUND"
+      - event: pre-node-sync
+        flags:
+          - oradbinstance
+          - oralistener
+          - oraswdbinstall
+          - oradbpluggables
+          - general
+        commands:
+          - hostname | xargs | tr '\n' ' '
+        out2var: "hostnamevar"
+      - event: pre-node-sync
+        flags:
+          - common
+        commands:
+          - >
+            echo "################" &&
+            echo "COMMON OPERATION" &&
+            echo "################"
+          - test -d ${oracle_base}"/"${db_version}"/" && (rm -rf /u01; echo "empty oracle dirs"; exit 0) || echo "oracle dirs not present"
+          - a=`yum repolist | grep epel`; test -n "$a" || yum install -y ${epel_repo} 
+          - yum install -y wget htop rlwrap sudo
+          - wget ${ol7_repo_prefix}"/"${ol7_repo}
+          - mv ${ol7_repo} /etc/yum.repos.d/          
+          # - yum repolist
+          - echo "${motdfile}" > /etc/motd
+          - >
+            sed -i 
+            -e "s:HOSTNAME:${hostnamevar}:g"
+            -e "s:DOMAINNAME:`cat /etc/resolv.conf | grep search | sed 's/search //'`:g"
+            -e 's/ \./\./'
+            -e "s:RELEASE:`cat /etc/oracle-release`:g"
+            -e "s:ARCH:`uname -i`:g"
+            -e "s:LISTIP:$(ip addr show type veth | grep "inet " | sed 's/.*inet \(\([0-9]\{1,3\}\.\)\{1,3\}[0-9]\{1,3\}\)\/.*/\1/'):g"
+            -e "s:CPUINFO:$(cat /proc/cpuinfo | grep 'model name' | sed 's/model name\s*://' | uniq):g"
+            -e "s:NUMCPU:`cat /proc/cpuinfo | grep 'model name' | wc -l`:g"
+            -e "s:TOTMEM:`cat /proc/meminfo | grep MemTotal | sed 's/MemTotal:\s*//'`:g"
+            -e "s:KERNEL:`uname -sr`:g"
+            -e 's/:###/:/' 
+            /etc/motd
+          - cat /etc/motd
+      - event: pre-node-sync
+        flags:
+          - orahost
+        commands:
+          - > 
+            echo "############" &&
+            echo "PREPARE HOST" &&
+            echo "############"
+          - echo "`ip addr show type veth | grep "inet " | sed 's/.*inet \(\([0-9]\{1,3\}\.\)\{1,3\}[0-9]\{1,3\}\)\/.*/\1/'`    `hostname`" >> /etc/hosts
+          - sed -i "s/#*\(127.*`hostname`\).*/#\1/" /etc/hosts
+          - groupadd -g 54318 asmdba
+          - groupadd -g 54319 asmoper
+          - groupadd -g 54320 asmadmin
+          - groupadd -g 54321 oinstall
+          - groupadd -g 54322 dba
+          - groupadd -g 54323 backupdba
+          - groupadd -g 54324 oper
+          - groupadd -g 54325 dgdba
+          - groupadd -g 54326 kmdba
+          - useradd -g oinstall -G dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper -u 54321 oracle
+          - echo oracle0 | passwd oracle --stdin
+          - sudo -u oracle ssh-keygen -N "" -f /home/oracle/.ssh/id_rsa
+      - event: post-node-sync
+        flags:
+          - orahost
+        commands:
+          - mv /tmp/.profile_dboracle /home/oracle/.profile_dboracle
+          - chown oracle:oinstall /home/oracle/.profile_dboracle
+      - event: pre-node-sync
+        flags:
+          - testvar
+        commands:
+          - echo "${databases}" | yq r -P - '[0].db_version'
+          - echo "$(echo "${databases}" | yq r -P - '[0].oracle_base')/recovery_area"
+      - event: pre-node-sync
+        flags:
+          - oradbpluggables
+          - prepareoravar
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].oracle_base')"
+        out2var: "orabase"
+      - event: pre-node-sync
+        flags:
+          - prepareoravar
+          - oradbinstance
+          - oradbpluggables
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].name')"
+        out2var: "namedbcnt"
+      - event: pre-node-sync
+        flags:
+          - oralistener
+          - oraswdbinstall
+          - prepareoravar
+          - oradbinstance
+          - oradbpluggables
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].oracle_home_db')"
+        out2var: "orahome"
+      - event: pre-node-sync
+        flags:
+          - prepareoravar
+          - oradbpluggables
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].list_pluggable[0].datafile_dest')"
+        out2var: "plugdest"
+      - event: pre-node-sync
+        flags:
+          - oradbpluggables
+          - prepareoravar
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].list_pluggable[0].name')"
+        out2var: "plugdb1"
+      - event: pre-node-sync
+        flags:
+          - oralistener
+          - prepareoravar
+          - oradbinstance
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].oracle_stage')"
+        out2var: "oracle_stage"
+      - event: pre-node-sync
+        flags:
+          - oralistener
+          - prepareoravar
+          - oradbinstance
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - '[0].oracle_rsp_stage')"
+        out2var: "oracle_rsp_stage"
+      - event: pre-node-sync
+        flags:
+          - prepareoravar
+          - oraswdbinstall
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - "[0].db_version")"
+        out2var: "dbver"
+      - event: pre-node-sync
+        flags:
+          - prepareoravar
+          - oraswdbinstall
+        commands:
+          - echo -n "$(echo "${databases}" | yq r -P - "[0].db_version" | tr "." "_")"
+        out2var: "dbverfiles"
+      - event: pre-node-sync
+        flags:
+          - prepareoravar
+          - oraswdbinstall
+        commands:
+          - echo -n "$(echo "${install_files}" | yq r -P - "ver_${dbverfiles}.files")"
+        out2var: "dbfiles"
+      - event: pre-node-sync
+        flags:
+          - oraswdb
+        commands:
+          - > 
+            echo "#################################" &&
+            echo "PREPARE INSTALLATION OF SW ORACLE" &&
+            echo "#################################"
+          - mkdir -p ${orabase}/recovery_area
+          - mkdir -p ${orabase}/oradata
+          - mkdir -p ${orabase}/cfgtoollogs
+          - mkdir -p ${orabase}/cfgtoollogs/dbca
+          - mkdir -p ${orabase}/cfgtoollogs/sqlpatch
+          - mkdir -p ${orabase}/cfgtoollogs/netca
+          - mkdir -p ${orabase}/admin
+          - mkdir -p ${orabase}/audit
+          - mkdir -p ${oracle_rsp_stage}
+          - mkdir -p /home/oracle/.Scripts
+          - mkdir -p ${orahome}
+          - chown -R oracle:oinstall /u01
+          - chmod -R 775 /u01
+          - echo "inventory_loc=/u01/app/oraInventory" > /etc/oraInst.loc
+          - echo "inst_group=oinstall" >> /etc/oraInst.loc
+      - event: post-node-sync
+        flags:
+          - oraswdb
+        commands:
+          - mv /tmp/12102_tmp.rsp "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
+          - chown oracle:oinstall "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
+          - for i in `echo -n "${dbfiles}" | sed 's/- //g' | xargs`; do mv /tmp/$i ${oracle_stage}/; unzip -q ${oracle_stage}/$i -d ${oracle_stage}/; done
+          - chown -R oracle:oinstall "${oracle_stage}/database/"
+      - event: post-node-sync
+        flags:
+          - oraswdbinstall
+        commands:
+          - > 
+            echo "#################" &&
+            echo "INSTALL SW ORACLE" &&
+            echo "#################"
+          - test -f ${orahome}/root.sh || su - oracle -c "${oracle_stage}/database/runInstaller -responseFile ${oracle_rsp_stage}/12102_oracle12cr1.rsp -ignorePrereq -ignoreSysPrereqs -silent -waitforcompletion"
+          - ${orahome}/root.sh
+          - su - oracle -c "${orahome}/OPatch/opatch lspatches"
+          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
+          - systemctl daemon-reload
+          - systemctl enable oracle-rdbms.service
+      - event: post-node-sync
+        flags:
+          - oralistener
+        commands:
+          - > 
+            echo "###############" &&
+            echo "CREATE LISTENER" &&
+            echo "###############"
+          - mv /tmp/netca_db1_LISTENER.rsp ${oracle_rsp_stage}/netca_db1_LISTENER.rsp
+          - chown oracle:oinstall ${oracle_rsp_stage}/netca_db1_LISTENER.rsp
+          - su - oracle -c "${orahome}/bin/netca -responseFile ${oracle_rsp_stage}/netca_db1_LISTENER.rsp -silent"
+      - event: post-node-sync
+        flags:
+          - oradbinstance
+        commands:
+          - >
+            echo "#####################" &&
+            echo "START CREATE INSTANCE" &&
+            echo "#####################"
+          - mv /tmp/dbca_tmp.rsp ${oracle_rsp_stage}/dbca_${namedbcnt}.rsp
+          - chown oracle:oinstall ${oracle_rsp_stage}/dbca_${namedbcnt}.rsp
+          - su - oracle -c "time ${orahome}/bin/dbca -createDatabase -responseFile ${oracle_rsp_stage}/dbca_${namedbcnt}.rsp -silent -redoLogFileSize 50"
+          - mv /tmp/.profile_tmp /home/oracle/.profile_${namedbcnt}
+          - chown oracle:oinstall /home/oracle/.profile_${namedbcnt}
+          - chmod 775 /home/oracle/.profile_${namedbcnt}
+          - echo "${namedbcnt}:${orahome}:Y" >> /etc/oratab
+      - event: post-node-sync
+        flags:
+          - oradbpluggables
+        commands:
+          - > 
+            echo "###########################" &&
+            echo "START CREATE PLUG DATABASES" &&
+            echo "###########################"
+          - mkdir -m750 ${orabase}/oradata/${namedbcnt}/${plugdb1}
+          - chown oracle:oinstall ${orabase}/oradata/${namedbcnt}/${plugdb1}
+          - su - oracle -c "time ${orahome}/bin/dbca -silent -createPluggableDatabase -sourceDB ${namedbcnt} -pdbName ${plugdb1} -createPDBFrom default -pdbAdminUserName pdb_orauser1 -pdbAdminPassword qwe123 -createUserTableSpace true -pdbDatafileDestination ${plugdest}"
+ 
+       
+    # List of templates files to compiles before push the
+    # result inside container.
+    config_templates:
+      - source: dotprofile-home.j2
+        dst: dotprofile-home.dbprof
+      - source: db-install.rsp.12.1.0.2.j2
+        dst: db-install.rsp.12.1.0.2.rsp
+      - source: oracle-rdbms-service.j2
+        dst: oracle-rdbms-service.srv
+      - source: netca.rsp.12.1.0.2.j2
+        dst: netca.rsp.12.1.0.2.net
+      - source: dbca-create-db.rsp.12.1.0.2.j2
+        dst: dbca-create-db.rsp.12.1.0.2.rsp
+      - source: dotprofile-db.j2
+        dst: dotprofile-db.dbprof
+
+    sync_resources:
+#      # source: File or directory to push
+#      # dst: File or directory target. For directory is needed "/" at the end
+      - source: dotprofile-home.dbprof
+        dst: "/tmp/.profile_dboracle"
+      - source: db-install.rsp.12.1.0.2.rsp
+        dst: "/tmp/12102_tmp.rsp"
+      - source: oracle-rdbms-service.srv
+        dst: "/tmp/oracle-rdbms.service"
+      - source: netca.rsp.12.1.0.2.net
+        dst: "/tmp/netca_db1_LISTENER.rsp"
+      - source: dbca-create-db.rsp.12.1.0.2.rsp
+        dst: "/tmp/dbca_tmp.rsp"
+      - source: dotprofile-db.dbprof
+        dst: "/tmp/.profile_tmp"
+      - source: linuxamd64_12102_database_1of2.zip
+        dst: "/tmp/linuxamd64_12102_database_1of2.zip"
+      - source: linuxamd64_12102_database_2of2.zip
+        dst: "/tmp/linuxamd64_12102_database_2of2.zip"
+

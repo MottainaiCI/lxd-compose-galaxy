@@ -13,6 +13,7 @@ env_dirs:
 - ./envs/mongo-rs
 - ./envs/mottainai-server
 - ./envs/luet-runner
+- ./envs/oracledb
 # Arm project
 - ./envs-arm/mottainai-agent
 
