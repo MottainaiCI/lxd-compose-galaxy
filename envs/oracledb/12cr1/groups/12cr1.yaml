@@ -192,18 +192,12 @@ nodes:
         commands:
           - echo -n "$(echo "${databases}" | yq r -P - "[0].db_version" | tr "." "_")"
         out2var: "dbverfiles"
-      - event: pre-node-sync
-        flags:
-          - prepareoravar
-          - oraswdbinstall
-        commands:
-          - echo -n "$(echo "${install_files}" | yq r -P - "ver_${dbverfiles}.files")"
-        out2var: "dbfiles"
+
       - event: pre-node-sync
         flags:
           - oraswdb
         commands:
-          - > 
+          - >
             echo "#################################" &&
             echo "PREPARE INSTALLATION OF SW ORACLE" &&
             echo "#################################"
@@ -228,7 +222,12 @@ nodes:
         commands:
           - mv /tmp/12102_tmp.rsp "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
           - chown oracle:oinstall "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
-          - for i in `echo -n "${dbfiles}" | sed 's/- //g' | xargs`; do mv /tmp/$i ${oracle_stage}/; unzip -q ${oracle_stage}/$i -d ${oracle_stage}/; done
+          - >-
+            dbfiles=$(echo -n "${install_files}" | jq -r '.install_files[].files[]') &&
+            for i in ${dbfiles}; do
+            mv /tmp/$i ${oracle_stage}/ ;
+            unzip -q ${oracle_stage}/$i -d ${oracle_stage}/;
+            done
           - chown -R oracle:oinstall "${oracle_stage}/database/"
       - event: post-node-sync
         flags:
