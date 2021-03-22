@@ -53,10 +53,27 @@ envs:
   ol7_repo: "public-yum-ol7.repo"
   local_timezone: "Europe/Rome"
   install_files:
-    ver_12_1_0_2:
-      files:
-        - "linuxamd64_12102_database_1of2.zip"
-        - "linuxamd64_12102_database_2of2.zip"
+    - "linuxamd64_12102_database_1of2.zip"
+    - "linuxamd64_12102_database_2of2.zip"
+  oradirbase:
+    - recovery_area
+    - oradata
+    - cfgtoollogs
+    - cfgtoollogs/dbca
+    - cfgtoollogs/sqlpatch
+    - cfgtoollogs/netca
+    - admin
+    - audit
+  oragroups:
+    - asmdba: 54318
+    - asmoper: 54319
+    - asmadmin: 54320 
+    - oinstall: 54321 
+    - dba: 54322 
+    - backupdba: 54323 
+    - oper: 54324 
+    - dgdba: 54325 
+    - kmdba: 54326 
   general_packages:
     - cronie
     - cronie-noanacron
@@ -159,6 +176,7 @@ envs:
     - elfutils-libelf-devel.i686
     - elfutils-libelf-devel
     - cpp
+    - net-tools
 
   databases:
 
@@ -179,7 +197,7 @@ envs:
         pdbadmin: qwe123
         PLUGPDB1:
            appuser1: qwe123
-      is_container: True
+      is_container: true
       num_pdbs_pluggable: 1
       list_pluggable:
         - name: PDPLUG1
