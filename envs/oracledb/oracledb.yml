@@ -58,6 +58,10 @@ profiles:
     config:
       security.privileged: "true"
     description: Privileged profile
+  - name: timezoneeurome
+    config:
+      environment.TZ: "Europe/Rome"
+    description: set timezone in Europe/Rome
 
 networks:
   - name: lxdbr0
@@ -183,11 +187,8 @@ projects:
         flags:
           - postnode
         commands:
-
-          # It seems fail the first time
-          - >
-            timedatectl set-timezone ${local_timezone} || true ;
-            timedatectl set-timezone ${local_timezone}
+          - timedatectl
+          - timedatectl set-timezone "${local_timezone}" || timedatectl set-timezone "${local_timezone}"
 
   - name: "oracledb::19c"
     description: "DATABASE ORACLE 19C"

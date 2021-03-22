@@ -372,7 +372,7 @@ EMCONFIGURATION = "NONE"
 # Mandatory     : Yes, if EMCONFIGURATION is specified or
 #                 the value of RUNCVUCHECKS is TRUE
 #-----------------------------------------------------------------------------
-{% if dbpasswords is defined and dbpasswords[databases[0].oracle_db_name] is defined and dbpasswords[databases[0].oracle_db_name]['dbsnmp'] is defined %}
+{% if databases[0].pwd.dbsnmp is defined %}
 DBSNMPPASSWORD = "{{ databases[0].pwd.dbsnmp }}"
 {% else %}
 DBSNMPPASSWORD = "{{ default_dbpass }}"
