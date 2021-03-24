@@ -297,8 +297,9 @@ projects:
         flags:
           - postnode
         commands:
-
-          # It seems fail the first time
+          - timedatectl
+          - timedatectl set-timezone "${local_timezone}" || timedatectl set-timezone "${local_timezone}"
           - >
-            timedatectl set-timezone ${local_timezone} || true ;
-            timedatectl set-timezone ${local_timezone}
+            echo "####################" &&
+            echo "END PROJECT DBORACLE" &&
+            echo "####################"

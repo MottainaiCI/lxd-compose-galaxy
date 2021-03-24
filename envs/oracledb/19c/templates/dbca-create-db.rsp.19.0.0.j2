@@ -68,7 +68,6 @@ RACONENODESERVICENAME={{ databases[0].service_name }}
 #RACONENODESERVICENAME =
 {% endif %}
 
-
 #-----------------------------------------------------------------------------
 # Name          : policyManaged
 # Datatype      : Boolean
@@ -186,13 +185,11 @@ numberOfPDBs={% if databases[0].is_container and databases[0].num_pdbs is define
 # Default value : None
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-{% if databases[0].is_container and databases[0].pdb_prefix is defined and databases[0].pdb_prefix != '' %}
+{% if databases[0].is_container and databases[0].pdb_prefix is defined and databases[0].num_pdbs > 0  %}
 PDBNAME={{ databases[0].pdb_prefix }}
 {% else %}
 #PDBNAME=
 {%endif%}
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : useLocalUndoForPDBs 
@@ -212,13 +209,11 @@ useLocalUndoForPDBs=
 # Default value : None
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases is defined and databases[0] is defined and databases[0].pwd is defined and databases[0].pwd.pdbadmin %}
 pdbAdminPassword={{ databases[0].pwd.pdbadmin }}
 {% else %}
 pdbAdminPassword={{ default_dbpass }}
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : nodelist
@@ -228,7 +223,6 @@ pdbAdminPassword={{ default_dbpass }}
 # Default value : None
 # Mandatory     : No (Yes for RAC database-centric database )
 #-----------------------------------------------------------------------------
-
 {% if configure_cluster and databases[0].oracle_db_type|upper != "SI" and databases[0].oracle_db_type|upper != "SIFO"  and oracle_gi_cluster_type |upper == 'FLEX' %}
 NODELIST={% for host in groups[hostgroup_hub] -%} {{host}} {%- if not loop.last -%} , {%- endif -%} {%- endfor %}
 {% elif configure_cluster and databases[0].oracle_db_type|upper != "SI" and databases[0].oracle_db_type|upper != "SIFO"  and oracle_gi_cluster_type |upper != 'FLEX' %}
@@ -236,9 +230,6 @@ NODELIST={% for host in groups[hostgroup] -%} {{host}} {%- if not loop.last -%} 
 {% else %}
 #NODELIST=
 {% endif %}
-
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : templateName
@@ -248,13 +239,11 @@ NODELIST={% for host in groups[hostgroup] -%} {{host}} {%- if not loop.last -%} 
 # Default value : None
 # Mandatory     : Yes
 #-----------------------------------------------------------------------------
-
 {% if databases[0].dbca_templatename is defined %}
 templateName={{ databases[0].dbca_templatename}}
 {% else %}
 templateName={{ dbca_templatename }}
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : sysPassword
@@ -264,14 +253,11 @@ templateName={{ dbca_templatename }}
 # Default value : None
 # Mandatory     : Yes
 #-----------------------------------------------------------------------------
-
 {% if dbpasswords is defined and dbpasswords[databases[0].oracle_db_name] is defined and dbpasswords[databases[0].oracle_db_name]['sys'] is defined%}
 sysPassword={{databases[0].pwd.sys}}
 {% else %}
 sysPassword={{ default_dbpass }}
 {% endif %}
-
-
 #-----------------------------------------------------------------------------
 # Name          : systemPassword
 # Datatype      : String
@@ -280,15 +266,11 @@ sysPassword={{ default_dbpass }}
 # Default value : None
 # Mandatory     : Yes
 #-----------------------------------------------------------------------------
-
 {% if dbpasswords is defined and dbpasswords[databases[0].oracle_db_name] is defined and dbpasswords[databases[0].oracle_db_name]['system'] is defined %}
 systemPassword={{ databases[0].pwd.system }}
 {% else %}
 systemPassword={{default_dbpass }}
 {% endif %}
-
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : oracleHomeUserPassword
@@ -340,14 +322,11 @@ emConfiguration=NONE
 # Mandatory     : Yes, if emConfiguration is specified or
 #                 the value of runCVUChecks is TRUE
 #-----------------------------------------------------------------------------
-
-{% if dbpasswords is defined and dbpasswords[databases[0].oracle_db_name] is defined and dbpasswords[databases[0].oracle_db_name]['dbsnmp'] is defined %}
+{% if databases[0].pwd.dbsnmp is defined %}
 dbsnmpPassword={{ databases[0].pwd.dbsnmp }}
 {% else %}
 dbsnmpPassword={{ default_dbpass }}
 {% endif %}
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : omsHost
@@ -463,14 +442,11 @@ dbsnmpPassword={{ default_dbpass }}
 # Default value : $ORACLE_BASE/oradata
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases[0].datafile_dest is defined %}
 datafileDestination={{ databases[0].datafile_dest }}
 {% else %}
 datafileDestination={{ datafile_dest }}
 {% endif %}
-
-
 #-----------------------------------------------------------------------------
 # Name          : recoveryAreaDestination
 # Datatype      : String
@@ -479,13 +455,11 @@ datafileDestination={{ datafile_dest }}
 # Default value : $ORACLE_BASE/flash_recovery_area
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases[0].recoveryfile_dest is defined %}
 recoveryAreaDestination={{ databases[0].recoveryfile_dest }}
 {% else %}
 recoveryAreaDestination={{ recoveryfile_dest }}
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : storageType
@@ -504,13 +478,11 @@ storageType={{ databases[0].storage_type }}
 # Default value : DATA
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases[0].datafile_dest is defined %}
 diskGroupName={{ databases[0].datafile_dest }}
 {% else %}
 diskGroupName={{ datafile_dest }}
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : asmsnmpPassword
@@ -528,13 +500,11 @@ asmsnmpPassword={%if asmmonitorpassword is defined %}{{asmmonitorpassword}}{% el
 # Default value : RECOVERY
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases[0].recoveryfile_dest is defined %}
 recoveryGroupName={{ databases[0].recoveryfile_dest }}
 {% else %}
 recoveryGroupName={{ recoveryfile_dest }}
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : characterSet
@@ -545,13 +515,11 @@ recoveryGroupName={{ recoveryfile_dest }}
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
 #
-
 {% if databases[0].characterset is defined %}
 characterSet={{ databases[0].characterset }}
 {% else %}
 characterSet=AL32UTF8
 {% endif %}
-
 
 #-----------------------------------------------------------------------------
 # Name          : nationalCharacterSet
@@ -561,14 +529,11 @@ characterSet=AL32UTF8
 # Default value : "AL16UTF16"
 # Mandatory     : No
 #-----------------------------------------------------------------------------
-
 {% if databases[0].ncharacterset is defined %}
 nationalCharacterSet={{ databases[0].ncharacterset }}
 {% else %}
 nationalCharacterSet=AL16UTF16
 {% endif %}
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : registerWithDirService
@@ -645,14 +610,11 @@ nationalCharacterSet=AL16UTF16
 # Default value : None
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
-
 {% if databases[0].oracle_init_params is defined %}
-initParams={{ databases[0].oracle_init_params }}
+initParams ="{{ databases[0].oracle_init_params }}"
 {% else %}
-#initParams=
+#initParams =
 {% endif %}
-
-
 
 #-----------------------------------------------------------------------------
 # Name          : sampleSchema
@@ -672,12 +634,10 @@ initParams={{ databases[0].oracle_init_params }}
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
 {% if databases[0].oracle_db_mem_percent is defined %}
-MEMORYPERCENTAGE = "{{ databases[0].oracle_db_mem_percent }}"
+MEMORYPERCENTAGE="{{ databases[0].oracle_db_mem_percent }}"
 {% else %}
 #MEMORYPERCENTAGE =
 {% endif %}
-
-
 #-----------------------------------------------------------------------------
 # Name          : databaseType
 # Datatype      : String
@@ -686,7 +646,7 @@ MEMORYPERCENTAGE = "{{ databases[0].oracle_db_mem_percent }}"
 # Default value : MULTIPURPOSE
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
-databaseType="{{ databases[0].oracle_database_type }}"
+databaseType={{ databases[0].oracle_database_type }}
 
 #-----------------------------------------------------------------------------
 # Name          : automaticMemoryManagement
@@ -706,7 +666,6 @@ automaticMemoryManagement=FALSE
 # Default value : 
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
-
 {% if databases[0].oracle_db_mem_totalmb is defined %}
 totalMemory={{ databases[0].oracle_db_mem_totalmb }}
 {% else %}
