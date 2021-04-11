@@ -16,34 +16,44 @@ template_engine:
 # This profiles are not mandatory. An user could create and
 # handle his profiles without define the list here.
 profiles:
+
   - name: memory4g
     config:
       limits.memory: 4GB
     description: limit memory 4G
-  - name: oracledb
-    description: LXD profile for Oracle database
+
+  - name: net-oracle
+    description: Oracle networking
     devices:
-      datadb:
-        path: /u01/app/oracle/oradata
-        source: /data/CONTAINER_STORAGE/oracle_container/datadb
-        type: disk
       eth0:
         name: eth0
         nictype: bridged
         parent: lxdbr0
         type: nic
-      fra:
-        path: /u01/app/oracle/recovery_area
-        source: /data/CONTAINER_STORAGE/oracle_container/fra
-        type: disk
+
+  - name: pool
+    devices:
       root:
         path: /
         pool: default
         type: disk
+
+  - name: oracledb
+    description: LXD profile for Oracle database
+    devices:
+      datadb:
+        path: /u01/app/oracle/oradata
+        source: {{ index .Values.oracledb "host_data_path" }}/datadb
+        type: disk
+      fra:
+        path: /u01/app/oracle/recovery_area
+        source: {{ index .Values.oracledb "host_data_path" }}/fra
+        type: disk
       u01:
         path: /u01
-        source: /data/CONTAINER_STORAGE/oracle_container/u01
+        source: {{ index .Values.oracledb "host_data_path" }}/u01
         type: disk
+
   - name: privileged
     config:
       security.privileged: "true"
@@ -91,33 +101,21 @@ projects:
         flags:
           - general
         commands:
-          - >
-            echo "##################" &&
-            echo "GENERAL" &&
-            echo "##################"
-          - rm -r /tmp/*.rsp || echo "NO FILE FOUND"
-          - rm -r /tmp/*.service || echo "NO FILE FOUND"
-          - rm -r /tmp/.profile* || echo "NO FILE FOUND"
-          - rm -r /tmp/*.zip || echo "NO FILE FOUND"
-      - event: pre-node-sync
-        flags:
-          - general
-        commands:
           - hostname | xargs | tr '\n' ' '
         out2var: "hostnamevar"
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - sysctlcfg
         commands:
           - cat /proc/meminfo | grep MemTotal | cut -d":" -f2 | sed "s/ kB//" | xargs | tr '\n' ' '
         out2var: "memtotal"
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - sysctlcfg
         commands:
           - echo "1.4 * ${memtotal} / 1 * 1024 / 4096 / 1" | bc | tr -d '\n'
         out2var: "kshma"
-      - event: pre-node-sync
+      - event: post-node-postnode
         flags:
           - sysctlcfg
         commands:
@@ -142,7 +140,7 @@ projects:
       #    - sudo sysctl -w kernel.panic_on_oops=1
       #    - sudo sysctl -w vm.min_free_kbytes=524288
       #    - sudo sysctl -a | grep -e kernel -e fs -e net -e vm | grep -e shm[am] -e "sem " -e aio -e "core\..mem" -e port_range -e oops -e free_k
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - sysctlcfg
         commands:
@@ -155,7 +153,7 @@ projects:
           - echo "kernel.shmmax=${kshmx}" >> /etc/sysctl.conf
           - echo "${sysctlvar}" >> /etc/sysctl.conf
           - cat /etc/sysctl.conf
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - luet
         commands:
@@ -167,9 +165,7 @@ projects:
           - postnode
         commands:
 
-          - timedatectl set-timezone ${local_timezone}
+          # It seems fail the first time
           - >
-            echo "####################" &&
-            echo "END PROJECT DBORACLE" &&
-            echo "####################"
-
+            timedatectl set-timezone ${local_timezone} || true ;
+            timedatectl set-timezone ${local_timezone}

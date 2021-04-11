@@ -7,9 +7,13 @@ connection: "local"
 # Define the list of LXD Profile to use
 # for create the containers
 common_profiles:
-  - oracledb
+  - default
+  - net-mottainai0
   - privileged
   - memory4g
+{{ if .Values.oracledb.enable_storage_from_host }}
+  - oracledb
+{{ end }}
 
 # Create the environment container as ephemeral or not.
 ephemeral: true
@@ -28,7 +32,7 @@ nodes:
     # List of commands executed just after the creation of the
     # container.
     hooks:
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - packets-install
         commands:
@@ -38,6 +42,7 @@ nodes:
           - yum install -y $(echo ${common_packages_ora} | jq '.[]' -r)
           # specific packages for oracle database
           - yum install -y $(echo ${specific_packages_ora} | jq '.[]' -r)
+
       - event: pre-node-sync
         flags:
           - oradbinstance
@@ -49,6 +54,7 @@ nodes:
           - rm -r /tmp/*.rsp || echo "NO FILE FOUND"
           - rm -r /tmp/*.service || echo "NO FILE FOUND"
           - rm -r /tmp/.profile* || echo "NO FILE FOUND"
+
       - event: pre-node-sync
         flags:
           - oradbinstance
@@ -58,8 +64,9 @@ nodes:
           - general
         commands:
           - hostname | xargs | tr '\n' ' '
+
         out2var: "hostnamevar"
-      - event: pre-node-sync
+      - event: post-node-creation
         flags:
           - common
         commands:
@@ -71,12 +78,12 @@ nodes:
           - a=`yum repolist | grep epel`; test -n "$a" || yum install -y ${epel_repo} 
           - yum install -y wget htop rlwrap sudo
           - wget ${ol7_repo_prefix}"/"${ol7_repo}
-          - mv ${ol7_repo} /etc/yum.repos.d/          
+          - mv ${ol7_repo} /etc/yum.repos.d/
           # - yum repolist
           - echo "${motdfile}" > /etc/motd
           - >
             sed -i 
-            -e "s:HOSTNAME:${hostnamevar}:g"
+            -e "s:HOSTNAME:$(hostname):g"
             -e "s:DOMAINNAME:`cat /etc/resolv.conf | grep search | sed 's/search //'`:g"
             -e 's/ \./\./'
             -e "s:RELEASE:`cat /etc/oracle-release`:g"
@@ -89,7 +96,8 @@ nodes:
             -e 's/:###/:/' 
             /etc/motd
           - cat /etc/motd
-      - event: pre-node-sync
+
+      - event: post-node-creation
         flags:
           - orahost
         commands:
@@ -117,6 +125,7 @@ nodes:
         commands:
           - mv /tmp/.profile_dboracle /home/oracle/.profile_dboracle
           - chown oracle:oinstall /home/oracle/.profile_dboracle
+
       - event: pre-node-sync
         flags:
           - testvar
@@ -223,7 +232,7 @@ nodes:
           - mv /tmp/12102_tmp.rsp "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
           - chown oracle:oinstall "${oracle_rsp_stage}/12102_oracle12cr1.rsp"
           - >-
-            dbfiles=$(echo -n "${install_files}" | jq -r '.install_files[].files[]') &&
+            dbfiles=$(echo -n "${install_files}" | jq -r '.[].files[]') &&
             for i in ${dbfiles}; do
             mv /tmp/$i ${oracle_stage}/ ;
             unzip -q ${oracle_stage}/$i -d ${oracle_stage}/;
@@ -280,8 +289,8 @@ nodes:
           - mkdir -m750 ${orabase}/oradata/${namedbcnt}/${plugdb1}
           - chown oracle:oinstall ${orabase}/oradata/${namedbcnt}/${plugdb1}
           - su - oracle -c "time ${orahome}/bin/dbca -silent -createPluggableDatabase -sourceDB ${namedbcnt} -pdbName ${plugdb1} -createPDBFrom default -pdbAdminUserName pdb_orauser1 -pdbAdminPassword qwe123 -createUserTableSpace true -pdbDatafileDestination ${plugdest}"
- 
-       
+
+
     # List of templates files to compiles before push the
     # result inside container.
     config_templates:
