@@ -15,8 +15,10 @@ env_dirs:
 - ./envs/docker-registry
 - ./envs/mongo-rs
 - ./envs/mottainai-server
+- ./envs/mottainai-agent
 - ./envs/luet-runner
 - ./envs/oracledb
+- ./envs/devs
 # Arm project
 - ./envs-arm/mottainai-agent
 

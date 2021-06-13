@@ -1,0 +1,219 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
+- name: loop
+  config:
+    security.privileged: "true"
+  description: Mount /dev/loop* stuff
+  devices:
+    loop-control:
+      path: /dev/loop-control
+      type: unix-char
+    loop0:
+      path: /dev/loop0
+      type: unix-block
+    loop1:
+      path: /dev/loop1
+      type: unix-block
+    loop2:
+      path: /dev/loop2
+      type: unix-block
+    loop3:
+      path: /dev/loop3
+      type: unix-block
+    loop4:
+      path: /dev/loop4
+      type: unix-block
+    loop5:
+      path: /dev/loop5
+      type: unix-block
+    loop6:
+      path: /dev/loop6
+      type: unix-block
+    loop7:
+      path: /dev/loop7
+      type: unix-block
+
+
+- name: "privileged"
+  config:
+    security.privileged: "true"
+  description: Privileged profile
+  devices:
+    fuse:
+      path: /dev/fuse
+      type: unix-char
+    tuntap:
+      path: /dev/net/tun
+      type: unix-char
+    # Comment this if zfs is not available.
+    zfs:
+      path: /dev/zfs
+      type: unix-char
+
+- name: "net-mottainai0"
+  description: Net mottainai0
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: mottainai0
+      type: nic
+
+- name: default
+  description: Default Storage
+  devices:
+    root:
+      path: /
+      pool: default
+      type: disk
+
+
+networks:
+  - name: "mottainai0"
+    type: "bridge"
+    config:
+      bridge.driver: native
+      dns.domain: mottainai.local
+      dns.mode: managed
+      ipv4.address: 172.18.10.1/23
+      ipv4.dhcp: "true"
+      ipv4.firewall: "true"
+      ipv4.nat: "true"
+      ipv6.nat: "false"
+      ipv6.dhcp: "false"
+
+
+commands:
+
+  - name: build-repo-with-docker
+    project: "devs::build-repo"
+    apply_alias: true
+    description: |
+      Clone and build passed repository.
+      Use this if Docker service is needed.
+
+      lxd-compose c r dev::build-repo build-repo \
+        --env "REPO=https://github.com/MottainaiCI/lxd-compose.git" \
+        --env "BUILD_CMD=make build" \
+        --env "TEST_CMD=make tests" \
+
+    enable_flags:
+      - setup
+      - setup_docker
+      - build
+      - test
+
+  - name: build-repo
+    description: |
+      Clone, build and test passed repository.
+
+      lxd-compose c r dev::build-repo build-repo \
+        --env "REPO=https://github.com/MottainaiCI/lxd-compose.git" \
+        --env "BUILD_CMD=make build" \
+        --env "TEST_CMD=make tests" \
+
+
+    project: "devs::build-repo"
+    apply_alias: true
+
+  - name: build-without-tests
+    project: "devs::build-repo"
+    apply_alias: true
+    description: |
+      Clone and build passed repository.
+
+      lxd-compose c r dev::build-repo build-repo \
+        --env "REPO=https://github.com/MottainaiCI/lxd-compose.git" \
+        --env "BUILD_CMD=make build"
+
+    disable_flags:
+      - test
+
+projects:
+
+  - name: "devs::build-repo"
+    description: |
+      An integration project to build a repository and run test
+
+    vars:
+      - envs:
+          REPO: https://github.com/MottainaiCI/lxd-compose.git
+          BRANCH: master
+          PACKAGES_SETUP: "wget jq docker.io bridge-utils make curl"
+          yq_version: "3.4.1"
+
+    groups:
+      - name: "devs::build-repo"
+        description: "Build group node"
+
+        connection: "{{ .connection }}"
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        ephemeral: true
+
+        nodes:
+          - name: dev-repo-build
+            image_source: "ubuntu/21.04"
+            image_remote_server: "images"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            profiles:
+              - docker
+              - privileged
+
+            hooks:
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y ${PACKAGES_SETUP}
+                  - |
+                    wget -q -O /usr/bin/yq \
+                    https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
+                  - chmod a+x /usr/bin/yq
+
+              - event: post-node-sync
+                disable: true
+                flags:
+                  - setup_docker
+                commands:
+                  - systemctl daemon-reload
+                  - systemctl start docker
+
+              - event: post-node-sync
+                flags:
+                  - build
+                commands:
+                  - eval 'rm -rf /build || true'
+                  - git clone ${REPO} -b ${BRANCH} /build
+                  - >-
+                    if [ -z "${BUILD_CMD}" ] ; then BUILD_CMD="make build" ; fi ;
+                    cd /build && ${BUILD_CMD}
+
+              - event: post-node-sync
+                flags:
+                  - test
+                commands:
+                  - >-
+                    if [ -z "${TEST_CMD}" ] ; then TEST_CMD="make tests" ; fi ;
+                    cd /build && ${TEST_CMD}

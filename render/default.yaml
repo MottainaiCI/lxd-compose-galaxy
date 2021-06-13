@@ -5,3 +5,5 @@ oracledb:
   # Path of the host to mount in the container.
   host_data_path: /data/CONTAINER_STORAGE/oracle_container
 
+connection: "local"
+
