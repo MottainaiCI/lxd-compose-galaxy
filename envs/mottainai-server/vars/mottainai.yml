@@ -44,7 +44,7 @@ envs:
    #----------------------------------------------
    web:
      #url: "/"
-     url: "/mottainai/"
+     url: "/"
      listenaddress: '0.0.0.0'
      # Listening port where expose Mottainai WebUI
      port: '19090'
