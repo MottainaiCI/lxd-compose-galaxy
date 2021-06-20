@@ -1,3 +1,7 @@
+
+#-------------------------------------------#
+# Oracle Database project customization
+#-------------------------------------------#
 oracledb:
   # Enable/Disable storage mount from host.
   enable_storage_from_host: false
@@ -6,4 +10,15 @@ oracledb:
   host_data_path: /data/CONTAINER_STORAGE/oracle_container
 
 connection: "local"
+
+#-------------------------------------------#
+# Mottainai Service project customization
+#-------------------------------------------#
+mottainai:
+  # Enable/Disable storage mount from host.
+  enable_storage_from_host: false
+
+  # Enable/Disable binding of the port 3000 to host.
+  # If you use a different port just edit the mottainai-dashboard profile.
+  enable_dashboard_host_binding: false
 
