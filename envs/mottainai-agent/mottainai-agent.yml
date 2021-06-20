@@ -1,0 +1,194 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+# Define the list of LXD Profiles used by all projects.
+# This profiles are not mandatory. An user could create and
+# handle his profiles without define the list here.
+profiles:
+- name: "default"
+  description: "Default profile"
+  devices:
+    root:
+      path: /
+      pool: pool-btrfs
+      type: disk
+
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
+- name: loop
+  config:
+    security.privileged: "true"
+  description: Mount /dev/loop* stuff
+  devices:
+    loop-control:
+      path: /dev/loop-control
+      type: unix-char
+    loop0:
+      path: /dev/loop0
+      type: unix-block
+    loop1:
+      path: /dev/loop1
+      type: unix-block
+    loop2:
+      path: /dev/loop2
+      type: unix-block
+    loop3:
+      path: /dev/loop3
+      type: unix-block
+    loop4:
+      path: /dev/loop4
+      type: unix-block
+    loop5:
+      path: /dev/loop5
+      type: unix-block
+    loop6:
+      path: /dev/loop6
+      type: unix-block
+    loop7:
+      path: /dev/loop7
+      type: unix-block
+
+- name: privileged
+  config:
+    security.privileged: "true"
+  description: Privileged profile
+  devices:
+    fuse:
+      path: /dev/fuse
+      type: unix-char
+    tuntap:
+      path: /dev/net/tun
+      type: unix-char
+    # Comment this if zfs is not available.
+    zfs:
+      path: /dev/zfs
+      type: unix-char
+
+- name: net-local
+  description: Net lxdbr0
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: lxdbr0
+      type: nic
+
+- name: docker
+  description: "Docker profile"
+  config:
+    security.nesting: "true"
+
+projects:
+
+  - name: "amd64::ubuntu::mottainai-agent"
+    description: |
+      Setup Mottaina Agent as LXD Container.
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/mottainai-agent.yml
+
+    vars:
+      - envs:
+          luet_repositories:
+            - repository/mocaccino-extra
+            - repository/mocaccino-os-commons-stable
+
+          luet_packages:
+            - dev-util/mottainai-agent
+            - utils/yq
+
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          yq_version: "3.4.1"
+          internal_domain: "mottainai.local"
+
+
+    groups:
+      - name: "mottainai-agents-amd64"
+        description: "Mottainai Agent AMD64"
+
+        connection: "local"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-local
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: false
+
+        nodes:
+          - name: mottainai-agent-amd64-1
+            image_source: "ubuntu/20.10"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            # Specify directory where build path of templates.
+            # Directory could be an absolute path or a relative path based
+            # on env base dir.
+            # source_dir: "."
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # Define the list of LXD Profile to use in additional
+            # to group profiles for create the containers
+            profiles:
+              - docker
+              - privileged
+              - loop
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y docker.io bridge-utils jq wget
+                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+                  - luet install $(echo ${luet_repositories} | jq '.[]' -r)
+                  - luet install $(echo ${luet_packages} | jq '.[]' -r)
+                  #- systemctl start docker
+
+              - event: post-node-creation
+                commands:
+                  - gpasswd -a mottainai-agent docker
+                  - chown mottainai-agent:mottainai /srv/mottainai/
+                  - systemctl daemon-reload
+                  - systemctl start docker
+
+              - event: pre-node-sync
+                flags:
+                  - update-mottainai
+                commands:
+                  - luet upgrade
+
+              - event: post-node-sync
+                flags:
+                  - update-mottainai
+                  - update-config
+                commands:
+                  - echo "${agent_config}" | yq r -P -
+                  - echo "${agent_config}" | yq r -P - > /tmp/mottainai-agent.yaml
+                  - mv /tmp/mottainai-agent.yaml /etc/mottainai/
+                  - mv /srv/mottainai/lxd-conf /srv/mottainai/lxc
+                  - chown mottainai-agent:mottainai -R /srv/mottainai/lxc
+                  - chown mottainai-agent:mottainai -R /etc/mottainai
+                  - systemctl restart mottainai-agent
+
+            sync_resources:
+              # Default source path is the directory of the env file.
+              - source: ../lxd-conf/
+                dst: /srv/mottainai/
