@@ -30,13 +30,13 @@ profiles:
       listen: tcp:0.0.0.0:19090
       type: proxy
 
-- name: "mottainai-amqp"
-  description: "Profile for export RabbitMQ port to Host"
+- name: "mottainai-dashboard"
+  description: "Profile for export Mottainai Dashboard port to Host"
   devices:
     api:
       bind: host
-      connect: tcp:127.0.0.1:5672
-      listen: tcp:0.0.0.0:5672
+      connect: tcp:127.0.0.1:3000
+      listen: tcp:0.0.0.0:3000
       type: proxy
 
 - name: "mottainai-data"
@@ -131,26 +131,54 @@ networks:
       ipv6.nat: "false"
       ipv6.dhcp: "false"
 
+commands:
+- name: mottainai-server-only
+  description: |
+    Create/Update only Mottainai Server.
+  project: "mottainai-server-services"
+  apply_alias: true
+  enable_groups:
+    - mottainai-server
+
+- name: mottainai-server-sync-local
+  description: |
+    Sync mottainai-server binary local to the container.
+    (For developers)
+
+    Example:
+
+    lxd-compose command run mottainai-server-services mottainai-server-sync-local \
+      -env "MOTTAINAI_BASEDIR=~/dev/mottainai/mottainai-server"
+
+  project: "mottainai-server-services"
+  apply_alias: true
+  enable_groups:
+    - mottainai-server
+  enable_flags:
+    - dev_version
+    - upgrade
+    - config
+
 projects:
 
   - name: "mottainai-server-services"
     description: |
-      Setup Mottainai Server, RabbitMQ and Database.
+      Setup Mottainai Server, Dashboard and Database.
 
     # Environments files to use with engine. Supported files depends on
     # template engine
     include_env_files:
       - vars/arangodb.yml
-      - vars/rabbitmq.yml
       - vars/mottainai.yml
       # To enable mottainai-nginx
       # - vars/cert.yml
-      # - vars/ngin
+      # - vars/nginx.yml
 
     include_groups_files:
       - groups/arangodb.yaml
-      - groups/rabbitmq.yaml
       - groups/server.yaml
+      - groups/dashboard.yml
+      - groups/scheduler.yaml
       # Active mottainai-nginx frontend
       # - groups/nginx.yml
 
@@ -159,33 +187,64 @@ projects:
           ACCEPT_LICENSE: "*"
           LUET_NOLOCK: "true"
           LUET_YES: "true"
-          yq_version: "3.4.1"
           internal_domain: "mottainai.local"
-          mypublic_domain: "example.com"
 
           enman_repos:
             - https://get.mocaccino.org/scr/geaaru/geaaru
             - https://get.mocaccino.org/scr/devel/devel
+
+          luet_repositories:
+            - repository/mocaccino-extra
+            - repository/mocaccino-os-commons-stable
+
+          arangodb_luet_packages:
+            - utils/yq
 
           arangodb_packages:
             - app-editors/vim
             - dev-db/arangodb
             - app-metrics/node_exporter
 
-          rabbitmq_packages:
-            - app-editors/vim
-            - net-misc/rabbitmq-server
-            - app-metrics/node_exporter
-
           server_packages:
             - app-editors/vim
             - app-metrics/node_exporter
+
+          server_luet_packages:
+            - utils/yq
+            - system/entities
+            - dev-util/mottainai-server
 
     hooks:
       - event: post-node-creation
         commands:
           - sleep 2
+
           - |
-            wget -q -O /usr/bin/yq \
-            https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
-          - chmod a+x /usr/bin/yq
+            cat <<EOF >/etc/systemd/network/default_dhcp.network
+            [Network]
+            DHCP=ipv4
+
+            [Match]
+            Name=eth0
+
+            [DHCP]
+            UseDomains=true
+            EOF
+
+          # Workaround to SystemD issue on setup DHCP network
+          - mkdir /etc/systemd/system/systemd-networkd.service.d
+          - |
+            cat <<EOF >/etc/systemd/system/systemd-networkd.service.d/override.conf
+            [Service]
+            BindReadOnlyPaths=/sys /proc
+            EOF
+          - systemctl enable systemd-networkd
+          - systemctl restart systemd-networkd
+
+          # DNS
+          - echo "Domains=${internal_domain}" >> /etc/systemd/resolved.conf
+          - systemctl enable systemd-resolved
+          - systemctl restart systemd-resolved
+          - cp /var/run/systemd/resolve/resolv.conf /etc/resolv.conf || true
+          - systemctl restart systemd-resolved
+

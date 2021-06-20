@@ -1,26 +1,29 @@
 name: "mottainai-server"
 description: "Install Mottainai Server"
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 common_profiles:
-- net-mottainai0
-- privileged
 - default
-#- disk-slow
+- net-mottainai0
+#- privileged
 
 ephemeral: true
 
 nodes:
 - name: mottainai-server
   image_source: "sabayon/base"
-  image_remote_server: "dso"
+  image_remote_server: "images"
   profiles:
     - mottainai-api
+{{ if .Values.mottainai.enable_storage_from_host }}
     - mottainai-data
+{{ end }}
 
 # Group hooks
 hooks:
   - event: post-node-creation
+    flags:
+      - setup
     commands:
       - equo repo mirrorsort sabayonlinux.org
       - equo update && equo upgrade
@@ -32,13 +35,18 @@ hooks:
         done
       - equo update
       - equo i $(echo ${server_packages} | jq '.[]' -r)
+      # Temporary workaround for entities issues.
+      - touhc /etc/gshadow
       - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-      - luet install repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable
-      - luet install dev-util/mottainai-server
+      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
+      - luet install $(echo ${server_luet_packages} | jq '.[]' -r)
       - |
         wget -O /etc/systemd/system/mottainai-server.service -q \
         https://raw.githubusercontent.com/MottainaiCI/mottainai-server/master/contrib/systemd/mottainai-server.service
       - systemctl daemon-reload
+      # TODO: Really, i don't understand why systemd doesn't see the user/group
+      # until i run reexec
+      - systemctl daemon-reexec
       - systemctl enable mottainai-server
       - equo cleanup && luet cleanup
 
@@ -49,9 +57,30 @@ hooks:
       - luet upgrade && luet cleanup
 
   - event: post-node-sync
+    disable: true
+    node: host
+    flags:
+      - dev_version
     commands:
+      - echo "Using mottainai-server binary from $MOTTAINAI_BASEDIR"
+      - lxc file push $MOTTAINAI_BASEDIR/mottainai-server mottainai-server/tmp/mottainai-server
+
+  - event: post-node-sync
+    disable: true
+    flags:
+      - dev_version
+    commands:
+      - mv /tmp/mottainai-server /usr/bin/mottainai-server
+
+  - event: post-node-sync
+    flags:
+      - config
+    commands:
+      - mkdir /etc/mottainai -p
       - echo "${server_config}" | yq r -P -
       - |
         echo "${server_config}" | yq r -P - > /etc/mottainai/mottainai-server.yaml
+      # Investigate on this
+      - chown mottainai-server:mottainai -R /var/lib/mottainai/
       - systemctl restart mottainai-server
 

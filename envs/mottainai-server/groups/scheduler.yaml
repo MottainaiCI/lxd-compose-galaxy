@@ -1,0 +1,43 @@
+name: "mottainai-scheduler"
+description: "Install Mottainai Scheduler"
+connection: "local"
+
+common_profiles:
+- default
+- net-mottainai0
+
+ephemeral: true
+
+nodes:
+- name: mottainai-scheduler
+  image_source: "ubuntu/20.10"
+  profiles:
+    - flavor-thin
+
+# Group hooks
+hooks:
+  - event: post-node-creation
+    commands:
+      - sleep 2
+      - apt-get update && apt-get upgrade -y
+      - apt-get install -y htop vim nodejs curl strace jq
+      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
+      - luet install utils/jq utils/yq system/entities dev-util/mottainai-scheduler
+      - systemctl daemon-reload
+      - systemctl enable mottainai-scheduler
+      - luet cleanup
+
+  - event: post-node-sync
+    flags:
+      - upgrade
+    commands:
+      - luet upgrade && luet cleanup
+
+  - event: post-node-sync
+    commands:
+      - echo "${scheduler_config}" | yq r -P -
+      - |
+        echo "${scheduler_config}" | yq r -P - > /etc/mottainai/mottainai-scheduler.yaml
+      - systemctl restart mottainai-scheduler
+

@@ -1,12 +1,11 @@
 name: "mottainai-database"
 description: "Install ArangoDB Backend for Mottainai Server"
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 common_profiles:
+- default
 - net-mottainai0
 - privileged
-- default
-#- disk-slow
 
 ephemeral: true
 
@@ -15,7 +14,9 @@ nodes:
   image_source: "sabayon/base"
   image_remote_server: "dso"
   profiles:
+{{ if .Values.mottainai.enable_storage_from_host }}
     - arangodb-data
+{{ end }}
 
 # Group hooks
 hooks:
@@ -31,8 +32,11 @@ hooks:
         done
       - equo update
       - equo i $(echo ${arangodb_packages} | jq '.[]' -r)
+      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
+      - luet install $(echo ${arangodb_luet_packages} | jq '.[]' -r)
       - systemctl enable arangodb3
-      - equo cleanup
+      - equo cleanup && luet cleanup
 
   - event: post-node-sync
     commands:

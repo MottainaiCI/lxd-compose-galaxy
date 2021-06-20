@@ -1,5 +1,33 @@
 envs:
 
+  MOTTAINAI_ADMIN_USER: "admin"
+  MOTTAINAI_ADMIN_PASS: "pass"
+  MOTTAINAI_ADMIN_EMAIL: "admin@mottainai.org"
+
+  dashboard_config:
+    insecure: false
+    port: 3000
+
+  scheduler_config:
+    # Mottainai Server Config
+    general:
+      debug: false
+      # Default 
+      logfile: '/var/log/mottainai/mottainai-server.log'
+      loglevel: 'DEBUG'
+    web:
+      application_url: "http://mottainai-server.mottainai.local:19090/mottainai"
+
+    scheduler:
+
+      # API Key
+      api_key: "xxxxxx"
+
+      # Define Queues handled by Agent and number of concurrency tasks
+      # queues:
+      #  - queue1
+      #  - queue2
+
   server_config:
    # Mottainai Server Config
    general:
@@ -26,8 +54,7 @@ envs:
      # protocol: "http"
      # Define application name.
      application_name: "MottainaiCI"
-     # Root path ???
-     root_path: './'
+     root_path: '/var/lib/mottainai/'
      # Define value for header Access-Control-Allow-Origin
      # access_control_allow_origin: '*'
      # Enable/Disable Embedded WebHook Server
@@ -39,29 +66,17 @@ envs:
      # github_token_user: 'xxx'
      # github_secret: 'xxxx'
      # webhook_token: 'xxxxx'
-   broker:
-     # Broker type
-     type: 'amqp'
-     # AMQP Broker for Result
-     result_backend: 'amqp://guest:guest@mottainai-broker1.mottainai.local:5672/'
-     # Address of Request Broker
-     broker: 'amqp://guest:guest@mottainai-broker1.mottainai.local:5672/'
-     default_queue: "standard"
-     exchange: "jobs"
-     # exchange_type: "direct"
-     # binding_key: "machinery_task"
-     # broker api management (if available)
-     mgmt_uri: 'http://mottainai-broker1.mottainai.local:15672'
-     user: 'guest'
-     pass: 'guest'
-     results_expire_in: 3600
    db:
-     engine: 'arangodb'
-     db_name: "mottainai"
-     db_user: "mottainai"
-     db_password: "mottainai01"
-     db_endpoints:
-       - "http://mottainai-database.mottainai.local:8529"
+
+     engine: "tiedot"
+     db_path: '/srv/mottainai/web/db'
+
+#     engine: 'arangodb'
+#     db_name: "mottainai"
+#     db_user: "mottainai"
+#     db_password: "mottainai01"
+#     db_endpoints:
+#       - "http://mottainai-database.mottainai.local:8529"
      # Configuration params for tiedot adapter
      # db_path: '/sdpool/mottainai/web/db'
    storage:
@@ -78,7 +93,7 @@ envs:
      # Standalone mode. Agent task only specific task
      # standalone: False
      # Directory where store building data
-     build_path: "/sdpool/mottainai/build"
+     build_path: "/srv/mottainai/build"
      concurrency: 1
      # Secret Key of the Agent
      secret_key: "xxxxxxxx"
