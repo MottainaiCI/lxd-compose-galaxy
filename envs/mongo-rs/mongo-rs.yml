@@ -3,17 +3,9 @@ version: "1"
 template_engine:
   engine: "mottainai"
 
-# Define the list of LXD Profiles used by all projects.
-# This profiles are not mandatory. An user could create and
-# handle his profiles without define the list here.
-profiles:
-#  - name: "profile1"
-#    description: "xxx"
-    # config and devices are field like describe here: https://godoc.org/github.com/lxc/lxd/shared/api#ProfilePut
-#    config:
-      # map[string]string 
-#    devices:
-      # map[string]map[string]string
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
 
 projects:
 
@@ -54,7 +46,7 @@ projects:
         # for create the containers
         common_profiles:
           - default
-          #- net-mottainai0
+          - net-mottainai0
 
         # Create the environment container as ephemeral or not.
         ephemeral: true
@@ -97,11 +89,6 @@ projects:
             entrypoint:
               - "/bin/bash"
               - "-c"
-
-            # Define the list of LXD Profile to use in additional
-            # to group profiles for create the containers
-            #profiles:
-            #  - privileged
 
             # List of commands executed just after the creation of the
             # container.
