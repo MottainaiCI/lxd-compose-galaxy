@@ -3,96 +3,15 @@ version: "1"
 template_engine:
   engine: "mottainai"
 
-# Define the list of LXD Profiles used by all projects.
-# This profiles are not mandatory. An user could create and
-# handle his profiles without define the list here.
-profiles:
-- name: docker
-  description: "Docker profile"
-  config:
-    security.nesting: "true"
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+- ../common/profiles/loop.yml
 
-- name: loop
-  config:
-    security.privileged: "true"
-  description: Mount /dev/loop* stuff
-  devices:
-    loop-control:
-      path: /dev/loop-control
-      type: unix-char
-    loop0:
-      path: /dev/loop0
-      type: unix-block
-    loop1:
-      path: /dev/loop1
-      type: unix-block
-    loop2:
-      path: /dev/loop2
-      type: unix-block
-    loop3:
-      path: /dev/loop3
-      type: unix-block
-    loop4:
-      path: /dev/loop4
-      type: unix-block
-    loop5:
-      path: /dev/loop5
-      type: unix-block
-    loop6:
-      path: /dev/loop6
-      type: unix-block
-    loop7:
-      path: /dev/loop7
-      type: unix-block
-
-
-- name: "privileged"
-  config:
-    security.privileged: "true"
-  description: Privileged profile
-  devices:
-    fuse:
-      path: /dev/fuse
-      type: unix-char
-    tuntap:
-      path: /dev/net/tun
-      type: unix-char
-    # Comment this if zfs is not available.
-    zfs:
-      path: /dev/zfs
-      type: unix-char
-
-- name: "net-mottainai0"
-  description: Net mottainai0
-  devices:
-    eth0:
-      name: eth0
-      nictype: bridged
-      parent: mottainai0
-      type: nic
-
-- name: default
-  description: Default Storage
-  devices:
-    root:
-      path: /
-      pool: default
-      type: disk
-
-
-networks:
-  - name: "mottainai0"
-    type: "bridge"
-    config:
-      bridge.driver: native
-      dns.domain: mottainai.local
-      dns.mode: managed
-      ipv4.address: 172.18.10.1/23
-      ipv4.dhcp: "true"
-      ipv4.firewall: "true"
-      ipv4.nat: "true"
-      ipv6.nat: "false"
-      ipv6.dhcp: "false"
+include_networks_files:
+- ../common/networks/mottainai0.yml
 
 projects:
 
