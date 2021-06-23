@@ -6,6 +6,12 @@ version: "1"
 template_engine:
   engine: "mottainai"
 
+include_profiles_files:
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+
 profiles:
 - name: "registry-port"
   description: "Profile for export docker registry port to Host"
@@ -24,43 +30,6 @@ profiles:
       connect: tcp:127.0.0.1:8080
       listen: tcp:0.0.0.0:8080
       type: proxy
-
-- name: docker
-  description: "Docker profile"
-  config:
-    security.nesting: "true"
-
-- name: privileged
-  config:
-    security.privileged: "true"
-  description: Privileged profile
-  devices:
-    fuse:
-      path: /dev/fuse
-      type: unix-char
-    tuntap:
-      path: /dev/net/tun
-      type: unix-char
-    # Comment this if zfs is not available.
-    zfs:
-      path: /dev/zfs
-      type: unix-char
-
-- name: net-mottainai0
-  description: Net mottainai0
-  devices:
-    eth0:
-      name: eth0
-      nictype: bridged
-      parent: mottainai0
-      type: nic
-
-- name: default
-  description: Default Storage
-  root:
-    path: /
-    pool: default
-    type: disk
 
 projects:
 

@@ -1,0 +1,8 @@
+name: net-mottainai0
+description: Net mottainai0
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: mottainai0
+    type: nic

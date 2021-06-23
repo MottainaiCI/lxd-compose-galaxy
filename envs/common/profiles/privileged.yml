@@ -1,0 +1,15 @@
+name: privileged
+config:
+  security.privileged: "true"
+description: Privileged profile
+devices:
+  fuse:
+    path: /dev/fuse
+    type: unix-char
+  tuntap:
+    path: /dev/net/tun
+    type: unix-char
+  # Comment this if zfs is not available.
+  zfs:
+    path: /dev/zfs
+    type: unix-char

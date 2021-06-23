@@ -1,6 +1,6 @@
 name: "registry-proxy"
 description: "Docker Registry Pull-through Mirror"
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 common_profiles:
   - default

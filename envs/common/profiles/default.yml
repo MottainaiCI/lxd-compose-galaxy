@@ -1,0 +1,8 @@
+name: default
+description: Default Storage
+devices:
+  root:
+    path: /
+    pool: default
+    type: disk
+

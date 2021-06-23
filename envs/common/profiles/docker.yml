@@ -1,0 +1,5 @@
+# Docker Profile
+name: docker
+description: "Docker profile"
+config:
+  security.nesting: "true"

@@ -1,7 +1,7 @@
 name: "registry-ui"
 description: "Docker Registry UI group"
 
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 # Define the list of LXD Profile to use
 # for create the containers
