@@ -30,3 +30,16 @@ products:
     aliases:
       - "sabayon/base"
 
+  # Mocaccino Micro
+  - name: mocaccino-micro:current:amd64:default
+    arch: amd64
+    release: current
+    os: Mocaccino
+    release_title: "Micro"
+    directory: mocaccino-micro
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://keybase.pub/geaaru/lxd-mocaccino-micro"
+    days: 2
+    aliases:
+      - "mocaccino/micro"
