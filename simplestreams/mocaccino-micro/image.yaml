@@ -103,6 +103,7 @@ packages:
 actions:
   - trigger: post-unpack
     action: |-
+      #!/bin/sh
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
@@ -113,12 +114,14 @@ actions:
 
   - trigger: post-unpack
     action: |-
+      #!/bin/sh
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
 
   - trigger: post-packages
     action: |-
+      #!/bin/sh
       # Create lock directory used by Luet
       mkdir -p /var/lock
       rm -rf /var/cache/luet/repos/

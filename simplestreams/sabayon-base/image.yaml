@@ -164,8 +164,8 @@ actions:
   # Clean journal directory (to avoid permission errors)
   - trigger: post-packages
     action: |-
+      #!/bin/sh
       rm -rf /var/log/journal/
 
 mappings:
   architecture_map: debian
-
