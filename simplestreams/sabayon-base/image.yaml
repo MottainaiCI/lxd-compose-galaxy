@@ -1,0 +1,171 @@
+image:
+  distribution: sabayon
+  decription: Sabayon
+  variant: base
+  expiry: 10d
+  architecture: amd64
+
+source:
+  downloader: docker-http
+  # For docker is mandatory for now use 
+  url: sabayon/base-amd64
+
+environment:
+  clear_defaults: true
+  variables:
+  - key: "SHELL"
+    value: "/bin/bash"
+  - key: "ACCEPT_LICENSE"
+    value: "*"
+  - key: "ETP_NONINTERACTIVE"
+    value: "1"
+
+targets:
+  lxc:
+    create-message: |
+      You just created a Sabayon container (arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+  manager: equo
+  update: true
+  cleanup: true
+
+  repositories:
+
+  sets:
+    - packages:
+        - sys-apps/dbus
+      action: install
+
+     # Enable main repository
+#   - name: "sabayonlinux.org"
+#     type: "equo"
+
+actions:
+  # Spinbase image doesn't include enman tool
+  # for external repositories. This is not needed
+  # if external repository aren't used or it's used equ
+  # as repo type.
+  - trigger: post-unpack
+    action: |-
+      #!/bin/bash
+      equo up && equo i enman
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      echo -5 | equo conf update
+
+  # Disable systemd-remount-fs.service because
+  # on unprivileged container systemd can't
+  # remount filesystem.
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      cd /etc/systemd/system
+      ln -s /dev/null systemd-remount-fs.service
+
+  # Disable mount of hugepages
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cd /etc/systemd/system
+      ln -s /dev/null dev-hugepages.mount
+
+  # Disable sabayon-anti-fork-bomb limits
+  # (already apply to host)
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      sed -i -e 's/^*/#*/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
+      sed -i -e 's/^root/#root/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
+
+  # Configure DHCP for interface eth0 by default.
+  # Avoid to use DHCP for any interface to avoid reset of docker
+  # interfaces or others custom interface.
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cat > /etc/systemd/network/default_dhcp.network << "EOF"
+      [Network]
+      DHCP=ipv4
+
+      [Match]
+      Name=eth0
+
+      [DHCP]
+      UseDomains=true
+      EOF
+
+  # Enable systemd-networkd service by default.
+  # Configure SystemD Resolve service for initialize
+  # resolv.conf with value from LXD dnsmasq service.
+  # NOTE: currently distrobuilder mount /etc/resolv.conf
+  # and this doesn't permit to initialize correctly
+  # resolv.conf as a link to systemd-resolved file.
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      systemctl enable systemd-networkd
+      systemctl enable systemd-resolved
+
+  # Disable systemd-journald-audit service
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cd /etc/systemd/system
+      ln -s /dev/null systemd-journald-audit.socket
+
+  # Workaround needed until I fix resolv.conf with distrobuider hook/generator
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      mkdir -p /etc/systemd/system/systemd-resolved.service.d || true
+      cat > /etc/systemd/system/systemd-resolved.service.d/00gentoo.conf << "EOF"
+      [Service]
+      DynamicUser=false
+      ExecStartPre=+/bin/chown systemd-resolve:systemd-resolve /run/systemd/resolve
+      ExecStartPre=+-/bin/rm -f /etc/resolv.conf
+      ExecStartPre=+/bin/ln -v -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+      EOF
+
+  # Clean journal directory (to avoid permission errors)
+  - trigger: post-packages
+    action: |-
+      rm -rf /var/log/journal/
+
+mappings:
+  architecture_map: debian
+

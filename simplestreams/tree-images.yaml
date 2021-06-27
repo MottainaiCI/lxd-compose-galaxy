@@ -1,0 +1,32 @@
+
+# Configuration script for SimpleStream Builder
+
+# Define a specific path where build simple streams files.
+# By defualt use path / for expose images.
+# prefix: '/'
+prefix: ''
+
+# Path of the images.json
+images_path: streams/v1
+
+# Normally this field must be with this values for LXC.
+datatype: image-downloads
+
+# Define version of the products.
+format: "products:1.0"
+
+# Define list of products
+products:
+
+  # Sabayon Base rootfs
+  - name: sabayon-base:current:amd64:default
+    arch: amd64
+    release: current
+    os: Sabayon
+    release_title: "Base"
+    directory: sabayon-base
+    prefix_path: "https://keybase.pub/geaaru/lxd-sabayon-base"
+    days: 1
+    aliases:
+      - "sabayon/base"
+
