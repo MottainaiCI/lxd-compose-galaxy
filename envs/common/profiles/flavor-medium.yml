@@ -1,0 +1,4 @@
+name: flavor-medium
+description: "flavor with 2GB RAM"
+config:
+  limits.memory: 2GB

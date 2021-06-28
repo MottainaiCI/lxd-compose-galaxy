@@ -7,4 +7,5 @@
 
 envs/docker-registry/files/*.crt
 envs/docker-registry/files/*.key
+envs/simplestreams-builder/vars/secrets.yml
 

@@ -1,0 +1,4 @@
+name: flavor-thin
+description: "flavor with 500MB RAM"
+config:
+  limits.memory: 500MB

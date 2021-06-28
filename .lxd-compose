@@ -19,6 +19,7 @@ env_dirs:
 - ./envs/luet-runner
 - ./envs/oracledb
 - ./envs/devs
+- ./envs/simplestreams-builder
 # Arm project
 - ./envs-arm/mottainai-agent
 

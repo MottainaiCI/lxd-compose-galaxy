@@ -1,0 +1,231 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Simplestreams builder container
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+commands:
+- name: simplestreams-build-galaxy-products
+  description: |
+    Build simplestreams product.
+
+  project: "simplestreams-builder-services"
+  apply_alias: true
+  disable_groups:
+    - "simplestreams-builder::build-index"
+  envs:
+    envs:
+      repo: "https://github.com/MottainaiCI/lxd-compose-galaxy.git"
+      repo_branch: "master"
+      repo_dir: "simplestreams"
+
+- name: simplestreams-build-galaxy-product-sabayon-base
+  description: |
+    Build simplestreams product sabayon/base
+
+  project: "simplestreams-builder-services"
+  apply_alias: true
+  disable_groups:
+    - "simplestreams-builder::build-index"
+  envs:
+    envs:
+      repo: "https://github.com/MottainaiCI/lxd-compose-galaxy.git"
+      repo_branch: "master"
+      repo_dir: "simplestreams"
+      LXD_PRODUCT: "sabayon-base:current:amd64:default"
+      LXD_IMAGEDIR: "sabayon-base"
+      SSBUILDER_PREFIX: "../lxd-sabayon-base"
+
+- name: simplestreams-build-galaxy-product-mocaccino-micro
+  description: |
+    Build simplestreams product mocaccino/micro
+
+  project: "simplestreams-builder-services"
+  apply_alias: true
+  disable_groups:
+    - "simplestreams-builder::build-index"
+  envs:
+    envs:
+      repo: "https://github.com/MottainaiCI/lxd-compose-galaxy.git"
+      repo_branch: "master"
+      repo_dir: "simplestreams"
+      LXD_PRODUCT: "mocaccino-micro:current:amd64:default"
+      LXD_IMAGEDIR: "mocaccino-micro"
+      SSBUILDER_PREFIX: "../lxd-mocaccino-micro"
+
+- name: simplestreams-build-galaxy-build-index
+  description: |
+    Build simplestreams index files.
+
+  project: "simplestreams-builder-services"
+  apply_alias: true
+  disable_groups:
+    - "simplestreams-builder::products"
+  envs:
+    envs:
+      repo: "https://github.com/MottainaiCI/lxd-compose-galaxy.git"
+      repo_branch: "master"
+      repo_dir: "simplestreams"
+
+projects:
+
+  - name: "simplestreams-builder-services"
+    description: |
+      Simplestreams products builder containers.
+
+    include_env_files:
+      # Note: On secrets i defined the Keybase environent variables requires for sync
+      #       or set these variables with --env option.
+      # - KEYBASE_DEVICENAME
+      # - KEYBASE_USERNAME
+      # - KEYBASE_PAPERKEY
+      - vars/secrets.yml
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          internal_domain: "mottainai.local"
+
+          luet_packages:
+            - app-emulation/distrobuilder
+            - app-emulation/simplestreams-builder
+            - utils/keybase-tools
+
+    hooks:
+      - event: post-node-creation
+        commands:
+          # DHCP seems slow
+          - sleep 2
+          - apt-get update
+          - apt-get upgrade -y
+          - apt-get install -y wget docker.io bridge-utils make curl squashfs-tools rsync
+          - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+          - luet install repository/mocaccino-extra repository/mocaccino-os-commons
+          - luet install utils/yq utils/jq
+          - luet install $(echo ${luet_packages} | jq '.[]' -r)
+          - luet cleanup
+
+      - event: pre-node-sync
+        flags:
+          - docker_config
+        commands:
+          - systemctl daemon-reload
+          - systemctl start docker
+
+      - event: pre-node-sync
+        flags:
+          - upgrade
+        commands:
+          - luet upgrade && luet cleanup
+
+    groups:
+      - name: "simplestreams-builder::products"
+        description: "Run container for build products."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+
+        nodes:
+          - name: simplestreams-builder
+            image_source: "ubuntu/21.04"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /repo || true'
+                  - echo "Cloning ${repo} for branch ${repo_branch}..."
+                  - git clone ${repo} -b ${repo_branch} /repo
+
+              - event: post-node-sync
+                flags:
+                  - build_product
+                commands:
+                  - >-
+                    if [ -z "$LXD_PRODUCT" ] ; then echo "Missing LXD_PRODUCT!" && exit 1; fi ;
+                    if [ -z "$LXD_IMAGEDIR" ] ; then echo "Missing LXD_IMAGEDIR!" && exit 1; fi ;
+                    if [ -z "$SSBUILDER_PREFIX" ] ; then echo "Missing SSBUILDER_PREFIX!" && exit 1; fi ;
+                  - >-
+                    cd /repo/${repo_dir} &&
+                    simplestreams-builder build-product -c tree-images.yaml -s . -t ./images $LXD_PRODUCT --skip-lxc &&
+                    simplestreams-builder build-versions-manifest -c tree-images.yaml -s ./images -t images -p $LXD_PRODUCT
+                    -i $LXD_IMAGEDIR/image.yaml &&
+                    ls -ltr images/$LXD_IMAGEDIR/ &&
+                    rm -rf /keybase || true && mkdir /keybase/lxd-$LXD_IMAGEDIR -p &&
+                    cp -rvf images/$LXD_IMAGEDIR/ /keybase/lxd-$LXD_IMAGEDIR/$LXD_IMAGEDIR
+
+              - event: post-node-sync
+                flags:
+                  - keybase_sync_images
+                commands:
+                  - chmod a+rwx -R /keybase/  && ls -lR /keybase/lxd-${LXD_IMAGEDIR}/
+                  - keybase-deploy /keybase/lxd-${LXD_IMAGEDIR}/ /keybase/public/geaaru/lxd-${LXD_IMAGEDIR}
+
+      - name: "simplestreams-builder::build-index"
+        description: "Run container for build simplestreams index files."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - privileged
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: simplestreams-builder-index
+            image_source: "ubuntu/21.04"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /repo || true'
+                  - echo "Cloning ${repo} for branch ${repo_branch}..."
+                  - git clone ${repo} -b ${repo_branch} /repo
+
+              - event: post-node-sync
+                flags:
+                  - build_index
+                commands:
+                  - >-
+                    cd /repo/${repo_dir} &&
+                    eval 'rm -rf images || true' &&
+                    simplestreams-builder build-index -c tree-images.yaml -t ./images &&
+                    simplestreams-builder build-images-file -c tree-images.yaml -t ./images &&
+                    ls -ltR images/ &&
+                    rm -rf /keybase || true && mkdir /keybase/ &&
+                    mv images/ /keybase/lxd-images/
+
+              - event: post-node-sync
+                flags:
+                  - keybase_sync_images
+                commands:
+                  - chmod a+rwx -R /keybase/  && ls -lR /keybase/
+                  - keybase-deploy /keybase/lxd-images/ /keybase/public/geaaru/lxd-images
