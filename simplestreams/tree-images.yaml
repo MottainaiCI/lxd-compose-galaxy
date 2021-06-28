@@ -30,6 +30,18 @@ products:
     aliases:
       - "sabayon/base"
 
+  # Sabayon Arangodb rootfs
+  - name: sabayon-arangodb:current:amd64:default
+    arch: amd64
+    release: current
+    os: Sabayon
+    release_title: "Arangodb"
+    directory: sabayon-arangodb
+    prefix_path: "https://geaaru.keybase.pub/lxd-sabayon-arangodb"
+    days: 1
+    aliases:
+      - "sabayon/arangodb"
+
   # Mocaccino Micro
   - name: mocaccino-micro:current:amd64:default
     arch: amd64
