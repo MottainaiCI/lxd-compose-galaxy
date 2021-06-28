@@ -25,7 +25,7 @@ products:
     os: Sabayon
     release_title: "Base"
     directory: sabayon-base
-    prefix_path: "https://keybase.pub/geaaru/lxd-sabayon-base"
+    prefix_path: "https://geaaru.keybase.pub/lxd-sabayon-base"
     days: 1
     aliases:
       - "sabayon/base"
@@ -39,7 +39,7 @@ products:
     directory: mocaccino-micro
     # Path where retrieve images informations and files.
     # This option is used by build-images-file
-    prefix_path: "https://keybase.pub/geaaru/lxd-mocaccino-micro"
+    prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-micro"
     days: 2
     aliases:
       - "mocaccino/micro"
