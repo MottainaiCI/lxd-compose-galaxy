@@ -75,10 +75,10 @@ actions:
   # for external repositories. This is not needed
   # if external repository aren't used or it's used equ
   # as repo type.
-  #- trigger: post-unpack
-  #  action: |-
-  #      #!/bin/sh
-  #    equo up && equo i enman
+  - trigger: post-unpack
+    action: |-
+      #!/bin/sh
+      equo up && equo i enman
 
   - trigger: post-packages
     action: |-
