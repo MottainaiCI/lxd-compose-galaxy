@@ -1,0 +1,104 @@
+image:
+  distribution: mocaccino
+  decription: Mocaccino OS Funtoo Base
+  expiry: 30d
+  architecture: amd64
+
+source:
+  downloader: docker-http
+  # For docker is mandatory for now use 
+  url: geaaru/luet-funtoo-base
+
+environment:
+  clear_defaults: true
+  variables:
+    - key: "PATH"
+      value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+    - key: "SHELL"
+      value: "/bin/bash"
+    - key: "LUET_NOLOCK"
+      value: "true"
+    - key: "LUET_YES"
+      value: "true"
+    - key: "USER"
+      value: "root"
+    - key: "LC_ALL"
+      value: "en_US.UTF-8"
+
+targets:
+  lxc:
+    create-message: |
+      You just created a Sabayon container (arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+  manager: luet
+  update: true
+  cleanup: true
+
+  sets:
+    - packages:
+        - layer/funtoo-base
+      action: install
+
+
+actions:
+  - trigger: post-unpack
+    action: |-
+      #!/bin/sh
+      # Fix docker-companion issue on handle removed data layer.
+      # https://github.com/mudler/docker-companion/issues/6
+      rm -rf /var/cache/luet/packages/*
+      luet install repository/mocaccino-os-commons
+      luet install repository/mocaccino-extra
+      wget -O /etc/luet/repos.conf.d/geaaru.yaml https://raw.githubusercontent.com/geaaru/luet-specs/master/contrib/geaaru.yml
+
+
+  - trigger: post-unpack
+    action: |-
+      #!/bin/sh
+      # Fix docker-companion issue on handle removed data layer.
+      # https://github.com/mudler/docker-companion/issues/6
+      rm -rf /var/cache/luet/packages/*
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      # Create lock directory used by Luet
+      mkdir -p /var/lock
+      rm -rf /var/cache/luet/repos/
+
+mappings:
+  architecture_map: debian
+

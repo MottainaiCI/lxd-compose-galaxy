@@ -55,3 +55,18 @@ products:
     days: 2
     aliases:
       - "mocaccino/micro"
+
+
+  # Mocaccino Funtoo Base
+  - name: mocaccino-funtoo-base:current:amd64:default
+    arch: amd64
+    release: current
+    os: Mocaccino
+    release_title: "Funtoo Base"
+    directory: mocaccino-funtoo-base
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-funtoo-base"
+    days: 2
+    aliases:
+      - "mocaccino/funtoo-base"
