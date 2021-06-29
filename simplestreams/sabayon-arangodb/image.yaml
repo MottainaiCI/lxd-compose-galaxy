@@ -79,6 +79,9 @@ actions:
     action: |-
       #!/bin/sh
       equo up && equo i enman
+      # Try to upgrade the rootfs before install packages.
+      equo upgrade || true
+      echo -5 | equo conf update || true
 
   - trigger: post-packages
     action: |-
