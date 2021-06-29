@@ -7,7 +7,7 @@ image:
 source:
   downloader: docker-http
   # For docker is mandatory for now use 
-  url: sabayon/base
+  url: geaaru/sabayon-base
 
 environment:
   clear_defaults: true
