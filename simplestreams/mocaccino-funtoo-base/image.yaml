@@ -76,25 +76,26 @@ packages:
 actions:
   - trigger: post-unpack
     action: |-
-      #!/bin/sh
+      #!/bin/bash
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
       luet install repository/mocaccino-os-commons
       luet install repository/mocaccino-extra
+      luet install repository/mocaccino-funtoo
       wget -O /etc/luet/repos.conf.d/geaaru.yaml https://raw.githubusercontent.com/geaaru/luet-specs/master/contrib/geaaru.yml
 
 
   - trigger: post-unpack
     action: |-
-      #!/bin/sh
+      #!/bin/bash
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
 
   - trigger: post-packages
     action: |-
-      #!/bin/sh
+      #!/bin/bash
       # Create lock directory used by Luet
       mkdir -p /var/lock
       rm -rf /var/cache/luet/repos/
