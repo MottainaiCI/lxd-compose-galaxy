@@ -22,6 +22,12 @@ commands:
   description: |
     Build simplestreams product.
 
+    $> lxd-compose c r simplestreams-builder-services simplestreams-build-galaxy-products \
+       --env "LXD_PRODUCT=sabayon-base:current:amd64:default" \
+       --env "LXD_IMAGEDIR=sabayon-base" \
+       --env "SSBUILDER_PREFIX=../lxd-sabayon-base" \
+       --destroy
+
   project: "simplestreams-builder-services"
   apply_alias: true
   disable_groups:
