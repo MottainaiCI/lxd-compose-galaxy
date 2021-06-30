@@ -80,7 +80,7 @@ actions:
     action: |-
       #!/bin/bash
       # Fix /bin/sh link that broke openrc. Will be managed by the finalizer.
-      if [ -e /bin/sh ] ; then
+      if [ ! -e /bin/sh ] ; then
         cd /bin && ln -s bash sh
       fi
 
