@@ -75,11 +75,15 @@ packages:
         - utils/yq
       action: install
 
-
 actions:
   - trigger: post-unpack
     action: |-
       #!/bin/bash
+      # Fix /bin/sh link that broke openrc. Will be managed by the finalizer.
+      if [ -e /bin/sh ] ; then
+        cd /bin && ln -s bash sh
+      fi
+
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
@@ -109,7 +113,7 @@ actions:
       rm -rf /var/cache/portage
       cd /etc/init.d
       ln -s netif.tmpl net.eth0
-      #rc-update add net.eth0 default
+      rc-update add net.eth0 default
       echo template=dhcpcd > /etc/conf.d/net.eth0
 
   - trigger: post-packages
@@ -121,6 +125,15 @@ actions:
       touch /etc/gshadow
       touch /etc/passwd
       entities merge -s /usr/share/mocaccino/layers/funtoo-base/entities/ -a
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      # Initialize localization
+      locale-gen || true
+      eselect locale list
+      eselect locale set en_US.utf8
+
 
 mappings:
   architecture_map: funtoo
