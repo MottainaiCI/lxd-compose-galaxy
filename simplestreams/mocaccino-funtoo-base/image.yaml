@@ -70,6 +70,9 @@ packages:
   sets:
     - packages:
         - layer/funtoo-base
+        - system/entities
+        - utils/jq
+        - utils/yq
       action: install
 
 
@@ -100,6 +103,21 @@ actions:
       mkdir -p /var/lock
       rm -rf /var/cache/luet/repos/
 
+      #! /bin/sh
+      set -eux
+      rm -rf /var/git/meta-repo
+      rm -rf /var/cache/portage
+      cd /etc/init.d
+      ln -s netif.tmpl net.eth0
+      rc-update add net.eth0 default
+      echo template=dhcpcd > /etc/conf.d/net.eth0
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      # Create /etc/shadow,/etc/group,/etc/gshadow,/etc/passwd files
+      entities -s /usr/share/mocaccino/layers/funtoo-base/entities/ -a
+
 mappings:
-  architecture_map: debian
+  architecture_map: funtoo
 
