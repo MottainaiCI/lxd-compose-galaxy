@@ -116,7 +116,7 @@ actions:
     action: |-
       #!/bin/bash
       # Create /etc/shadow,/etc/group,/etc/gshadow,/etc/passwd files
-      entities -s /usr/share/mocaccino/layers/funtoo-base/entities/ -a
+      entities merge -s /usr/share/mocaccino/layers/funtoo-base/entities/ -a
 
 mappings:
   architecture_map: funtoo
