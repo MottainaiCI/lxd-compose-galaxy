@@ -67,6 +67,21 @@ products:
     # Path where retrieve images informations and files.
     # This option is used by build-images-file
     prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-funtoo-base"
-    days: 2
+    days: 1
     aliases:
       - "mocaccino/funtoo-base"
+
+  # Mocaccino Funtoo Gnome Base
+  - name: mocaccino-funtoo-gnome-base:current:amd64:default
+    arch: amd64
+    release: current
+    os: Mocaccino
+    release_title: "Funtoo Gnome Base"
+    directory: mocaccino-funtoo-gnome-base
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-funtoo-gnome-base"
+    days: 1
+    aliases:
+      - "mocaccino/funtoo-gnome-base"
+
