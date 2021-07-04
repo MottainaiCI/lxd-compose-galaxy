@@ -7,7 +7,7 @@ image:
 source:
   downloader: docker-http
   # For docker is mandatory for now use 
-  url: geaaru/luet-funtoo-base
+  url: geaaru/luet-funtoo-gnome-base
 
 environment:
   clear_defaults: true
@@ -95,9 +95,6 @@ actions:
       luet install repository/mocaccino-extra
       luet install repository/mocaccino-funtoo
       wget -O /etc/luet/repos.conf.d/geaaru.yaml https://raw.githubusercontent.com/geaaru/luet-specs/master/contrib/geaaru.yml
-
-      luet replace layer/funtoo-base --for layer/funtoo-base-gnome --force --nodeps -y --concurrency 1
-
 
   - trigger: post-unpack
     action: |-
