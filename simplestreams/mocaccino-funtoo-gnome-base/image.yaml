@@ -159,7 +159,7 @@ actions:
       touch /etc/group
       touch /etc/gshadow
       touch /etc/passwd
-      entities merge -s /usr/share/mocaccino/layers/funtoo-base/entities/ -a
+      entities merge -s /usr/share/mocaccino/layers/funtoo-base-gnome/entities/ -a
 
   - trigger: post-packages
     action: |-
