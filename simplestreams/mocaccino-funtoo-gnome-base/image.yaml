@@ -7,7 +7,7 @@ image:
 source:
   downloader: docker-http
   # For docker is mandatory for now use 
-  url: geaaru/funtoo-gnome-base
+  url: geaaru/funtoo-base-gnome
 
 environment:
   clear_defaults: true
