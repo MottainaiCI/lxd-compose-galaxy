@@ -7,7 +7,7 @@ image:
 source:
   downloader: docker-http
   # For docker is mandatory for now use 
-  url: geaaru/funtoo-base-gnome
+  url: geaaru/funtoo-gnome-base
 
 environment:
   clear_defaults: true
@@ -69,7 +69,7 @@ packages:
 
   sets:
     - packages:
-        - layer/funtoo-gnome-base
+        - layer/funtoo-base-gnome
         - system/entities
         - utils/jq
         - utils/yq
