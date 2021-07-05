@@ -98,3 +98,17 @@ products:
     days: 1
     aliases:
       - "mocaccino/funtoo-metatools"
+
+  # Mocaccino Builder
+  - name: mocaccino-builder:current:amd64:default
+    arch: amd64
+    release: current
+    os: Mocaccino
+    release_title: "Funtoo Builder"
+    directory: mocaccino-builder
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-builder"
+    days: 1
+    aliases:
+      - "mocaccino/builder"
