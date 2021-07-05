@@ -283,7 +283,7 @@ source:
     -----END PGP PUBLIC KEY BLOCK-----
 
 environment:
-  clear_defaults: true
+  clear_defaults: false
   variables:
     - key: "PATH"
       value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
