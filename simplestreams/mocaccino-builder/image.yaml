@@ -341,11 +341,11 @@ targets:
         lxc.arch = {{ image.architecture_personality }}
 
 files:
- - path: /etc/hostname
-   generator: hostname
+- path: /etc/hostname
+  generator: hostname
 
- - path: /etc/hosts
-   generator: hosts
+- path: /etc/hosts
+  generator: hosts
 
 - path: /etc/resolvconf/resolv.conf.d/original
   generator: remove
