@@ -293,10 +293,10 @@ environment:
       value: "true"
     - key: "LUET_YES"
       value: "true"
-    - key: "USER"
-      value: "root"
     - key: "LC_ALL"
       value: "en_US.UTF-8"
+    - key: "LANG"
+      value: "en_US.utf8"
 
 targets:
   lxc:
