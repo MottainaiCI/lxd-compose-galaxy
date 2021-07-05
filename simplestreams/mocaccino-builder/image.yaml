@@ -297,7 +297,10 @@ environment:
       value: "en_US.UTF-8"
     - key: "LANG"
       value: "en_US.utf8"
-
+    - key: "DEBIAN_FRONTEND"
+      value: "noninteractive"
+    - key: "XTERM"
+      value: "xterm"
 targets:
   lxc:
     create-message: |-
@@ -619,6 +622,12 @@ actions:
 - trigger: post-packages
   action: |-
     #!/bin/sh
+    #
+    # Install gnupg for load key
+    apt-get update && apt-get install gpg ca-certificates -y || exit 1
+    # Workaround for issue on upgrade systemd
+    apt-get install systemd apparmor -y || true
+
     curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
     wget -O /etc/luet/repos.conf.d/geaaru.yaml https://raw.githubusercontent.com/geaaru/luet-specs/master/contrib/geaaru.yml
     cp /usr/bin/luet luet && luet uninstall system/luet && ./luet install system/luet-geaaru
