@@ -109,6 +109,7 @@ products:
     # Path where retrieve images informations and files.
     # This option is used by build-images-file
     prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-builder"
+    build_script_hook: "mocaccino-builder/hook.sh"
     days: 1
     aliases:
       - "mocaccino/builder"
