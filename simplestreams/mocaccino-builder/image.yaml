@@ -609,6 +609,11 @@ packages:
 
 actions:
 
+- trigger: post-unpack
+  action: |-
+    #!/bin/sh
+    env
+
 - trigger: post-update
   action: |-
     #!/bin/sh
