@@ -104,6 +104,10 @@ projects:
       - envs:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
+          # Really, i don't understand why apparmor is broken on ubuntu image
+          # without using relative path.
+          TMPDIR: "./tmp"
+          CACHEDIR: "./cachedir"
           internal_domain: "mottainai.local"
 
           luet_packages:
@@ -118,7 +122,9 @@ projects:
           - sleep 2
           - apt-get update
           - apt-get upgrade -y
-          - apt-get install -y wget docker.io bridge-utils make curl squashfs-tools rsync
+          # gpg is required for specs with keys
+          # debootstrap is required for ubuntu specs
+          - apt-get install -y wget docker.io bridge-utils make curl squashfs-tools rsync gpg debootstrap
           - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
           - luet install repository/mocaccino-extra repository/mocaccino-os-commons
           - luet install utils/yq utils/jq
@@ -153,7 +159,6 @@ projects:
         ephemeral: true
         connection: "{{ .Values.connection }}"
 
-
         nodes:
           - name: simplestreams-builder
             image_source: "ubuntu/21.04"
@@ -166,6 +171,8 @@ projects:
                   - eval 'rm -rf /repo || true'
                   - echo "Cloning ${repo} for branch ${repo_branch}..."
                   - git clone ${repo} -b ${repo_branch} /repo
+                  - cd /repo/${repo_dir} && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
+                  - cd /repo/${repo_dir} && eval 'rm -rf $CACHEDIR || true' && mkdir $CACHEDIR -p
 
               - event: post-node-sync
                 flags:
@@ -175,12 +182,17 @@ projects:
                     if [ -z "$LXD_PRODUCT" ] ; then echo "Missing LXD_PRODUCT!" && exit 1; fi ;
                     if [ -z "$LXD_IMAGEDIR" ] ; then echo "Missing LXD_IMAGEDIR!" && exit 1; fi ;
                     if [ -z "$SSBUILDER_PREFIX" ] ; then echo "Missing SSBUILDER_PREFIX!" && exit 1; fi ;
+
                   - >-
                     cd /repo/${repo_dir} &&
+                    if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
+                    if [ ! -e $CACHEDIR ] ; then mkdir $CACHEDIR -p ; fi &&
                     simplestreams-builder build-product -c tree-images.yaml -s . -t ./images $LXD_PRODUCT --skip-lxc &&
                     simplestreams-builder build-versions-manifest -c tree-images.yaml -s ./images -t images -p $LXD_PRODUCT
                     -i $LXD_IMAGEDIR/image.yaml &&
-                    ls -ltr images/$LXD_IMAGEDIR/ &&
+                    ls -ltr images/$LXD_IMAGEDIR/
+                  - >-
+                    cd /repo/${repo_dir} &&
                     rm -rf /keybase || true && mkdir /keybase/lxd-$LXD_IMAGEDIR -p &&
                     cp -rvf images/$LXD_IMAGEDIR/ /keybase/lxd-$LXD_IMAGEDIR/$LXD_IMAGEDIR
 
