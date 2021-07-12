@@ -1,0 +1,107 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Simplestreams builder container
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+- commands/build-funtoo-iso.yml
+
+projects:
+
+  - name: "mocaccino-dev-services"
+    description: |
+      List of groups to run Mocaccino OS Build tasks
+
+    include_env_files:
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          internal_domain: "mottainai.local"
+
+    hooks:
+      - event: post-node-creation
+        commands:
+          # DHCP seems slow
+          - sleep 2
+          - apt-get install -y xorriso squashfs-tools dosfstools
+          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit
+          - luet cleanup
+
+      - event: pre-node-sync
+        flags:
+          - upgrade
+        commands:
+          - luet upgrade && luet cleanup
+
+      - event: pre-node-sync
+        flags:
+          - install_geniso
+        commands:
+          - >-
+            eval 'rm -rf /extensions || true' &&
+            git clone https://github.com/Luet-lab/extensions.git /extensions &&
+            cd /extensions/extensions/geniso && make install
+
+    groups:
+      - name: "mocaccino::iso-geniso"
+        description: "Build Mocaccino ISO with luet-geniso extension."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: mocaccino-iso
+            image_source: "mocaccino/builder"
+            image_remote_server: "keybase-geaaru"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /repo || true'
+                  - echo "Cloning ${repo} for branch ${repo_branch}..."
+                  - git clone ${repo} -b ${repo_branch} /repo
+                  - cd /repo/ && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
+
+              - event: post-node-sync
+                flags:
+                  - build_iso
+                commands:
+                  - >-
+                    cd /repo/ &&
+                    if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
+                    luet geniso-isospec ${spec_file} &&
+                    ls -ltr
+
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull_iso
+                commands:
+                  - >-
+                    lxc pull file {{ .Values.connection }}:mocaccino-iso/repo/*.iso* .

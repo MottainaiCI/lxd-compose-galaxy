@@ -151,14 +151,14 @@ projects:
       - envs:
           REPO: https://github.com/MottainaiCI/lxd-compose.git
           BRANCH: master
-          PACKAGES_SETUP: "wget jq docker.io bridge-utils make curl"
+          PACKAGES_SETUP: "wget jq docker.io bridge-utils make curl golang"
           yq_version: "3.4.1"
 
     groups:
       - name: "devs::build-repo"
         description: "Build group node"
 
-        connection: "{{ .connection }}"
+        connection: "{{ .Values.connection }}"
         common_profiles:
           - default
           - net-mottainai0

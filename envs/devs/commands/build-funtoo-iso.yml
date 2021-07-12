@@ -1,0 +1,28 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Command for build Mocaccino Funtoo Experimental ISO.
+
+name: mocaccino-build-funtoo-iso
+description: |
+  Build Funtoo Experimental ISO.
+
+  The generated ISO is copy locally from the container.
+
+  $> lxd-compose c r mocaccino-dev-services mocaccino-build-funtoo-iso \
+     --destroy
+
+  or on rewrite target LXD Instance:
+
+  $> lxd-compose c r mocaccino-dev-services mocaccino-build-funtoo-iso \
+     --destroy --render-env "connection=your-remote"
+
+project: "mocaccino-dev-services"
+apply_alias: true
+disable_groups:
+envs:
+  envs:
+    repo: "https://github.com/mocaccinoOS/mocaccino.git"
+    repo_branch: "funtoo-experimental"
+    spec_file: "specs/funtoo-experimental.yaml"
+    TMPDIR: "./tmp"
+    LUET_CONFIG_PROTECT_SKIP: "true"
+    LUET_GENISO_OUTPUT: "/dev/stdout"
