@@ -15,6 +15,8 @@ description: |
   $> lxd-compose c r mocaccino-dev-services mocaccino-build-funtoo-iso \
      --destroy --render-env "connection=your-remote"
 
+  The ISOs will be available under the iso/ directory.
+
 project: "mocaccino-dev-services"
 apply_alias: true
 disable_groups:

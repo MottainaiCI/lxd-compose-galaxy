@@ -96,12 +96,13 @@ projects:
                     cd /repo/ &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
                     luet geniso-isospec ${spec_file} &&
-                    ls -ltr
+                    ls -ltr &&
+                    mkdir iso &&
+                    mv *.iso *.iso.* iso/
 
               - event: post-node-sync
                 node: host
                 flags:
                   - pull_iso
                 commands:
-                  - >-
-                    lxc pull file {{ .Values.connection }}:mocaccino-iso/repo/*.iso* .
+                  - lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
