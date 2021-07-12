@@ -1,6 +1,6 @@
 general:
   debug: false
-#  lxd_confdir: ./lxd-conf
+  lxd_confdir: ./lxd-conf
   push_progressbar: false
 logging:
   level: "info"
