@@ -40,7 +40,7 @@ projects:
         commands:
           # DHCP seems slow
           - sleep 2
-          - apt-get install -y xorriso squashfs-tools dosfstools
+          - apt-get install -y xorriso squashfs-tools dosfstools file
           - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit extension/makeiso
           - luet cleanup
 
