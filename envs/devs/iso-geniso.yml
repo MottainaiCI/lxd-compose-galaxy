@@ -19,6 +19,7 @@ include_networks_files:
 
 include_commands_files:
 - commands/build-funtoo-iso.yml
+- commands/build-gnome-iso.yml
 
 projects:
 
@@ -40,7 +41,7 @@ projects:
           # DHCP seems slow
           - sleep 2
           - apt-get install -y xorriso squashfs-tools dosfstools
-          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit
+          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit extension/makeiso
           - luet cleanup
 
       - event: pre-node-sync
@@ -96,6 +97,54 @@ projects:
                     cd /repo/ &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
                     luet geniso-isospec ${spec_file} &&
+                    ls -ltr &&
+                    mkdir iso &&
+                    mv *.iso *.iso.* iso/
+
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull_iso
+                commands:
+                  - lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
+
+      - name: "mocaccino::iso-makeiso"
+        description: "Build Mocaccino ISO with luet-makeiso extension."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: mocaccino-makeiso
+            image_source: "mocaccino/builder"
+            image_remote_server: "keybase-geaaru"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /repo || true'
+                  - echo "Cloning ${repo} for branch ${repo_branch}..."
+                  - git clone ${repo} -b ${repo_branch} /repo
+                  - cd /repo/ && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
+
+              - event: post-node-sync
+                flags:
+                  - build_iso
+                commands:
+                  - >-
+                    cd /repo/ &&
+                    if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
+                    luet makeiso ${spec_file} &&
                     ls -ltr &&
                     mkdir iso &&
                     mv *.iso *.iso.* iso/
