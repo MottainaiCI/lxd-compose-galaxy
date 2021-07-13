@@ -1,0 +1,97 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+- ../common/profiles/loop.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+
+
+projects:
+
+  - name: "mqtt-emqx"
+    description: |
+      Setup a standalone community edition
+      of EMQx MQTT Broker.
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          yq_version: "3.4.1"
+
+          packages:
+            - apt-transport-https
+            - ca-certificates
+            - gnupg-agent
+            - software-properties-common
+            - wget
+            - net-tools
+
+    groups:
+      - name: "emqx-broker"
+        description: "Setup Standalone EMQX MQTT Broker"
+
+        connection: "{{ .Values.connection }}"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+
+        nodes:
+          - name: emqx-broker
+            image_source: "ubuntu/18.04"
+            # By deafult it use remote images"
+            image_remote_server: "images"
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            profiles:
+              #- docker
+              #- privileged
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                commands:
+                  # DHCP seems slow
+                  - sleep 5
+                  - apt-get update
+                  - apt-get upgrade -y
+                  - apt-get install -y curl
+                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+                  - luet install repository/mocaccino-extra repository/mocaccino-os-commons repository/geaaru
+                  - luet install utils/jq utils/yq system/entities
+                  - apt-get install -y $(echo ${packages} | jq '.[]' -r)
+                  - >-
+                    curl -fsSL https://repos.emqx.io/gpg.pub | apt-key add - &&
+                    apt-key fingerprint 3E640D53 &&
+                    add-apt-repository
+                    "deb [arch=amd64] https://repos.emqx.io/emqx-ce/deb/ubuntu/ ./$(lsb_release -cs) stable"
+                  - apt-get update && apt-get install -y emqx && apt-get clean
+                  - >-
+                    wget -O /etc/systemd/system/emqx.service
+                    https://raw.githubusercontent.com/emqx/emqx/master/deploy/packages/rpm/emqx.service
+
+
+              - event: post-node-sync
+                commands:
+                  - luet upgrade
+                  - systemctl daemon-reload && systemctl start emqx
