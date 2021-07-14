@@ -106,7 +106,9 @@ projects:
                 flags:
                   - pull_iso
                 commands:
-                  - lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
+                  - >-
+                    eval 'rm -rf iso || true' &&
+                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
 
       - name: "mocaccino::iso-makeiso"
         description: "Build Mocaccino ISO with luet-makeiso extension."
@@ -154,4 +156,6 @@ projects:
                 flags:
                   - pull_iso
                 commands:
-                  - lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
+                  - >-
+                    eval 'rm -rf iso || true' &&
+                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
