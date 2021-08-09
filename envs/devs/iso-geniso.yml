@@ -19,6 +19,7 @@ include_networks_files:
 
 include_commands_files:
 - commands/build-funtoo-iso.yml
+- commands/build-funtoo-iso-makeiso.yml
 - commands/build-gnome-iso.yml
 
 projects:
@@ -40,7 +41,19 @@ projects:
         commands:
           # DHCP seems slow
           - sleep 2
-          - apt-get install -y xorriso squashfs-tools dosfstools file
+          - apt-get install -y xorriso squashfs-tools dosfstools file curl
+
+      - event: post-node-creation
+        disable: true
+        flags:
+          - luet_master
+        commands:
+          # Using luet master
+          - luet uninstall system/luet-geaaru
+          - curl https://get.mocaccino.org/luet/get_luet_root.sh | sudo sh
+
+      - event: post-node-creation
+        commands:
           - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit extension/makeiso
           - luet cleanup
 
@@ -96,7 +109,7 @@ projects:
                   - >-
                     cd /repo/ &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
-                    luet geniso-isospec ${spec_file} &&
+                    bash -x luet-geniso-isospec ${spec_file} &&
                     ls -ltr &&
                     mkdir iso &&
                     mv *.iso *.iso.* iso/
@@ -146,6 +159,8 @@ projects:
                   - >-
                     cd /repo/ &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
+                    echo "Using spec file ${spec_file}..." &&
+                    rm -rf /var/luet/db/repos/ -rf &&
                     luet makeiso ${spec_file} &&
                     ls -ltr &&
                     mkdir iso &&
