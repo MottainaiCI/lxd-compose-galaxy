@@ -30,3 +30,4 @@ envs:
     LUET_CONFIG_PROTECT_SKIP: "true"
     LUET_GENISO_OUTPUT: "/dev/stdout"
     BUILD_ISO: "1"
+    HTTP_TIMEOUT: 0

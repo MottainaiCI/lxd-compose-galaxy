@@ -29,3 +29,4 @@ envs:
     HTTP_TIMEOUT: 0
     #LUET_GENERAL__DEBUG: "true"
     LUET_FORCE: "true"
+    LUET_GENERAL__CONCURRENCY: "2"
