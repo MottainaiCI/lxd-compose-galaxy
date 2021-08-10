@@ -28,4 +28,8 @@ envs:
     spec_file: "specs/gnome.yaml"
     TMPDIR: "./tmp"
     LUET_CONFIG_PROTECT_SKIP: "true"
-    LUET_GENISO_OUTPUT: "/dev/stdout"
+    #LUET_GENERAL__DEBUG: "true"
+    BUILD_ISO: "1"
+    HTTP_TIMEOUT: 0
+    LUET_FORCE: "true"
+    LUET_GENERAL__CONCURRENCY: "2"

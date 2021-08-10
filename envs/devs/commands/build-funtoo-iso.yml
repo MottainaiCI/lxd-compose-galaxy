@@ -31,3 +31,5 @@ envs:
     LUET_GENISO_OUTPUT: "/dev/stdout"
     BUILD_ISO: "1"
     HTTP_TIMEOUT: 0
+    LUET_BOX_INSTALLER: "1"
+    LUET_FORCE: "true"

@@ -161,7 +161,7 @@ projects:
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
                     echo "Using spec file ${spec_file}..." &&
                     rm -rf /var/luet/db/repos/ -rf &&
-                    luet makeiso ${spec_file} &&
+                    luet-makeiso ${spec_file} &&
                     ls -ltr &&
                     mkdir iso &&
                     mv *.iso *.iso.* iso/
@@ -173,4 +173,4 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf iso || true' &&
-                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
+                    lxc file pull {{ .Values.connection }}:mocaccino-makeiso/repo/iso/ . --recursive
