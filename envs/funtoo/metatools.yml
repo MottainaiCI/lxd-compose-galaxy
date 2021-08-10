@@ -1,0 +1,122 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Simplestreams builder container
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+- commands/reposcan-gentoo-portage.yml
+
+projects:
+
+  - name: "metatools-services"
+    description: |
+      Run metatools tasks inside containers.
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          METATOOLS_WORKSPACE: "/reposcan"
+          repo: "https://code.funtoo.org/bitbucket/scm/~geaaru/funtoo-metatools.git"
+          repo_branch: "master"
+
+    hooks:
+      - event: post-node-creation
+        commands:
+          # DHCP seems slow
+          - sleep 2
+
+      - event: post-node-creation
+        flags:
+          - mongodb_config
+        commands:
+          # Temporary
+          - entities merge -s /usr/share/mocaccino/layers/funtoo-metatools/entities/ -a
+          - /etc/init.d/mongodb start
+
+      - event: pre-node-sync
+        flags:
+          - upgrade
+        commands:
+          - luet upgrade && luet cleanup
+
+    groups:
+      - name: "metatools::reposcan"
+        description: "Run container where generate Reposcan files."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: reposcan
+            image_source: "mocaccino/funtoo-metatools"
+            image_remote_server: "keybase-geaaru"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /repo || true'
+                  - echo "Cloning ${repo} for branch ${repo_branch}..."
+                  - git clone ${repo} -b ${repo_branch} /repo
+
+              - event: pre-node-sync
+                flags:
+                  - setup_portage_specs
+                commands:
+                  - eval 'rm -rf /reposcan || true'
+                  - mkdir /reposcan/specs -p
+                  - echo "${portage_specs}" | yq r -P - > /reposcan/specs/portage.yml
+                  # Set commit hash if it's available
+                  - >-
+                    if [ -n "${portage_commit_sha1}" ] ; then
+                    yq w -i /reposcan/specs/portage.yml 'commit_sha1' "${portage_commit_sha1}" ;
+                    fi
+
+              - event: pre-node-sync
+                flags:
+                  - setup_overlay
+                commands:
+                  - echo "${overlay_specs}" | yq r -P -
+                  - echo "${overlay_specs}" | yq r -P - > /reposcan/specs/overlay.yml
+
+              - event: pre-node-sync
+                flags:
+                  - generate_portage_json
+                commands:
+                  - >-
+                    cd /repo &&
+                    PYTHONPATH=. ./bin/reposcan --specs /reposcan/specs/portage.yml
+
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull_jsons
+                commands:
+                  - >-
+                    eval 'rm -rf kit_cache || true' &&
+                    lxc file pull {{ .Values.connection }}:reposcan/reposcan/repo_tmp/tmp/kit_cache/ .
+                    --recursive

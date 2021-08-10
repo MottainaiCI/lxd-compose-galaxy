@@ -1,0 +1,6 @@
+envs:
+
+  # Temporary workaournd until i integrated a real solution
+  # with the reposcan code.
+  reposcan_bin: |
+    

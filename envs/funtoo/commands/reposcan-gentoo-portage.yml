@@ -1,0 +1,35 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+
+name: reposcan-gentoo-portage
+description: |
+  Generate the reposcan JSON file for the portage tree.
+
+
+  $> lxd-compose c r metatools-services reposcan-gentoo-portage \
+     --destroy
+
+  By default it uses master branch. To specify a particular commit hash:
+
+  $> lxd-compose c r metatools-services reposcan-gentoo-portage \
+     --destroy --env "portage_commit_sha1=XXXX"
+
+  The generated file is copy locally from the container to local kit_cache directory.
+
+project: "metatools-services"
+apply_alias: true
+disable_flags:
+  - setup_overlay
+  - upgrade
+envs:
+  envs:
+    portage_specs:
+      name: "gentoo"
+      url: "https://github.com/gentoo/gentoo.git"
+      # Set to actual branch name
+      branch: "master"
+      kind: "independent"
+      #commit_sha1": None,  # You should be able to set commit SHA1 here.
+
+    TMPDIR: "/luettmp"
+    HTTP_TIMEOUT: 0
+    LUET_GENERAL__CONCURRENCY: "1"

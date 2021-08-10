@@ -21,6 +21,7 @@ env_dirs:
 - ./envs/devs
 - ./envs/simplestreams-builder
 - ./envs/mqtt
+- ./envs/funtoo
 # Arm project
 - ./envs-arm/mottainai-agent
 
