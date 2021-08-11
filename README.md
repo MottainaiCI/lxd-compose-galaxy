@@ -12,6 +12,21 @@ In particular, under the directory:
 > Note: Currently, this repository is a ready to go lxd-compose tree but will be soon
 >       integrated witih the lxd-compose galaxy integration.
 
+## Getting Started
+
+Show all projects availables.
+
+```
+$> lxd-compose p list
+```
+
+Show all commands available to run tasks / containers.
+
+```
+$> lxd-compose c list
+```
+
+
 ## Using Custom LXD Images from Galaxy
 
 Configure your LXD Configuration directory or add the remote with this command:
