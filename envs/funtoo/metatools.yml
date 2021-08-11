@@ -19,6 +19,7 @@ include_networks_files:
 
 include_commands_files:
 - commands/reposcan-gentoo-portage.yml
+- commands/reposcan-geaaru-overlay.yml
 
 projects:
 
@@ -102,6 +103,10 @@ projects:
                 commands:
                   - echo "${overlay_specs}" | yq r -P -
                   - echo "${overlay_specs}" | yq r -P - > /reposcan/specs/overlay.yml
+                  - >-
+                    if [ -n "${overlay_commit_sha1}" ] ; then
+                    yq w -i /reposcan/specs/overlay.yml 'commit_sha1' "${overlay_commit_sha1}" ;
+                    fi
 
               - event: pre-node-sync
                 flags:
@@ -109,7 +114,11 @@ projects:
                 commands:
                   - >-
                     cd /repo &&
-                    PYTHONPATH=. ./bin/reposcan --specs /reposcan/specs/portage.yml
+                    export REPOSCAN_OPTS="--specs /reposcan/specs/portage.yml" &&
+                    if [ -n "${overlay_specs}" ] ; then
+                    REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/overlay.yml" ;
+                    fi &&
+                    PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
 
               - event: post-node-sync
                 node: host

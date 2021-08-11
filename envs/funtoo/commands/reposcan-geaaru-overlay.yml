@@ -1,0 +1,43 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+
+name: reposcan-geaaru-overlay
+description: |
+  Generate the reposcan JSON file for the portage tree and
+  Geaaru Overlay.
+  NOTE: portage analysis is needed for eclasses inherited.
+
+  $> lxd-compose c r metatools-services reposcan-geaaru-overlay \
+     --destroy
+
+  By default it uses master branch. To specify a particular commit hash:
+
+  $> lxd-compose c r metatools-services reposcan-geaaru-overlay \
+     --destroy --env "portage_commit_sha1=XXXX"
+
+  You can set --env "overlay_commit_sha1=YYY" to define a specific commit
+  of the overlay.
+  The generated file is copy locally from the container to local kit_cache directory.
+
+project: "metatools-services"
+apply_alias: true
+disable_flags:
+  - upgrade
+envs:
+  envs:
+    portage_specs:
+      name: "gentoo"
+      url: "https://github.com/gentoo/gentoo.git"
+      # Set to actual branch name
+      branch: "master"
+      kind: "independent"
+      #commit_sha1": None,  # You should be able to set commit SHA1 here.
+
+    overlay_specs:
+      name: "geaaru-overlay"
+      url: "https://github.com/geaaru/geaaru_overlay.git"
+      branch: "master"
+      kind: "independent"
+
+    TMPDIR: "/luettmp"
+    HTTP_TIMEOUT: 0
+    LUET_GENERAL__CONCURRENCY: "1"
