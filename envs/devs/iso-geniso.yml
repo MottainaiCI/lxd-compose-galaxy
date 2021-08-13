@@ -74,7 +74,9 @@ projects:
 
     groups:
       - name: "mocaccino::iso-geniso"
-        description: "Build Mocaccino ISO with luet-geniso extension."
+        description: |
+          Build Mocaccino ISO with luet-geniso extension.
+
 
         common_profiles:
           - default
@@ -124,7 +126,13 @@ projects:
                     lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
 
       - name: "mocaccino::iso-makeiso"
-        description: "Build Mocaccino ISO with luet-makeiso extension."
+        description: |
+          Build Mocaccino ISO with luet-makeiso extension.
+
+          Additional render variable to use:
+
+            * local_luet_binary: to set with the path of the local luet binary to push
+              in the container. If not set it's used official binary.
 
         common_profiles:
           - default
@@ -152,6 +160,29 @@ projects:
                   - git clone ${repo} -b ${repo_branch} /repo
                   - cd /repo/ && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
 
+      {{ if .Values.local_luet_binary }}
+              - event: post-node-sync
+                node: host
+                commands:
+                  - lxc file push {{ .Values.local_luet_binary }} {{ .Values.connection }}:mocaccino-makeiso/tmp/luet
+
+              - event: post-node-sync
+                commands:
+                  - mv /tmp/luet /usr/bin/luet
+                  - luet --version
+      {{ end }}
+
+      {{ if .Values.local_luet_makeiso_binary }}
+              - event: post-node-sync
+                node: host
+                commands:
+                  - lxc file push {{ .Values.local_luet_makeiso_binary }} {{ .Values.connection }}:mocaccino-makeiso/tmp/luet-makeiso
+
+              - event: post-node-sync
+                commands:
+                  - mv /tmp/luet-makeiso /usr/bin/luet-makeiso
+                  - luet-makeiso --version
+      {{ end }}
               - event: post-node-sync
                 flags:
                   - build_iso
