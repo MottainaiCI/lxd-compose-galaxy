@@ -155,6 +155,8 @@ commands:
   enable_groups:
     - mottainai-server
   enable_flags:
+    - setup
+    - bootstrap
     - dev_version
     - upgrade
     - config
@@ -168,19 +170,29 @@ projects:
     # Environments files to use with engine. Supported files depends on
     # template engine
     include_env_files:
+      - vars/common.yml
+{{ if .Values.mottainai.enable_arangodb_backend }}
       - vars/arangodb.yml
+      - vars/mottainai-arangodb.yml
+{{ else }}
       - vars/mottainai.yml
-      # To enable mottainai-nginx
-      # - vars/cert.yml
-      # - vars/nginx.yml
+{{ end }}
+{{ if .Values.mottainai.enable_nginx_frontend }}
+      - vars/cert.yml
+      - vars/nginx.yml
+{{ end }}
 
     include_groups_files:
+{{ if .Values.mottainai.enable_arangodb_backend }}
       - groups/arangodb.yaml
+{{ end }}
       - groups/server.yaml
       - groups/dashboard.yml
       - groups/scheduler.yaml
+{{ if .Values.mottainai.enable_nginx_frontend }}
       # Active mottainai-nginx frontend
-      # - groups/nginx.yml
+      - groups/nginx.yml
+{{ end }}
 
     vars:
       - envs:
@@ -201,8 +213,6 @@ projects:
             - utils/yq
 
           arangodb_packages:
-            - app-editors/vim
-            - dev-db/arangodb
             - app-metrics/node_exporter
 
           server_packages:
@@ -216,6 +226,8 @@ projects:
 
     hooks:
       - event: post-node-creation
+        flags:
+          - setup
         commands:
           - sleep 2
 
@@ -247,4 +259,3 @@ projects:
           - systemctl restart systemd-resolved
           - cp /var/run/systemd/resolve/resolv.conf /etc/resolv.conf || true
           - systemctl restart systemd-resolved
-

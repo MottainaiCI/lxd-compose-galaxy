@@ -22,3 +22,9 @@ mottainai:
   # If you use a different port just edit the mottainai-dashboard profile.
   enable_dashboard_host_binding: false
 
+  # Using arangodb configuration
+  enable_arangodb_backend: false
+
+  # Enable Nginx Frontend
+  enable_nginx_frontend: false
+

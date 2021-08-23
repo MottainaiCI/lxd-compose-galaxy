@@ -1,0 +1,38 @@
+envs:
+  MOTTAINAI_ADMIN_USER: "admin"
+  MOTTAINAI_ADMIN_PASS: "pass"
+  MOTTAINAI_ADMIN_EMAIL: "admin@mottainai.org"
+
+  mottainai_service_url: "http://mottainai-server.mottainai.local:19090"
+
+  systemd_override: |
+    [Service]
+    WorkingDirectory=/var/lib/mottainai
+    EnvironmentFile=-/srv/mottainai/bootstrap.conf
+    ExecStart=
+    ExecStart=/usr/bin/mottainai-server web --config /etc/mottainai/mottainai-server.yaml --setup-admin-user
+
+
+  dashboard_config:
+    insecure: true
+    port: 3000
+
+  scheduler_config:
+    # Mottainai Server Config
+    general:
+      debug: false
+      # Default 
+      logfile: '/var/log/mottainai/mottainai-scheduler.log'
+      loglevel: 'DEBUG'
+    web:
+      application_url: "http://mottainai-server.mottainai.local:19090/"
+
+    scheduler:
+      # API Key
+      api_key: "xxxxxx"
+
+      # Define Queues handled by Agent and number of concurrency tasks
+      # queues:
+      #  - queue1
+      #  - queue2
+
