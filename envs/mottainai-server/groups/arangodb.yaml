@@ -11,8 +11,8 @@ ephemeral: true
 
 nodes:
 - name: mottainai-database
-  image_source: "sabayon/base"
-  image_remote_server: "dso"
+  image_source: "sabayon/arangodb"
+  image_remote_server: "keybase-geaaru"
   profiles:
 {{ if .Values.mottainai.enable_storage_from_host }}
     - arangodb-data
