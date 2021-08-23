@@ -19,7 +19,7 @@ ephemeral: true
 
 nodes:
   - name: mottainai-dashboard
-    image_source: "ubuntu/20.10"
+    image_source: "ubuntu/21.04"
     # By deafult it use remote images"
     image_remote_server: "images"
 
@@ -36,7 +36,7 @@ nodes:
           # DHCP seems slow
           - sleep 2
           - apt-get update && apt-get upgrade -y
-          - apt-get install -y htop vim nodejs curl strace
+          - apt-get install -y htop vim nodejs curl strace jq
           - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
           - luet install $(echo ${luet_repositories} | jq '.[]' -r)
           - luet install utils/jq utils/yq system/entities
