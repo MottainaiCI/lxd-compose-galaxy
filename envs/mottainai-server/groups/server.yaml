@@ -12,7 +12,7 @@ ephemeral: true
 nodes:
 - name: mottainai-server
   image_source: "sabayon/base"
-  image_remote_server: "images"
+  image_remote_server: "keybase-geaaru"
   profiles:
     - mottainai-api
 {{ if .Values.mottainai.enable_storage_from_host }}
@@ -36,13 +36,10 @@ hooks:
       - equo update
       - equo i $(echo ${server_packages} | jq '.[]' -r)
       # Temporary workaround for entities issues.
-      - touhc /etc/gshadow
+      - touch /etc/gshadow
       - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
       - luet install $(echo ${luet_repositories} | jq '.[]' -r)
       - luet install $(echo ${server_luet_packages} | jq '.[]' -r)
-      - |
-        wget -O /etc/systemd/system/mottainai-server.service -q \
-        https://raw.githubusercontent.com/MottainaiCI/mottainai-server/master/contrib/systemd/mottainai-server.service
       - systemctl daemon-reload
       # TODO: Really, i don't understand why systemd doesn't see the user/group
       # until i run reexec
@@ -74,6 +71,19 @@ hooks:
 
   - event: post-node-sync
     flags:
+      - bootstrap
+    commands:
+      - >-
+        if [ ! -e /srv/mottainai/.configured ] ; then
+        mkdir -p /etc/systemd/system/mottainai-server.service.d/ ;
+        echo "${systemd_override}" > /etc/systemd/system/mottainai-server.service.d/override.conf ;
+        echo "MOTTAINAI_ADMIN_USER=\"${MOTTAINAI_ADMIN_USER}\"" > /srv/mottainai/bootstrap.conf &&
+        echo "MOTTAINAI_ADMIN_PASS=\"${MOTTAINAI_ADMIN_PASS}\"" >> /srv/mottainai/bootstrap.conf &&
+        echo "MOTTAINAI_ADMIN_EMAIL=\"${MOTTAINAI_ADMIN_EMAIL}\"" >> /srv/mottainai/bootstrap.conf ;
+        fi
+
+  - event: post-node-sync
+    flags:
       - config
     commands:
       - mkdir /etc/mottainai -p
@@ -83,4 +93,10 @@ hooks:
       # Investigate on this
       - chown mottainai-server:mottainai -R /var/lib/mottainai/
       - systemctl restart mottainai-server
-
+      - >-
+        if [ -e /srv/mottainai/bootstrap.conf ] ; then
+        touch /srv/mottainai/.configured ;
+        rm /srv/mottainai/bootstrap.conf ;
+        touch /srv/mottainai/.configured
+        systemctl daemon-reload ;
+        fi
