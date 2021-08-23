@@ -23,10 +23,18 @@ hooks:
       - apt-get install -y htop vim nodejs curl strace jq
       - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
       - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install utils/jq utils/yq system/entities dev-util/mottainai-scheduler
+      - luet install utils/jq utils/yq system/entities dev-util/mottainai-scheduler dev-util/mottainai-cli
       - systemctl daemon-reload
       - systemctl enable mottainai-scheduler
       - luet cleanup
+
+  - event: post-node-creation
+    flags:
+      - create_token
+    commands:
+      - >-
+        MOTTAINAI_TOKEN=$(mottainai-cli token create --apiPass "$MOTTAINAI_ADMIN_PASS" --apiUser "$MOTTAINAI_ADMIN_USER" -m ${mottainai_service_url} --json | jq -r .data) &&
+        echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.scheduler-token.yml &&
 
   - event: post-node-sync
     flags:
@@ -39,5 +47,10 @@ hooks:
       - echo "${scheduler_config}" | yq r -P -
       - |
         echo "${scheduler_config}" | yq r -P - > /etc/mottainai/mottainai-scheduler.yaml
+      - >-
+        if [ -e /etc/mottainai/.scheduler-token.yml ] ; then
+        MOTTAINAI_TOKEN="$(yq r /etc/mottainai/.scheduler-token.yml 'token')" &&
+        yq w /etc/mottainai/mottainai-scheduler.yaml 'scheduler.api_key' "$MOTTAINAI_TOKEN" -i ;
+        fi
       - systemctl restart mottainai-scheduler
 
