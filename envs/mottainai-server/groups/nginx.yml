@@ -8,16 +8,16 @@ hooks:
       - certificate_selfsigned_creation
     node: host
     commands:
-      - mkdir -p envs/nginx/files/certs/ -p || true
+      - mkdir -p envs/mottainai-server/files/certs/ -p || true
       - >
-        dhfile=envs/nginx/files/certs/dhparam.pem ;
+        dhfile=envs/mottainai-server/files/certs/dhparam.pem ;
         if [ ! -e ${dhfile} ] ; then openssl dhparam -out ${dhfile} 4096 ; fi
       - echo "${nginx_ssl_cert_conf}" > /tmp/openssl.cnf
       - sed -i -e "s:COMMON_NAME:${mypublic_domain}:g" /tmp/openssl.cnf
       - openssl rand -out /tmp/rnd -writerand /tmp/rnd
       - >
-        keyfile=envs/nginx/files/certs/server.key ;
-        crtfile=envs/nginx/files/certs/server.crt ;
+        keyfile=envs/mottainai-server/files/certs/server.key ;
+        crtfile=envs/mottainai-server/files/certs/server.crt ;
         if [ ! -e ${keyfile} ] ; then
         openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl.cnf ;
         fi ;
@@ -30,14 +30,16 @@ common_profiles:
   #- disk-slow
   - net-mottainai0
   - flavor-medium
+{{ if .Values.mottainai.enable_nginx_host_binding }}
   - mottainai-https
+{{ end }}
 
 # Create the environment container as ephemeral or not.
 ephemeral: true
 
 nodes:
   - name: mottainai-nginx
-    image_source: "ubuntu/20.10"
+    image_source: "ubuntu/21.04"
     # By deafult it use remote images"
     image_remote_server: "images"
 

@@ -3,6 +3,7 @@ envs:
   MOTTAINAI_ADMIN_PASS: "pass"
   MOTTAINAI_ADMIN_EMAIL: "admin@mottainai.org"
 
+  mypublic_domain: "*.mottainai.local"
   mottainai_service_url: "http://mottainai-server.mottainai.local:19090"
 
   systemd_override: |
@@ -13,9 +14,13 @@ envs:
     ExecStart=/usr/bin/mottainai-server web --config /etc/mottainai/mottainai-server.yaml --setup-admin-user
 
 
+  dashboard_prefix: "/"
   dashboard_config:
     insecure: true
     port: 3000
+    ssl: true
+    key: "/etc/mottainai-dashboard/dashboard.key"
+    cert: "/etc/mottainai-dashboard/dashboard.crt"
 
   scheduler_config:
     # Mottainai Server Config

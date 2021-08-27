@@ -17,6 +17,31 @@ common_profiles:
 # Create the environment container as ephemeral or not.
 ephemeral: true
 
+{{ if .Values.mottainai.enable_dashboard_ssl }}
+hooks:
+  - event: pre-group
+    flags:
+      - certificate_selfsigned_creation
+    node: host
+    commands:
+      # Using same certificate generate for nginx.
+      - mkdir -p envs/mottainai-server/files/certs/ -p || true
+      - >
+        dhfile=envs/mottainai-server/files/certs/dhparam.pem ;
+        if [ ! -e ${dhfile} ] ; then openssl dhparam -out ${dhfile} 4096 ; fi
+      - echo "${nginx_ssl_cert_conf}" > /tmp/openssl.cnf
+      - sed -i -e "s:COMMON_NAME:${mypublic_domain}:g" /tmp/openssl.cnf
+      - openssl rand -out /tmp/rnd -writerand /tmp/rnd
+      - >
+        keyfile=envs/mottainai-server/files/certs/server.key ;
+        crtfile=envs/mottainai-server/files/certs/server.crt ;
+        if [ ! -e ${keyfile} ] ; then
+        openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl.cnf ;
+        fi ;
+        openssl x509 -in ${crtfile} -text -noout
+
+{{ end }}
+
 nodes:
   - name: mottainai-dashboard
     image_source: "ubuntu/21.04"
@@ -32,11 +57,13 @@ nodes:
     hooks:
 
       - event: post-node-creation
+        flags:
+          - setup
         commands:
           # DHCP seems slow
           - sleep 2
           - apt-get update && apt-get upgrade -y
-          - apt-get install -y htop vim nodejs curl strace jq
+          - apt-get install -y htop vim nodejs curl strace jq git
           - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
           - luet install $(echo ${luet_repositories} | jq '.[]' -r)
           - luet install utils/jq utils/yq system/entities
@@ -50,6 +77,21 @@ nodes:
         commands:
           - luet upgrade && luet cleanup
 
+      - event: pre-node-sync
+        disable: true
+        flags:
+          - customize-baseurl
+        commands:
+          - >-
+            export APP_PREFIX="${dashboard_prefix}" &&
+            echo "Rebuild Dashboard application with the base url ${APP_PREFIX}" &&
+            eval 'rm -rf /dashboard || true' &&
+            git clone ${dashboard_git_url} -b ${dashboard_git_branch} /dashboard &&
+            cd dashboard &&
+            npm install . &&
+            npm run build &&
+            cp -rvf build/* /var/lib/mottainai-dashboard/
+
       - event: post-node-sync
         flags:
           - update-systemd-service
@@ -57,14 +99,48 @@ nodes:
           - mkdir /etc/systemd/system/mottainai-dashboard.service.d/ -p || true
           - |
             API_URL=$(echo ${server_config} | jq '.web.application_url' -r) && \
+            APP_PREFIX="${dashboard_prefix}" && \
             PORT=$(echo ${dashboard_config} | jq '.port' -r ) && \
             INSECURE=$(echo ${dashboard_config} | jq '.insecure' -r ) && \
+            USE_SSL=$(echo ${dashboard_config} | jq '.ssl' -r ) && \
+            PRIVATE_KEYFILE=$(echo ${dashboard_config} | jq '.key' -r ) && \
+            CERT_FILE=$(echo ${dashboard_config} | jq '.cert' -r ) && \
             cat <<EOF >/etc/systemd/system/mottainai-dashboard.service.d/override.conf
             [Service]
             Environment=PORT=${PORT}
             Environment=API_URL=${API_URL}
+            Environment=APP_PREFIX=${APP_PREFIX}
             Environment=INSECURE=${INSECURE}
+            Environment=USE_SSL=${USE_SSL}
+            Environment=PRIVATE_KEYFILE=${PRIVATE_KEYFILE}
+            Environment=CERT_FILE=${CERT_FILE}
             EOF
           - cat /etc/systemd/system/mottainai-dashboard.service.d/override.conf
+
+{{ if .Values.mottainai.enable_dashboard_ssl }}
+      - event: post-node-sync
+        flags:
+          - configure_certificates
+        commands:
+          - >-
+            PRIVATE_KEYFILE=$(echo ${dashboard_config} | jq '.key' -r ) &&
+            CERT_FILE=$(echo ${dashboard_config} | jq '.cert' -r ) &&
+            eval "mkdir -p $(dirname ${PRIVATE_KEYFILE}) || true" &&
+            eval "mkdir -p $(dirname ${CERT_FILE}) || true" &&
+            mv /certs/server.key ${PRIVATE_KEYFILE} &&
+            mv /certs/server.crt ${CERT_FILE} &&
+            rm -rvf /certs &&
+            chown mottainai-server:mottainai ${PRIVATE_KEYFILE} ${CERT_FILE}
+{{ end }}
+
+      - event: post-node-sync
+        flags:
+          - restart_service
+        commands:
           - systemctl daemon-reload && systemctl restart mottainai-dashboard
 
+{{ if .Values.mottainai.enable_dashboard_ssl }}
+    sync_resources:
+      - source: files/certs/
+        dst: /
+{{ end }}

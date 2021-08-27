@@ -140,10 +140,39 @@ commands:
   enable_groups:
     - mottainai-server
 
+- name: mottainai-dashboard-only-prefix
+  description: |
+    Create/Update only Mottainai Dashboard and
+    modify the base url prefix.
+
+    Using `dashboard_prefix` variable to
+    customize the path.
+
+  project: "mottainai-server-services"
+  apply_alias: true
+  enable_groups:
+    - mottainai-dashboard
+  enable_flags:
+    - setup
+    - certificate_selfsigned_creation
+    - update-mottainai
+    - customize-baseurl
+    - update-systemd-service
+    - configure_certificates
+    - restart_service
+
+- name: mottainai-dashboard-only
+  description: |
+    Create/Update only Mottainai Dashboard.
+  project: "mottainai-server-services"
+  apply_alias: true
+  enable_groups:
+    - mottainai-dashboard
+
 - name: mottainai-server-sync-local
   description: |
     Sync mottainai-server binary local to the container.
-    (For developers)
+    (For developers).
 
     Example:
 
@@ -171,6 +200,7 @@ projects:
     # template engine
     include_env_files:
       - vars/common.yml
+      - vars/cert.yml
 {{ if .Values.mottainai.enable_arangodb_backend }}
       - vars/arangodb.yml
       - vars/mottainai-arangodb.yml
@@ -178,7 +208,6 @@ projects:
       - vars/mottainai.yml
 {{ end }}
 {{ if .Values.mottainai.enable_nginx_frontend }}
-      - vars/cert.yml
       - vars/nginx.yml
 {{ end }}
 
@@ -200,6 +229,8 @@ projects:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
           internal_domain: "mottainai.local"
+          dashboard_git_url: "https://github.com/MottainaiCI/mottainai-dashboard.git"
+          dashboard_git_branch: "main"
 
           enman_repos:
             - https://get.mocaccino.org/scr/geaaru/geaaru

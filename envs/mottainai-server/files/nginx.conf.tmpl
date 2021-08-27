@@ -69,7 +69,8 @@ http {
   }
 
   server {
-     listen 443 ssl proxy_protocol;
+     listen 443 ssl;
+     # listen 443 ssl proxy_protocol;
      server_name    {{ .mypublic_domain }};
      server_tokens off;
 
@@ -94,8 +95,8 @@ http {
      error_log /var/log/nginx/ssl_error_log info;
 
      # IP used by LXD to proxy https flow
-     set_real_ip_from 127.0.0.1;
-     real_ip_header proxy_protocol;
+     #set_real_ip_from 127.0.0.1;
+     #real_ip_header proxy_protocol;
 
      {{ range $index, $loc := .nginx_location_ssl }}
 

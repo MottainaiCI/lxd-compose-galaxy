@@ -33,9 +33,10 @@ envs:
         proxy_read_timeout          900;
         send_timeout                900;
 
-        proxy_pass http://mottainai-server.mottainai.local:19090;
+        proxy_pass http://mottainai-dashboard.mottainai.local:3000/;
+        #proxy_pass http://mottainai-server.mottainai.local:19090/;
 
-        allow my.authorized.clients;
+        # allow my.authorized.clients;
 
         # Github hooks
         allow 192.30.252.0/22;
