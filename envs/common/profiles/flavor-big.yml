@@ -1,0 +1,4 @@
+name: flavor-big
+description: "flavor with 3GB RAM"
+config:
+  limits.memory: 3GB
