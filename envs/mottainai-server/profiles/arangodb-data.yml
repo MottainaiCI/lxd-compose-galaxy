@@ -1,0 +1,12 @@
+name: "arangodb-data"
+description: "Mount ArangoDB data from Host"
+devices:
+  arangodbdata:
+    source: /var/lib/arangodb3-apps/
+    path: /var/lib/arangodb3-apps/
+    type: disk
+
+  arangodb:
+    source: /var/lib/arangodb3/
+    path: /var/lib/arangodb3/
+    type: disk

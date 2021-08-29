@@ -1,0 +1,11 @@
+name: "mottainai-https"
+description: "Profile for export HTTPS port to Host"
+devices:
+  https:
+    bind: host
+    connect: tcp:0.0.0.0:443
+    listen: tcp:0.0.0.0:443
+    nat: false
+    proxy_protocol: true
+    type: proxy
+

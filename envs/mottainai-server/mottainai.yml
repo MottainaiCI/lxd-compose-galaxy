@@ -6,130 +6,22 @@ version: "1"
 template_engine:
   engine: "mottainai"
 
-# Define the list of LXD Profiles used by all projects.
-# This profiles are not mandatory. An user could create and
-# handle his profiles without define the list here.
-profiles:
-- name: "mottainai-https"
-  description: "Profile for export HTTPS port to Host"
-  devices:
-    https:
-      bind: host
-      connect: tcp:0.0.0.0:443
-      listen: tcp:0.0.0.0:443
-      nat: false
-      proxy_protocol: true
-      type: proxy
+include_profiles_files:
+- profiles/mottainai-api.yml
+- profiles/mottainai-https.yml
+- profiles/mottainai-dashboard.yml
+- profiles/mottainai-data.yml
+- profiles/arangodb-data.yml
 
-- name: "mottainai-api"
-  description: "Profile for export Mottainai Server port to Host"
-  devices:
-    api:
-      bind: host
-      connect: tcp:127.0.0.1:19090
-      listen: tcp:0.0.0.0:19090
-      type: proxy
+- ../common/profiles/privileged.yml
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/flavor-big.yml
+- ../common/profiles/flavor-thin.yml
 
-- name: "mottainai-dashboard"
-  description: "Profile for export Mottainai Dashboard port to Host"
-  devices:
-    api:
-      bind: host
-      connect: tcp:127.0.0.1:3000
-      listen: tcp:0.0.0.0:3000
-      type: proxy
-
-- name: "mottainai-data"
-  description: "Mount mottainai data from Host"
-  devices:
-    storage:
-      source: /srv/mottainai/web/storage/
-      path: /srv/mottainai/web/storage/
-      type: disk
-
-    namespace:
-      source: /srv/mottainai/web/namespace/
-      path: /srv/mottainai/web/namespace/
-      type: disk
-
-    artefacts:
-      source: /srv/mottainai/web/artefacts/
-      path: /srv/mottainai/web/artefacts/
-      type: disk
-
-- name: "arangodb-data"
-  description: "Mount ArangoDB data from Host"
-  devices:
-    arangodbdata:
-      source: /var/lib/arangodb3-apps/
-      path: /var/lib/arangodb3-apps/
-      type: disk
-
-    arangodb:
-      source: /var/lib/arangodb3/
-      path: /var/lib/arangodb3/
-      type: disk
-
-- name: "privileged"
-  config:
-    security.privileged: "true"
-  description: Privileged profile
-  devices:
-    fuse:
-      path: /dev/fuse
-      type: unix-char
-    tuntap:
-      path: /dev/net/tun
-      type: unix-char
-    # Comment this if zfs is not available.
-    zfs:
-      path: /dev/zfs
-      type: unix-char
-
-- name: "net-mottainai0"
-  description: Net mottainai0
-  devices:
-    eth0:
-      name: eth0
-      nictype: bridged
-      parent: mottainai0
-      type: nic
-
-- name: default
-  description: Default Storage
-  root:
-    path: /
-    pool: default
-    type: disk
-
-- name: flavor-medium
-  description: "flavor with 2GB RAM"
-  config:
-    limits.memory: 2GB
-
-- name: flavor-big
-  description: "flavor with 3GB RAM"
-  config:
-    limits.memory: 3GB
-
-- name: flavor-thin
-  description: "flavor with 500MB RAM"
-  config:
-    limits.memory: 500MB
-
-networks:
-  - name: "mottainai0"
-    type: "bridge"
-    config:
-      bridge.driver: native
-      dns.domain: mottainai.local
-      dns.mode: managed
-      ipv4.address: 172.18.10.1/23
-      ipv4.dhcp: "true"
-      ipv4.firewall: "true"
-      ipv4.nat: "true"
-      ipv6.nat: "false"
-      ipv6.dhcp: "false"
+include_networks_files:
+- ../common/networks/mottainai0.yml
 
 commands:
 - name: mottainai-server-only

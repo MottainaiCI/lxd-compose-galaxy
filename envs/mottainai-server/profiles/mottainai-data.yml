@@ -1,0 +1,17 @@
+name: "mottainai-data"
+description: "Mount mottainai data from Host"
+devices:
+  storage:
+    source: /srv/mottainai/web/storage/
+    path: /srv/mottainai/web/storage/
+    type: disk
+
+  namespace:
+    source: /srv/mottainai/web/namespace/
+    path: /srv/mottainai/web/namespace/
+    type: disk
+
+  artefacts:
+    source: /srv/mottainai/web/artefacts/
+    path: /srv/mottainai/web/artefacts/
+    type: disk

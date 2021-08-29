@@ -1,0 +1,8 @@
+name: "mottainai-api"
+description: "Profile for export Mottainai Server port to Host"
+devices:
+  api:
+    bind: host
+    connect: tcp:127.0.0.1:19090
+    listen: tcp:0.0.0.0:19090
+    type: proxy

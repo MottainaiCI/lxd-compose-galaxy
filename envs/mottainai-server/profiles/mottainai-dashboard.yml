@@ -1,0 +1,8 @@
+name: "mottainai-dashboard"
+description: "Profile for export Mottainai Dashboard port to Host"
+devices:
+  api:
+    bind: host
+    connect: tcp:127.0.0.1:3000
+    listen: tcp:0.0.0.0:3000
+    type: proxy

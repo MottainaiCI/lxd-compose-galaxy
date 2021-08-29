@@ -24,8 +24,8 @@ envs:
     #commonName_default = COMMON_NAME
     #emailAddress_default = geaaru@sabayonlinux.org
     [ v3_req ]
-    # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-    keyUsage = keyEncipherment, dataEncipherment
+    keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment
+    #keyUsage = keyEncipherment, dataEncipherment
     extendedKeyUsage = serverAuth, clientAuth
     subjectAltName = @alt_names
     [alt_names]

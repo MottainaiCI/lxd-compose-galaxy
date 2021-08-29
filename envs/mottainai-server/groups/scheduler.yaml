@@ -1,6 +1,6 @@
 name: "mottainai-scheduler"
 description: "Install Mottainai Scheduler"
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 common_profiles:
 - default
@@ -10,7 +10,7 @@ ephemeral: true
 
 nodes:
 - name: mottainai-scheduler
-  image_source: "ubuntu/20.10"
+  image_source: "ubuntu/21.04"
   profiles:
     - flavor-thin
 
@@ -23,7 +23,9 @@ hooks:
       - apt-get install -y htop vim nodejs curl strace jq
       - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
       - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install utils/jq utils/yq system/entities dev-util/mottainai-scheduler dev-util/mottainai-cli
+      - >-
+        luet install utils/jq utils/yq system/entities
+        dev-util/mottainai-scheduler dev-util/mottainai-cli
       - systemctl daemon-reload
       - systemctl enable mottainai-scheduler
       - luet cleanup
@@ -34,7 +36,7 @@ hooks:
     commands:
       - >-
         MOTTAINAI_TOKEN=$(mottainai-cli token create --apiPass "$MOTTAINAI_ADMIN_PASS" --apiUser "$MOTTAINAI_ADMIN_USER" -m ${mottainai_service_url} --json | jq -r .data) &&
-        echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.scheduler-token.yml &&
+        echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.scheduler-token.yml
 
   - event: post-node-sync
     flags:

@@ -20,7 +20,7 @@ envs:
      listenaddress: '0.0.0.0'
      # Listening port where expose Mottainai WebUI
      port: '19090'
-     application_url: "http://mottainai-server.mottainai.local:19090/"
+     application_url: "http://mottainai-server.mottainai.local:19090"
      # Define Web Interface protocol.
      # Default is http. Values: http or https.
      # protocol: "http"
