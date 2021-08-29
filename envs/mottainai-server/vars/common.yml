@@ -30,7 +30,7 @@ envs:
       logfile: '/var/log/mottainai/mottainai-scheduler.log'
       loglevel: 'DEBUG'
     web:
-      application_url: "http://mottainai-server.mottainai.local:19090/"
+      application_url: "http://mottainai-server.mottainai.local:19090"
 
     scheduler:
       # API Key
