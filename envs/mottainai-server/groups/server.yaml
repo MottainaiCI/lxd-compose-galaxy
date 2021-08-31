@@ -90,13 +90,12 @@ hooks:
       - echo "${server_config}" | yq r -P -
       - |
         echo "${server_config}" | yq r -P - > /etc/mottainai/mottainai-server.yaml
-      # Investigate on this
-      - chown mottainai-server:mottainai -R /var/lib/mottainai/
-      - systemctl restart mottainai-server
       - >-
         if [ -e /srv/mottainai/bootstrap.conf ] ; then
         touch /srv/mottainai/.configured ;
         rm /srv/mottainai/bootstrap.conf ;
-        touch /srv/mottainai/.configured
-        systemctl daemon-reload ;
+        touch /srv/mottainai/.configured ;
         fi
+      # Investigate on this
+      - chown mottainai-server:mottainai -R /var/lib/mottainai/
+      - systemctl daemon-reload && systemctl restart mottainai-server
