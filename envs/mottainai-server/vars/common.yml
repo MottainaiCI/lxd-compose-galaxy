@@ -21,6 +21,7 @@ envs:
     ssl: true
     key: "/etc/mottainai-dashboard/dashboard.key"
     cert: "/etc/mottainai-dashboard/dashboard.crt"
+    signup_enable: "true"
 
   scheduler_config:
     # Mottainai Server Config

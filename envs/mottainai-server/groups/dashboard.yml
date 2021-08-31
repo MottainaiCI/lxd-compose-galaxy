@@ -83,6 +83,7 @@ nodes:
           - customize-baseurl
         commands:
           - >-
+            evport SIGNUP_ENABLE=$(echo ${dashboard_config} | jq '.signup_enable' -r ) &&
             export APP_PREFIX="${dashboard_prefix}" &&
             echo "Rebuild Dashboard application with the base url ${APP_PREFIX}" &&
             eval 'rm -rf /dashboard || true' &&
