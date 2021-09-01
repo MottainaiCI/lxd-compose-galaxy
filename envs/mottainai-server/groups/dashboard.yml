@@ -85,6 +85,7 @@ nodes:
           - >-
             export SIGNUP_ENABLE=$(echo ${dashboard_config} | jq '.signup_enable' -r ) &&
             export APP_PREFIX="${dashboard_prefix}" &&
+            export SKIP_AUTH=$(echo ${dashboard_config} | jq '.skip_auth' -r ) &&
             echo "Rebuild Dashboard application with the base url ${APP_PREFIX}" &&
             eval 'rm -rf /dashboard || true' &&
             git clone ${dashboard_git_url} -b ${dashboard_git_branch} /dashboard &&
