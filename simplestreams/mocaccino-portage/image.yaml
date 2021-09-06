@@ -81,10 +81,10 @@ packages:
 
   sets:
     - packages:
-        - layer/funtoo-base-gnome
         - system/entities
         - utils/jq
         - utils/yq
+        - entities/acct-core
       action: install
 
 actions:
@@ -128,7 +128,6 @@ actions:
       locale-gen || true
       eselect locale list
       eselect locale set en_US.utf8
-
 
 mappings:
   architecture_map: funtoo
