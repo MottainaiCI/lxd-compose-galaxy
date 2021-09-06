@@ -62,18 +62,6 @@ files:
  - path: /etc/hosts
    generator: hosts
 
- - path: /etc/luet/repos.conf.d/geaaru.yaml
-   generator: dump
-   content: |
-     name: "geaaru"
-     description: "Geaaru Repository"
-     type: "http"
-     enable: true
-     cached: true
-     priority: 1
-     urls:
-         - "https://geaaru.keybase.pub/luet-repo"
-
 packages:
   manager: luet
   update: true
@@ -82,9 +70,11 @@ packages:
   sets:
     - packages:
         - system/entities
+        - sys-apps/sed
         - utils/jq
         - utils/yq
         - entities/acct-core
+        - repository/geaaru-stable
       action: install
 
 actions:
@@ -114,20 +104,20 @@ actions:
   - trigger: post-packages
     action: |-
       #!/bin/bash
+      luet upgrade
+      #
       # Create /etc/shadow,/etc/group,/etc/gshadow,/etc/passwd files
       touch /etc/shadow
       touch /etc/group
       touch /etc/gshadow
       touch /etc/passwd
-      entities merge -s /usr/share/mocaccino/entities/core-acct/ -a
+      entities merge -s /usr/share/mocaccino/entities/acct-core/ -a
 
   - trigger: post-packages
     action: |-
       #!/bin/bash
       # Initialize localization
       locale-gen || true
-      eselect locale list
-      eselect locale set en_US.utf8
 
 mappings:
   architecture_map: funtoo
