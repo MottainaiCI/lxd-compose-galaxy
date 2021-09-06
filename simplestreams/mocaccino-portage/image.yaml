@@ -62,6 +62,18 @@ files:
  - path: /etc/hosts
    generator: hosts
 
+ - path: /etc/luet/repos.conf.d/geaaru.yaml
+   generator: dump
+   content: |
+     name: "geaaru"
+     description: "Geaaru Repository"
+     type: "http"
+     enable: true
+     cached: true
+     priority: 1
+     urls:
+         - "https://geaaru.keybase.pub/luet-repo"
+
 packages:
   manager: luet
   update: true
@@ -91,7 +103,6 @@ actions:
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
       rm -rf /var/cache/luet/packages/*
-      wget -O /etc/luet/repos.conf.d/geaaru.yaml https://raw.githubusercontent.com/geaaru/luet-specs/master/contrib/geaaru.yml
 
   - trigger: post-unpack
     action: |-
