@@ -67,7 +67,7 @@ packages:
 
   repositories:
     - name: "geaaru"
-      url: "https://downloads.svc.sabayon.org/geaaru/geaaru"
+      url: "https://get.mocaccino.org/scr/geaaru/geaaru"
       type: "enman"
 
 actions:
