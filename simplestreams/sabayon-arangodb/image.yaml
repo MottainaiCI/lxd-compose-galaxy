@@ -86,6 +86,8 @@ actions:
   - trigger: post-packages
     action: |-
       #!/bin/sh
+      # Temporary workaround
+      equo i dev-db/arangodb
       echo -5 | equo conf update
 
   # Disable systemd-remount-fs.service because
