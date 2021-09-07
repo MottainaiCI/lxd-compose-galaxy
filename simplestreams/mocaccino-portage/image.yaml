@@ -71,6 +71,8 @@ packages:
     - packages:
         - system/entities
         - sys-apps/sed
+        - sys-apps/util-linux
+        - dev-libs/libgcrypt
         - utils/jq
         - utils/yq
         - entities/acct-core
@@ -89,6 +91,8 @@ actions:
       if [ ! -e /usr/bin/awk ] ; then
         cd /usr/bin && ln -s gawk awk
       fi
+
+      mkdir /var/lock -p
 
       # Fix docker-companion issue on handle removed data layer.
       # https://github.com/mudler/docker-companion/issues/6
