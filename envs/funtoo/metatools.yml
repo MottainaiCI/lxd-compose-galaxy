@@ -172,8 +172,9 @@ projects:
                   - >-
                     cd /repo &&
                     export REPOSCAN_OPTS="--specs" &&
-                    for i in $(ls /reposcan/specs/) ; do
-                    REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${i}" ;
+                    for i in $(echo ${kits} | jq .[] -rc) ; do
+                    name=$(echo $i | jq '.name' -r) ;
+                    REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${name}.yml" ;
                     done &&
                     PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
 
@@ -184,6 +185,6 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf kit_cache || true' &&
-                    lxc file pull {{ .Values.connection }}:reposcan/reposcan/repo_tmp/tmp/kit_cache/ .
+                    lxc file pull {{ .Values.connection }}:reposcan-funtoo/reposcan/repo_tmp/tmp/kit_cache/ .
                     --recursive
 
