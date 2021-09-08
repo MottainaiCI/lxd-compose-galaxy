@@ -1,0 +1,206 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+
+name: reposcan-funtoo-kits
+description: |
+  Generate the reposcan JSON file for the funtoo tree.
+
+  $> lxd-compose c r metatools-services reposcan-funtoo-kits \
+     --destroy
+
+  The generated file is copy locally from the container to local
+  kit_cache directory.
+
+project: "metatools-services"
+apply_alias: true
+disable_flags:
+  - upgrade
+enable_groups:
+  - "metatools::reposcan-funtoo-kits"
+envs:
+  envs:
+    kits:
+      # Empty
+      browser-kit:
+       name: "browser-kit"
+       url: "https://github.com/funtoo/browser-kit"
+       branch: "1.4-release"
+       kind: "independent"
+       #commit_sha1": None,  # You should be able to set commit SHA1 here.
+
+      core-gl-kit:
+        name: "core-gl-kit"
+        url: "https://github.com/funtoo/core-gl-kit"
+        branch: "2.0-release"
+        kind: "independent"
+
+      core-hw-kit:
+        name: "core-hw-kit"
+        url: "https://github.com/funtoo/core-hw-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      core-kit:
+        name: "core-kit"
+        url: "https://github.com/funtoo/core-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      core-server-kit:
+        name: "core-server-kit"
+        url: "https://github.com/funtoo/core-server-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      desktop-kit:
+        name: "desktop-kit"
+        url: "https://github.com/funtoo/desktop-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      dev-kit:
+        name: "dev-kit"
+        url: "https://github.com/funtoo/dev-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      editors-kit:
+        name: "editors-kit"
+        url: "https://github.com/funtoo/editors-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      games-kit:
+        name: "games-kit"
+        url: "https://github.com/funtoo/games-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      gnome-kit:
+        name: "gnome-kit"
+        url: "https://github.com/funtoo/gnome-kit"
+        branch: "3.36-prime"
+        kind: "independent"
+
+      haskell-kit:
+        name: "haskell-kit"
+        url: "https://github.com/funtoo/haskell-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      java-kit:
+        name: "java-kit"
+        url: "https://github.com/funtoo/java-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      kde-kit:
+        name: "kde-kit"
+        url: "https://github.com/funtoo/kde-kit"
+        branch: "5.20-release"
+        kind: "independent"
+
+      lang-kit:
+        name: "lang-kit"
+        url: "https://github.com/funtoo/lang-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      lisp-scheme-kit:
+        name: "lisp-scheme-kit"
+        url: "https://github.com/funtoo/lisp-scheme-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      llvm-kit:
+        name: "llvm-kit"
+        url: "https://github.com/funtoo/llvm-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      mate-kit:
+        name: "mate-kit"
+        url: "https://github.com/funtoo/mate-kit"
+        branch: "1.24-prime"
+        kind: "independent"
+
+      media-kit:
+        name: "media-kit"
+        url: "https://github.com/funtoo/media-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      ml-lang-kit:
+        name: "ml-lang-kit"
+        url: "https://github.com/funtoo/ml-lang-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      net-kit:
+        name: "net-kit"
+        url: "https://github.com/funtoo/net-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      nokit:
+        name: "nokit"
+        url: "https://github.com/funtoo/nokit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      perl-kit:
+        name: "perl-kit"
+        url: "https://github.com/funtoo/perl-kit"
+        branch: "5.32-release"
+        kind: "independent"
+
+      python-kit:
+        name: "python-kit"
+        url: "https://github.com/funtoo/python-kit"
+        branch: "3.7-release"
+        kind: "independent"
+
+      python-modules-kit:
+        name: "python-modules-kit"
+        url: "https://github.com/funtoo/python-modules-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      qt-kit:
+        name: "qt-kit"
+        url: "https://github.com/funtoo/qt-kit"
+        branch: "5.15.2-release"
+        kind: "independent"
+
+      ruby-kit:
+        name: "ruby-kit"
+        url: "https://github.com/funtoo/ruby-kit"
+        branch: "2.7-prime"
+        kind: "independent"
+
+      science-kit:
+        name: "science-kit"
+        url: "https://github.com/funtoo/science-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      security-kit:
+        name: "security-kit"
+        url: "https://github.com/funtoo/security-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      text-kit:
+        name: "text-kit"
+        url: "https://github.com/funtoo/text-kit"
+        branch: "1.4-release"
+        kind: "independent"
+
+      xfce-kit:
+        name: "xfce-kit"
+        url: "https://github.com/funtoo/xfce-kit"
+        branch: "4.14-release"
+        kind: "independent"
+
+    TMPDIR: "/luettmp"
+    HTTP_TIMEOUT: 0
+    LUET_GENERAL__CONCURRENCY: "1"

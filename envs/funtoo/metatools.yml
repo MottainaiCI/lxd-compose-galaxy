@@ -20,6 +20,7 @@ include_networks_files:
 include_commands_files:
 - commands/reposcan-gentoo-portage.yml
 - commands/reposcan-geaaru-overlay.yml
+- commands/reposcan-funtoo-kits.yml
 
 projects:
 
@@ -47,13 +48,21 @@ projects:
         commands:
           # Temporary
           - entities merge -s /usr/share/mocaccino/layers/funtoo-metatools/entities/ -a
-          - /etc/init.d/mongodb start
+          - /etc/init.d/mongodb start && sleep 2
 
       - event: pre-node-sync
         flags:
           - upgrade
         commands:
           - luet upgrade && luet cleanup
+
+      - event: pre-node-sync
+        flags:
+          - clone_repo
+        commands:
+          - eval 'rm -rf /repo || true'
+          - echo "Cloning ${repo} for branch ${repo_branch}..."
+          - git clone ${repo} -b ${repo_branch} /repo
 
     groups:
       - name: "metatools::reposcan"
@@ -76,14 +85,6 @@ projects:
             image_remote_server: "keybase-geaaru"
 
             hooks:
-              - event: pre-node-sync
-                flags:
-                  - clone_repo
-                commands:
-                  - eval 'rm -rf /repo || true'
-                  - echo "Cloning ${repo} for branch ${repo_branch}..."
-                  - git clone ${repo} -b ${repo_branch} /repo
-
               - event: pre-node-sync
                 flags:
                   - setup_portage_specs
@@ -129,3 +130,60 @@ projects:
                     eval 'rm -rf kit_cache || true' &&
                     lxc file pull {{ .Values.connection }}:reposcan/reposcan/repo_tmp/tmp/kit_cache/ .
                     --recursive
+
+      - name: "metatools::reposcan-funtoo-kits"
+        description: "Run container where generate Reposcan files of Funtoo Kits."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: reposcan-funtoo
+            image_source: "mocaccino/funtoo-metatools"
+            image_remote_server: "keybase-geaaru"
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - setup_portage_specs
+                commands:
+                  - eval 'rm -rf /reposcan || true'
+                  - mkdir /reposcan/specs -p
+
+                  - >-
+                    for i in $(echo ${kits} | jq .[] -rc) ; do
+                    name=$(echo $i | jq '.name' -r) ;
+                    echo "${i}" | yq r -P - > /reposcan/specs/${name}.yml ;
+                    cat /reposcan/specs/${name}.yml ;
+                    done
+
+              - event: pre-node-sync
+                flags:
+                  - generate_portage_json
+                commands:
+                  - >-
+                    cd /repo &&
+                    export REPOSCAN_OPTS="--specs" &&
+                    for i in $(ls /reposcan/specs/) ; do
+                    REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${i}" ;
+                    done &&
+                    PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
+
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull_jsons
+                commands:
+                  - >-
+                    eval 'rm -rf kit_cache || true' &&
+                    lxc file pull {{ .Values.connection }}:reposcan/reposcan/repo_tmp/tmp/kit_cache/ .
+                    --recursive
+

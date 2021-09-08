@@ -20,6 +20,8 @@ apply_alias: true
 disable_flags:
   - setup_overlay
   - upgrade
+enable_groups:
+  - "metatools::reposcan"
 envs:
   envs:
     portage_specs:

@@ -22,6 +22,8 @@ project: "metatools-services"
 apply_alias: true
 disable_flags:
   - upgrade
+enable_groups:
+  - "metatools::reposcan"
 envs:
   envs:
     portage_specs:
