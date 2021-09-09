@@ -177,6 +177,22 @@ projects:
                     REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${name}.yml" ;
                     done &&
                     PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
+                  # Store git version of every kits used to generate specs.
+                  - >-
+                    export dir="/reposcan/repo_tmp/tmp/kit_cache/kits-versions" &&
+                    mkdir ${dir} -p &&
+                    for i in $(echo ${kits} | jq .[] -rc) ; do
+                    name=$(echo $i | jq '.name' -r) ;
+                    if [ -d /repo_tmp/dest-trees/${name} ] ; then
+                    cd /repo_tmp/dest-trees/${name} ;
+                    kit_fixups=$(git log -1 | grep kit-fixups | awk '{ print $2 }') &&
+                    gentoo_staging=$(git log -1 | grep gentoo-staging | awk '{ print $2 }') &&
+                    commit=$(git log -1 | grep commit | awk '{ print $2 }') &&
+                    echo "kit-fixups: \"${kit_fixups}\"" > ${dir}/${name}.yml &&
+                    echo "gentoo-staging: \"${gentoo_staging}\"" >> ${dir}/${name}.yml &&
+                    echo "commit: \"${commit}\"" >> ${dir}/${name}.yml ;
+                    fi ;
+                    done
 
               - event: post-node-sync
                 node: host
