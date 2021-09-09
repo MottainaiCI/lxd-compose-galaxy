@@ -62,6 +62,18 @@ files:
  - path: /etc/hosts
    generator: hosts
 
+ - path: /etc/systemd/network/default_dhcp.network
+   generator: dump
+   content: |-
+      [Network]
+      DHCP=ipv4
+
+      [Match]
+      Name=eth*
+
+      [DHCP]
+      UseDomains=true
+
 packages:
   manager: luet
   update: true
@@ -72,7 +84,10 @@ packages:
         - system/entities
         - sys-apps/sed
         - sys-apps/util-linux
+        - sys-apps/shadow
         - dev-libs/libgcrypt
+        - sys-process/procps
+        - sys-process/psmisc
         - utils/jq
         - utils/yq
         - entities/acct-core
@@ -122,6 +137,12 @@ actions:
       #!/bin/bash
       # Initialize localization
       locale-gen || true
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      # Setup systemd-networkd
+      systemctl enable systemd-networkd
 
 mappings:
   architecture_map: funtoo
