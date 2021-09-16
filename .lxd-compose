@@ -4,6 +4,8 @@ general:
   push_progressbar: false
 logging:
   level: "info"
+  path: ./logs/lxd-compose.log
+  enable_logfile: true
 
 render_default_file: render/default.yaml
 
