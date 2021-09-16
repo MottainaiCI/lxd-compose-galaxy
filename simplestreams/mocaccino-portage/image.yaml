@@ -138,6 +138,9 @@ actions:
       # Initialize localization
       locale-gen || true
 
+      # Avoid that bootstrap is blocked with systemd-firstboot
+      echo "Europe/Rome" > /etc/localtime
+
   - trigger: post-packages
     action: |-
       #!/bin/bash
