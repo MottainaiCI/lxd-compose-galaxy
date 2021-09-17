@@ -128,3 +128,17 @@ products:
     aliases:
       - "mocaccino/portage"
 
+  # Ubuntu Steam
+  - name: ubuntu-steam:current:amd64:default
+    arch: amd64
+    release: current
+    os: Ubuntu
+    release_title: "Steam"
+    directory: ubuntu-steam
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://geaaru.keybase.pub/lxd-ubuntu-steam"
+    days: 1
+    aliases:
+      - "ubuntu/steam"
+
