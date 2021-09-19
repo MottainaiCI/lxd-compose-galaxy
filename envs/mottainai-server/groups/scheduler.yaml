@@ -6,11 +6,11 @@ common_profiles:
 - default
 - net-mottainai0
 
-ephemeral: true
+ephemeral: {{ .Values.ephemeral }}
 
 nodes:
 - name: mottainai-scheduler
-  image_source: "ubuntu/21.04"
+  image_source: "{{ .Values.default_ubuntu_image }}"
   profiles:
     - flavor-thin
 

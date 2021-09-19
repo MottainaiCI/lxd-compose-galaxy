@@ -7,7 +7,7 @@ common_profiles:
 - net-mottainai0
 - privileged
 
-ephemeral: true
+ephemeral: {{ .Values.ephemeral }}
 
 nodes:
 - name: mottainai-database
