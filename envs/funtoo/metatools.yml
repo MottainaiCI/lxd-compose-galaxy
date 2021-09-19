@@ -139,7 +139,7 @@ projects:
           - net-mottainai0
           - docker
           - privileged
-          - loop
+          #- loop
 
         # Create the environment container as ephemeral or not.
         ephemeral: {{ .Values.ephemeral }}
