@@ -1,0 +1,107 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Steam container
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/privileged.yml
+
+profiles:
+  - name: steam
+    description: "Steam Profile"
+    devices:
+      mygpu:
+        type: gpu
+      PASocket1:
+        bind: container
+        connect: unix:/run/user/{{ .Values.steam_user_id }}/pulse/native
+        gid: "{{ .Values.steam_user_gid }}"
+        listen: unix:/home/ubuntu/pulse-native
+        mode: "0777"
+        security.gid: "{{ .Values.steam_user_gid }}"
+        security.uid: "{{ .Values.steam_user_id }}"
+        type: proxy
+        uid: "{{ .Values.steam_user_id }}"
+      X0:
+        bind: container
+        connect: unix:/tmp/.X11-unix/X0
+        gid: "{{ .Values.steam_user_gid }}"
+        listen: unix:/tmp/.X11-unix/X0
+        mode: "0777"
+        security.gid: "{{ .Values.steam_user_gid }}"
+        security.uid: "{{ .Values.steam_user_id }}"
+        type: proxy
+        uid: "{{ .Values.steam_user_id }}"
+      mygpu:
+        type: gpu
+
+  - name: 
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+
+projects:
+
+  - name: "steam-os"
+    description: |
+      Run SteamOS Application.
+
+      To create the container or start steam:
+
+        $> lxd-compose a steam-os
+
+      To override current UID {{ .Values.steam_user_id }} and GID {{ .Values.steam_user_gid }}:
+
+        $> lxd-compose a steam-os --render-env="steam_user_id=1000" \
+           --render-env="steam_user_gid=1000"
+
+      Note: You need create the steam profile the first time:
+
+        $> lxd-compose profile  create steam-os steam
+        Profile steam created correctly.
+
+      To destroy the container:
+
+        $> lxd-compose destroy steam-os
+
+    vars:
+      - envs:
+          DISPLAY: ":0"
+          PULSE_SERVER: "unix:/home/ubuntu/pulse-native"
+          PROTON_NO_ESYNC: "1"
+
+    groups:
+      - name: "ubuntu::steam"
+        description: "Run container with Steam OS."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          #- docker
+          - privileged
+          - steam
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: steamos
+            image_source: "ubuntu/steam"
+            image_remote_server: "keybase-geaaru"
+
+            hooks:
+              - event: post-node-sync
+                flags:
+                  - start_steam
+                commands:
+                  - su ubuntu -c steam
+
