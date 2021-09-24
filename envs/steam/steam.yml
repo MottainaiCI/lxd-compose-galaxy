@@ -38,15 +38,23 @@ profiles:
         security.uid: "{{ .Values.steam_user_id }}"
         type: proxy
         uid: "{{ .Values.steam_user_id }}"
-      mygpu:
-        type: gpu
-
-  - name: 
 
 include_networks_files:
 - ../common/networks/mottainai0.yml
 
-include_commands_files:
+commands:
+- name: steam_upgrade
+  project: "steam-os"
+  apply_alias: true
+  description: |
+    Upgrade Steam container.
+
+    lxd-compose c r steam-os steam_upgrade
+
+  enable_flags:
+    - update
+  disable_flags:
+    - start_steam
 
 projects:
 
@@ -99,6 +107,14 @@ projects:
             image_remote_server: "keybase-geaaru"
 
             hooks:
+              - event: post-node-sync
+                disable: true
+                flags:
+                  - update
+                commands:
+                  - >-
+                    apt-get update && apt-get upgrade -y && apt-get clean
+
               - event: post-node-sync
                 flags:
                   - start_steam
