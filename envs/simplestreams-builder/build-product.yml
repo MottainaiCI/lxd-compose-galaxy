@@ -110,6 +110,11 @@ projects:
           CACHEDIR: "./cachedir"
           internal_domain: "mottainai.local"
 
+          simplestreams_builder_repo: "https://github.com/MottainaiCI/simplestreams-builder"
+          simplestreams_builder_branch: "master"
+
+          SSBUILDER_HTTP_TIMEOUT: "120"
+
           luet_packages:
             - app-emulation/distrobuilder
             - app-emulation/simplestreams-builder
@@ -164,6 +169,20 @@ projects:
             image_source: "ubuntu/21.04"
 
             hooks:
+
+              - event: pre-node-sync
+                disable: true
+                flags:
+                  - ssb_dev
+                commands:
+                  - eval 'rm -rf /ssb || true'
+                  - >-
+                    echo "Cloning ${simplestreams_builder_repo} for branch ${simplestreams_builder_branch}..." &&
+                    git clone ${simplestreams_builder_repo} -b
+                    ${simplestreams_builder_branch} /ssb &&
+                    cd /ssb && CGO_ENABLE=0 go build . &&
+                    cp ./simplestreams-builder /usr/bin/simplestreams-builder
+
               - event: pre-node-sync
                 flags:
                   - clone_repo
