@@ -28,11 +28,11 @@ profiles:
         security.uid: "{{ .Values.steam_user_id }}"
         type: proxy
         uid: "{{ .Values.steam_user_id }}"
-      X0:
+      X:
         bind: container
-        connect: unix:/tmp/.X11-unix/X0
+        connect: unix:/tmp/.X11-unix/X{{ ( .Values.steam_x | default "0" ) }}
         gid: "{{ .Values.steam_user_gid }}"
-        listen: unix:/tmp/.X11-unix/X0
+        listen: unix:/tmp/.X11-unix/X{{ ( .Values.steam_x | default "0" ) }}
         mode: "0777"
         security.gid: "{{ .Values.steam_user_gid }}"
         security.uid: "{{ .Values.steam_user_id }}"
@@ -68,13 +68,22 @@ projects:
 
       To override current UID {{ .Values.steam_user_id }} and GID {{ .Values.steam_user_gid }}:
 
+
         $> lxd-compose a steam-os --render-env="steam_user_id=1000" \
            --render-env="steam_user_gid=1000"
+
+      To override default DISPLAY id:
+
+        $> lxd-compose a steam-os --render-env="steam_x=1"
 
       Note: You need create the steam profile the first time:
 
         $> lxd-compose profile  create steam-os steam
         Profile steam created correctly.
+
+        or to override X id
+
+        $> lxd-compose profile  create steam-os steam --render-env="steam_x=1"
 
       To destroy the container:
 
@@ -82,7 +91,7 @@ projects:
 
     vars:
       - envs:
-          DISPLAY: ":0"
+          DISPLAY: ":{{ ( .Values.steam_x | default "0" ) }}"
           PULSE_SERVER: "unix:/home/ubuntu/pulse-native"
           PROTON_NO_ESYNC: "1"
 
