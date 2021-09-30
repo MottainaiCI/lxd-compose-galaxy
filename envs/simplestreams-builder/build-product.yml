@@ -98,7 +98,7 @@ projects:
       # - KEYBASE_DEVICENAME
       # - KEYBASE_USERNAME
       # - KEYBASE_PAPERKEY
-      - vars/secrets.yml
+      #- vars/secrets.yml
 
     vars:
       - envs:
