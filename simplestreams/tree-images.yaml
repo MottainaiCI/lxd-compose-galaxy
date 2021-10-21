@@ -71,6 +71,20 @@ products:
     aliases:
       - "mocaccino/funtoo-base"
 
+  # Mocaccino Funtoo minimal
+  - name: mocaccino-funtoo-minimal:current:amd64:default
+    arch: amd64
+    release: current
+    os: Mocaccino
+    release_title: "Funtoo Minimal"
+    directory: mocaccino-funtoo-minimal
+    # Path where retrieve images informations and files.
+    # This option is used by build-images-file
+    prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-funtoo-minimal"
+    days: 1
+    aliases:
+      - "mocaccino/funtoo-minimal"
+
   # Mocaccino Funtoo Gnome Base
   - name: mocaccino-funtoo-gnome-base:current:amd64:default
     arch: amd64
