@@ -81,7 +81,7 @@ products:
     # Path where retrieve images informations and files.
     # This option is used by build-images-file
     prefix_path: "https://geaaru.keybase.pub/lxd-mocaccino-funtoo-minimal"
-    days: 1
+    days: 2
     aliases:
       - "mocaccino/funtoo-minimal"
 
