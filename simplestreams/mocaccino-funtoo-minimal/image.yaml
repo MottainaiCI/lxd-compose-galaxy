@@ -87,6 +87,9 @@ packages:
         - sys-apps/corenetwork
         - dev-libs-3/libpcre
         - app-admin/eselect
+        - net-misc/dhcpcd
+        - net-libs/libmnl
+        - sys-process/procps
 
       action: install
 
