@@ -38,19 +38,12 @@ projects:
 
     hooks:
       - event: post-node-creation
+        flags:
+          - setup
         commands:
           # DHCP seems slow
           - sleep 2
           - apt-get install -y xorriso squashfs-tools dosfstools file curl
-
-      - event: post-node-creation
-        disable: true
-        flags:
-          - luet_master
-        commands:
-          # Using luet master
-          - luet uninstall system/luet-geaaru
-          - curl https://get.mocaccino.org/luet/get_luet_root.sh | sudo sh
 
       - event: post-node-creation
         commands:
@@ -62,6 +55,17 @@ projects:
           - upgrade
         commands:
           - luet upgrade && luet cleanup
+
+      - event: post-node-sync
+        disable: true
+        flags:
+          - luet_master
+        commands:
+          # Using luet latest from github
+          - luet uninstall system/luet-geaaru || true
+          - >-
+            curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh
+            | sudo sh
 
       - event: pre-node-sync
         flags:
@@ -102,14 +106,16 @@ projects:
                   - eval 'rm -rf /repo || true'
                   - echo "Cloning ${repo} for branch ${repo_branch}..."
                   - git clone ${repo} -b ${repo_branch} /repo
-                  - cd /repo/ && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
+                  - cd /repo/${WORKSPACE} && eval 'rm -rf $TMPDIR || true' && mkdir $TMPDIR -p
 
               - event: post-node-sync
                 flags:
                   - build_iso
                 commands:
                   - >-
-                    cd /repo/ &&
+                    cd /repo/${WORKSPACE} &&
+                    eval 'mkdir /var/lib/mocaccino -p || true' &&
+                    wget https://raw.githubusercontent.com/mocaccinoOS/mocaccino-funtoo/master/packages/mocaccino/live-setup/build-iso-hook.sh -O /var/lib/mocaccino/build-iso-hook.sh &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
                     bash -x luet-geniso-isospec ${spec_file} &&
                     ls -ltr &&
@@ -123,7 +129,7 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf iso || true' &&
-                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/iso/ . --recursive
+                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/${WORKSPACE}iso/ . --recursive
 
       - name: "mocaccino::iso-makeiso"
         description: |

@@ -21,15 +21,26 @@ project: "mocaccino-dev-services"
 apply_alias: true
 disable_groups:
   - "mocaccino::iso-makeiso"
+enable_flags:
+  - setup
+  #  - luet_master
+  - upgrade
+  - install_geniso
+  - clone_repo
+  - build_iso
+  - pull_iso
+
 envs:
   envs:
-    repo: "https://github.com/mocaccinoOS/mocaccino.git"
-    repo_branch: "funtoo-experimental"
-    spec_file: "specs/funtoo-experimental.yaml"
+    repo: "https://github.com/mocaccinoOS/mocaccino-funtoo.git"
+    repo_branch: "master"
+    spec_file: "funtoo-dev.yaml"
     TMPDIR: "./tmp"
+    WORKSPACE: "iso/"
     LUET_CONFIG_PROTECT_SKIP: "true"
     LUET_GENISO_OUTPUT: "/dev/stdout"
+    #LUET_GENERAL__CONCURRENCY: "1"
     BUILD_ISO: "1"
     HTTP_TIMEOUT: 0
-    LUET_BOX_INSTALLER: "1"
+    LUET_BOX_INSTALLER: "0"
     LUET_FORCE: "true"
