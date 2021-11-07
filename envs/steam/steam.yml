@@ -85,6 +85,12 @@ projects:
 
         $> lxd-compose profile  create steam-os steam --render-env="steam_x=1"
 
+      Command for Mocaccino Funtoo OS:
+
+        $> lxd-compose a steam-os --render-env="steam_user_id=1000" \
+           --render-env "steam_user_gid=1005" --render-env="steam_x=1" \
+           --render-env "ephemeral=false"
+
       To destroy the container:
 
         $> lxd-compose destroy steam-os
@@ -122,7 +128,9 @@ projects:
                   - update
                 commands:
                   - >-
-                    apt-get update && apt-get upgrade -y && apt-get clean
+                    apt-get update && apt-get upgrade -y &&
+                    apt-get install pciutils -y &&
+                    apt-get clean &&
 
               - event: post-node-sync
                 flags:
