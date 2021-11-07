@@ -1,5 +1,5 @@
 # Author: Daniele Rondina, geaaru@sabayonlinux.org
-# Description: Setup Simplestreams builder container
+# Description: Setup LXD environment.
 
 version: "1"
 
@@ -25,6 +25,12 @@ projects:
     description: |
       Setup LXD instance and test container.
 
+      NOTE: ATM, lxd-compose initialize LXD connection before
+            runs hooks. LXD must be running for the setup.
+
+    include_env_files:
+      - vars/common.yaml
+
     vars:
       - envs:
           LUET_NOLOCK: "true"
@@ -37,15 +43,20 @@ projects:
         flags:
           - setup_lxc
         commands:
-          - touch /etc/subuid
-          - touch /etc/subgid
+          - >-
+            rm /etc/subuid || true ;
+            touch /etc/subuid
+          - >-
+            rm /etc/subgid || true ;
+            touch /etc/subgid
           # Setup subuid/subuid users and mappings
           - >-
             for i in $(echo "${lxc_subuids}" | jq .[].user -r) ; do
             elem=$(echo "${lxc_subuids}" | jq ".[] | select(.user==\"$i\")") ;
             home=$(echo "${elem}" | jq '.home' -r) ;
             map=$(echo "${elem}" | jq '.map' -r) ;
-            $SUDO usermod --add-subuids "${map}" "${i}"
+            echo "usermod --add-subuids ${map} ${i}" ;
+            $SUDO usermod --add-subuids "${map}" "${i}" ;
             chmod a+x ${home} ;
             done
           - cat /etc/subuid
@@ -54,7 +65,7 @@ projects:
             elem=$(echo "${lxc_subgids}" | jq ".[] | select(.user==\"$i\")") ;
             home=$(echo "${elem}" | jq '.home' -r) ;
             map=$(echo "${elem}" | jq '.map' -r) ;
-            $SUDO usermod --add-subgids "${map}" "${i}"
+            $SUDO usermod --add-subgids "${map}" "${i}" ;
             chmod a+x ${home} ;
             done
           - cat /etc/subgid
@@ -66,11 +77,26 @@ projects:
       - event: pre-project
         node: "host"
         flags:
+          - setup_lxd_kernel_resources
+        commands:
+          - >-
+            if [ ! -e /etc/modules.load.d/tun.conf ] ; then
+              $SUDO mkdir /etc/modules.load.d || true ;
+              $SUDO echo "tun" > /etc/modules.load.d/tun.conf
+            fi
+          - >-
+            if [ "$(lsmod | grep tun | wc -l)" != "1" ] ; then
+            $SUDO modprobe tun || exit 1 ;
+            fi
+
+      - event: pre-project
+        node: "host"
+        flags:
           - setup_lxd_resources
         commands:
           - >-
-            lxd-compose profile create lxd-setup-and-test -a &&
-            lxd-compose network create lxd-setup-and-test -a
+            lxd-compose profile create lxd-setup-and-test -a -u &&
+            lxd-compose network create lxd-setup-and-test -a -u
 
 
     groups:
@@ -80,7 +106,6 @@ projects:
         common_profiles:
           - default
           - net-mottainai0
-          - docker
           - privileged
           - loop
 
@@ -90,12 +115,41 @@ projects:
 
         nodes:
           - name: lxd-test-1
-            image_source: "alpine"
+            image_source: "alpine/3.11"
             image_remote_server: "images"
 
             hooks:
               - event: pre-node-sync
+                entrypoint:
+                  - /bin/sh
+                  - -c
                 commands:
                   - ls -l /
                   - poweroff
+
+      - name: "containers-tests-unprivileged"
+        description: "Start container to verify correct LXC/LXD setup."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: lxd-test-unpriv-1
+            image_source: "alpine/3.11"
+            image_remote_server: "images"
+
+            hooks:
+              - event: pre-node-sync
+                entrypoint:
+                  - /bin/sh
+                  - -c
+                commands:
+                  - ls -l /
+                  - poweroff
+
 
