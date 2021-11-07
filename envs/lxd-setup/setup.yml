@@ -1,0 +1,101 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Description: Setup Simplestreams builder container
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+
+projects:
+
+  - name: "lxd-setup-and-test"
+    description: |
+      Setup LXD instance and test container.
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          SUDO: "sudo"
+
+    hooks:
+      - event: pre-project
+        node: "host"
+        flags:
+          - setup_lxc
+        commands:
+          - touch /etc/subuid
+          - touch /etc/subgid
+          # Setup subuid/subuid users and mappings
+          - >-
+            for i in $(echo "${lxc_subuids}" | jq .[].user -r) ; do
+            elem=$(echo "${lxc_subuids}" | jq ".[] | select(.user==\"$i\")") ;
+            home=$(echo "${elem}" | jq '.home' -r) ;
+            map=$(echo "${elem}" | jq '.map' -r) ;
+            $SUDO usermod --add-subuids "${map}" "${i}"
+            chmod a+x ${home} ;
+            done
+          - cat /etc/subuid
+          - >-
+            for i in $(echo "${lxc_subgids}" | jq .[].user -r) ; do
+            elem=$(echo "${lxc_subgids}" | jq ".[] | select(.user==\"$i\")") ;
+            home=$(echo "${elem}" | jq '.home' -r) ;
+            map=$(echo "${elem}" | jq '.map' -r) ;
+            $SUDO usermod --add-subgids "${map}" "${i}"
+            chmod a+x ${home} ;
+            done
+          - cat /etc/subgid
+          # Check if it's yet needed or if we could to use the capabilities.
+          - chmod 4755 /usr/bin/newuidmap
+          - chmod 4755 /usr/bin/newgidmap
+          - echo "${lxc_conf}" > /etc/lxc/lxc.conf
+
+      - event: pre-project
+        node: "host"
+        flags:
+          - setup_lxd_resources
+        commands:
+          - >-
+            lxd-compose profile create lxd-setup-and-test -a &&
+            lxd-compose network create lxd-setup-and-test -a
+
+
+    groups:
+      - name: "containers-tests-privileged"
+        description: "Start container to verify correct LXC/LXD setup."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: lxd-test-1
+            image_source: "alpine"
+            image_remote_server: "images"
+
+            hooks:
+              - event: pre-node-sync
+                commands:
+                  - ls -l /
+                  - poweroff
+
