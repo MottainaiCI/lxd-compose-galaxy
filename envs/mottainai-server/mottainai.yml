@@ -122,11 +122,7 @@ projects:
           LUET_YES: "true"
           internal_domain: "mottainai.local"
           dashboard_git_url: "https://github.com/MottainaiCI/mottainai-dashboard.git"
-          dashboard_git_branch: "main"
-
-          enman_repos:
-            - https://get.mocaccino.org/scr/geaaru/geaaru
-            - https://get.mocaccino.org/scr/devel/devel
+          dashboard_git_branch: "develop"
 
           luet_repositories:
             - repository/mocaccino-extra
