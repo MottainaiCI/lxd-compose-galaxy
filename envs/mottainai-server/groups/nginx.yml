@@ -1,6 +1,6 @@
 name: "mottainai-proxy1"
 description: "Mottainai Nginx Proxy"
-connection: "local"
+connection: "{{ .Values.connection }}"
 
 hooks:
   - event: pre-group
@@ -33,13 +33,16 @@ common_profiles:
 {{ if .Values.mottainai.enable_nginx_host_binding }}
   - mottainai-https
 {{ end }}
+{{ if .Values.mottainai.privileged_containers }}
+  - privileged
+{{ end }}
 
 # Create the environment container as ephemeral or not.
-ephemeral: true
+ephemeral: {{ .Values.ephemeral }}
 
 nodes:
   - name: mottainai-nginx
-    image_source: "ubuntu/21.04"
+    image_source: "{{ .Values.default_ubuntu_image }}"
     # By deafult it use remote images"
     image_remote_server: "images"
 
