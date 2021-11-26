@@ -5,6 +5,9 @@ connection: "{{ .Values.connection }}"
 common_profiles:
 - default
 - net-mottainai0
+{{ if .Values.mottainai.privileged_containers }}
+- privileged
+{{ end }}
 
 ephemeral: {{ .Values.ephemeral }}
 
@@ -21,10 +24,11 @@ hooks:
       - sleep 2
       - apt-get update && apt-get upgrade -y
       - apt-get install -y htop vim nodejs curl strace jq
-      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
+      - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
       - luet install $(echo ${luet_repositories} | jq '.[]' -r)
       - >-
-        luet install utils/jq utils/yq system/entities
+        luet install --sync-repos
+        utils/jq utils/yq system/entities
         dev-util/mottainai-scheduler dev-util/mottainai-cli
       - systemctl daemon-reload
       - systemctl enable mottainai-scheduler
