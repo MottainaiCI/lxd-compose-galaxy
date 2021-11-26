@@ -5,7 +5,9 @@ connection: "{{ .Values.connection }}"
 common_profiles:
 - default
 - net-mottainai0
-#- privileged
+{{ if .Values.mottainai.privileged_containers }}
+- privileged
+{{ end }}
 
 ephemeral: {{ .Values.ephemeral }}
 
@@ -25,21 +27,25 @@ hooks:
     flags:
       - setup
     commands:
-      - equo repo mirrorsort sabayonlinux.org
+      - |
+        echo "
+        # Repository configuration file automatically generated
+        # by sabayon-repo-generator script.
+        [sabayonlinux.org]
+        desc = Sabayon Linux Official Repository
+        enabled =  true
+        repo = http://sabayonlinux.mirror.garr.it/sabayon/entropy
+        pkg = http://sabayonlinux.mirror.garr.it/sabayon/entropy
+        " > /etc/entropy/repositories.conf.d/entropy_sabayonlinux.org
+
       - equo update && equo upgrade
       - equo i enman app-misc/jq
-      - echo ${enman_repos} | jq '.[]' -r
-      - |
-        for i in $(echo ${enman_repos} | jq '.[]' -r) ; do \
-        enman add ${i} ; \
-        done
-      - equo update
       - equo i $(echo ${server_packages} | jq '.[]' -r)
       # Temporary workaround for entities issues.
       - touch /etc/gshadow
-      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install $(echo ${server_luet_packages} | jq '.[]' -r)
+      - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+      - luet install --sync-repos $(echo ${luet_repositories} | jq '.[]' -r)
+      - luet install --sync-repos $(echo ${server_luet_packages} | jq '.[]' -r)
       - systemctl daemon-reload
       # TODO: Really, i don't understand why systemd doesn't see the user/group
       # until i run reexec
@@ -90,12 +96,14 @@ hooks:
       - echo "${server_config}" | yq r -P -
       - |
         echo "${server_config}" | yq r -P - > /etc/mottainai/mottainai-server.yaml
-      - >-
-        if [ -e /srv/mottainai/bootstrap.conf ] ; then
-        touch /srv/mottainai/.configured ;
-        rm /srv/mottainai/bootstrap.conf ;
-        touch /srv/mottainai/.configured ;
-        fi
+
       # Investigate on this
       - chown mottainai-server:mottainai -R /var/lib/mottainai/
       - systemctl daemon-reload && systemctl restart mottainai-server
+      - >-
+        if [ -e /srv/mottainai/bootstrap.conf ] ; then
+        touch /srv/mottainai/.configured ;
+        sleep 2 ;
+        rm /srv/mottainai/bootstrap.conf ;
+        touch /srv/mottainai/.configured ;
+        fi
