@@ -5,7 +5,9 @@ connection: "{{ .Values.connection }}"
 common_profiles:
 - default
 - net-mottainai0
+{{ if .Values.mottainai.privileged_containers }}
 - privileged
+{{ end }}
 
 ephemeral: {{ .Values.ephemeral }}
 
@@ -22,19 +24,25 @@ nodes:
 hooks:
   - event: post-node-creation
     commands:
-      - equo repo mirrorsort sabayonlinux.org
+      - |
+        echo "
+        # Repository configuration file automatically generated
+        # by sabayon-repo-generator script.
+        [sabayonlinux.org]
+        desc = Sabayon Linux Official Repository
+        enabled =  true
+        repo = http://sabayonlinux.mirror.garr.it/sabayon/entropy
+        pkg = http://sabayonlinux.mirror.garr.it/sabayon/entropy
+        " > /etc/entropy/repositories.conf.d/entropy_sabayonlinux.org
+
+      - enman remove geaaru
       - equo update && equo upgrade
       - equo i enman app-misc/jq
-      - echo ${enman_repos} | jq '.[]' -r
-      - |
-        for i in $(echo ${enman_repos} | jq '.[]' -r) ; do \
-        enman add ${i} ; \
-        done
       - equo update
       - equo i $(echo ${arangodb_packages} | jq '.[]' -r)
-      - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install $(echo ${arangodb_luet_packages} | jq '.[]' -r)
+      - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+      - luet install --sync-repos $(echo ${luet_repositories} | jq '.[]' -r)
+      - luet install --sync-repos $(echo ${arangodb_luet_packages} | jq '.[]' -r)
       - systemctl enable arangodb3
       - equo cleanup && luet cleanup
 
