@@ -7,6 +7,9 @@ connection: "{{ .Values.connection }}"
 # for create the containers
 common_profiles:
   - default
+{{ if .Values.mottainai.privileged_containers }}
+  - privileged
+{{ end }}
   - net-mottainai0
   - flavor-medium
 {{ if .Values.mottainai.enable_dashboard_host_binding }}
@@ -44,7 +47,7 @@ hooks:
 
 nodes:
   - name: mottainai-dashboard
-    image_source: "ubuntu/21.04"
+    image_source: "{{ .Values.default_ubuntu_image }}"
     # By deafult it use remote images"
     image_remote_server: "images"
 
@@ -64,11 +67,11 @@ nodes:
           - sleep 2
           - apt-get update && apt-get upgrade -y
           - apt-get install -y htop vim nodejs curl strace jq git npm
-          - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-          - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-          - luet install utils/jq utils/yq system/entities
-          - luet install groups/mottainai users/mottainai-server
-          - luet install www-apps/mottainai-dashboard
+          - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+          - luet install --sync-repos $(echo ${luet_repositories} | jq '.[]' -r)
+          - luet install --sync-repos utils/jq utils/yq system/entities
+          - luet install --sync-repos groups/mottainai users/mottainai-server
+          - luet install --sync-repos www-apps/mottainai-dashboard
           - systemctl daemon-reload && systemctl enable mottainai-dashboard
 
       - event: pre-node-sync
@@ -86,7 +89,7 @@ nodes:
             export SIGNUP_ENABLE=$(echo ${dashboard_config} | jq '.signup_enable' -r ) &&
             export APP_PREFIX="${dashboard_prefix}" &&
             export SKIP_AUTH=$(echo ${dashboard_config} | jq '.skip_auth' -r ) &&
-            echo "Rebuild Dashboard application with the base url ${APP_PREFIX}" &&
+            echo "Rebuild Dashboard application with the base url ${APP_PREFIX} - (${dashboard_git_branch})" &&
             eval 'rm -rf /dashboard || true' &&
             git clone ${dashboard_git_url} -b ${dashboard_git_branch} /dashboard &&
             cd dashboard &&
