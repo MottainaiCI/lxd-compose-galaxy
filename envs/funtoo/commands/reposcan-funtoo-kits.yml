@@ -169,7 +169,7 @@ envs:
 
       - name: "xfce-kit"
         url: "https://github.com/funtoo/xfce-kit"
-        branch: "4.14-release"
+        branch: "4.16-release"
         kind: "independent"
 
     TMPDIR: "/luettmp"
