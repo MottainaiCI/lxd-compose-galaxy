@@ -76,8 +76,7 @@ projects:
                   - apt-get update
                   - apt-get upgrade -y
                   - apt-get install -y curl
-                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-                  - luet install repository/mocaccino-extra repository/mocaccino-os-commons repository/geaaru
+                  - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
                   - luet install utils/jq utils/yq system/entities
                   - apt-get install -y $(echo ${packages} | jq '.[]' -r)
                   - >-
