@@ -9,7 +9,3 @@ devices:
   tuntap:
     path: /dev/net/tun
     type: unix-char
-  # Comment this if zfs is not available.
-  zfs:
-    path: /dev/zfs
-    type: unix-char

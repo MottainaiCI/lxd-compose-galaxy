@@ -1,0 +1,8 @@
+name: zfs
+config:
+  security.privileged: "true"
+description: ZFS device
+devices:
+  zfs:
+    path: /dev/zfs
+    type: unix-char
