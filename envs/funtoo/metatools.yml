@@ -1,4 +1,4 @@
-# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Author: Daniele Rondina, geaaru@funtoo.org
 # Description: Setup Simplestreams builder container
 
 version: "1"
@@ -40,21 +40,19 @@ projects:
       - event: post-node-creation
         commands:
           # DHCP seems slow
-          - sleep 2
+          - sleep 5
 
       - event: post-node-creation
         flags:
           - mongodb_config
         commands:
-          # Temporary
-          - entities merge -s /usr/share/mocaccino/layers/funtoo-metatools/entities/ -a
           - /etc/init.d/mongodb start && sleep 2
 
       - event: pre-node-sync
         flags:
           - upgrade
         commands:
-          - luet upgrade && luet cleanup
+          - luet repo update && luet upgrade && luet cleanup
 
       - event: pre-node-sync
         flags:
@@ -76,13 +74,13 @@ projects:
           - loop
 
         # Create the environment container as ephemeral or not.
-        ephemeral: true
+        ephemeral: {{ .Values.ephemeral }}
         connection: "{{ .Values.connection }}"
 
         nodes:
           - name: reposcan
-            image_source: "mocaccino/funtoo-metatools"
-            image_remote_server: "keybase-geaaru"
+            image_source: "macaroni/funtoo-metatools"
+            image_remote_server: "macaroni"
 
             hooks:
               - event: pre-node-sync
@@ -147,8 +145,8 @@ projects:
 
         nodes:
           - name: reposcan-funtoo
-            image_source: "mocaccino/funtoo-metatools"
-            image_remote_server: "keybase-geaaru"
+            image_source: "macaroni/funtoo-metatools"
+            image_remote_server: "macaroni"
 
             hooks:
               - event: pre-node-sync
