@@ -13,8 +13,8 @@ ephemeral: {{ .Values.ephemeral }}
 
 nodes:
 - name: mottainai-database
-  image_source: "sabayon/arangodb"
-  image_remote_server: "keybase-geaaru"
+  image_source: "macaroni/funtoo-systemd-minimal"
+  image_remote_server: "macaroni"
   profiles:
 {{ if .Values.mottainai.enable_storage_from_host }}
     - arangodb-data
@@ -24,27 +24,36 @@ nodes:
 hooks:
   - event: post-node-creation
     commands:
-      - |
-        echo "
-        # Repository configuration file automatically generated
-        # by sabayon-repo-generator script.
-        [sabayonlinux.org]
-        desc = Sabayon Linux Official Repository
-        enabled =  true
-        repo = http://sabayonlinux.mirror.garr.it/sabayon/entropy
-        pkg = http://sabayonlinux.mirror.garr.it/sabayon/entropy
-        " > /etc/entropy/repositories.conf.d/entropy_sabayonlinux.org
+      - >-
+        luet repo update &&
+        luet i utils/jq &&
+        luet install $(echo ${arangodb_luet_packages} | jq '.[]' -r) &&
+        env-update &&
+        ldconfig &&
+        luet cleanup --purge-repos
+      # Create user, group
+      - >-
+        groupadd arangodb3 &&
+        useradd arangodb3 -m -d /var/lib/arangodb3 -s /sbin/nologin -g arangodb3
+      - >-
+        chown arangodb3:arangodb3 -R /var/lib/arangodb3/ /var/lib/arangodb3-apps/ &&
+        systemctl daemon-reload &&
+        systemctl enable arangodb3
 
-      - enman remove geaaru
-      - equo update && equo upgrade
-      - equo i enman app-misc/jq
-      - equo update
-      - equo i $(echo ${arangodb_packages} | jq '.[]' -r)
-      - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
-      - luet install --sync-repos $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install --sync-repos $(echo ${arangodb_luet_packages} | jq '.[]' -r)
-      - systemctl enable arangodb3
-      - equo cleanup && luet cleanup
+  - event: post-node-creation
+    flags:
+      - info
+    commands:
+      - |-
+        echo "
+        These the configuration to set on host to speedup Arangodb Service:
+
+        > sudo bash -c \"echo madvise > /sys/kernel/mm/transparent_hugepage/defrag\"
+        > sudo bash -c \"echo madvise > /sys/kernel/mm/transparent_hugepage/enabled\"
+        > sudo sysctl -w \"vm.max_map_count=512000\"
+
+        "
+
 
   - event: post-node-sync
     commands:
