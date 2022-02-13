@@ -8,6 +8,10 @@ remotes:
     addr: https://geaaru.keybase.pub/lxd-images
     protocol: simplestreams
     public: true
+  macaroni:
+    addr: https://images.macaroni.funtoo.org/lxd-images
+    protocol: simplestreams
+    public: true
   local:
     addr: unix://
     public: false
