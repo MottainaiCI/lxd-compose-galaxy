@@ -1,28 +1,29 @@
 # Author: Daniele Rondina, geaaru@sabayonlinux.org
-# Description: Command for build Mocaccino Funtoo Experimental ISO.
+# Description: Command for build Macarani Funtoo ISO.
 
-name: mocaccino-build-funtoo-iso
+name: macaroni-build-funtoo-iso
 description: |
-  Build Funtoo Experimental ISO.
+  Build Funtoo Macaroni ISO.
 
   The generated ISO is copy locally from the container.
 
-  $> lxd-compose c r mocaccino-dev-services mocaccino-build-funtoo-iso \
+  $> lxd-compose c r macaroni-dev-services macaroni-build-funtoo-iso \
      --destroy
 
   or on rewrite target LXD Instance:
 
-  $> lxd-compose c r mocaccino-dev-services mocaccino-build-funtoo-iso \
+  $> lxd-compose c r macaroni-dev-services macaroni-build-funtoo-iso \
      --destroy --render-env "connection=your-remote"
 
   The ISOs will be available under the iso/ directory.
 
-project: "mocaccino-dev-services"
+project: "macaroni-dev-services"
 apply_alias: true
 disable_groups:
-  - "mocaccino::iso-makeiso"
+  - "macaroni::iso-makeiso"
 enable_flags:
   - setup
+  - 
   #  - luet_master
   - upgrade
   - install_geniso
@@ -32,15 +33,16 @@ enable_flags:
 
 envs:
   envs:
-    repo: "https://github.com/mocaccinoOS/mocaccino-funtoo.git"
+    repo: "https://github.com/funtoo/macaroni-funtoo.git"
     repo_branch: "master"
-    spec_file: "funtoo-dev.yaml"
+    spec_file: "funtoo.yaml"
     TMPDIR: "./tmp"
     WORKSPACE: "iso/"
     LUET_CONFIG_PROTECT_SKIP: "true"
     LUET_GENISO_OUTPUT: "/dev/stdout"
-    #LUET_GENERAL__CONCURRENCY: "1"
+    LUET_GENERAL__CONCURRENCY: "8"
     BUILD_ISO: "1"
     HTTP_TIMEOUT: 0
     LUET_BOX_INSTALLER: "0"
     LUET_FORCE: "true"
+    LUET_OPTS: "--sync-repos --solver-type solverv2"
