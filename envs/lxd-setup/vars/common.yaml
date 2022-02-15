@@ -3,12 +3,12 @@ envs:
   lxc_subuids:
     - user: root
       home: /root
-      map: 100000-165535
+      map: 1000000-1065535
 
   lxc_subgids:
     - user: root
       home: /root
-      map: 100000-165535
+      map: 1000000-1065535
 
   # Create LXD cluster node (true) or standalone node (false)
   lxd_cluster: false
