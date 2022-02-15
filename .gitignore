@@ -9,4 +9,6 @@ envs/docker-registry/files/*.crt
 envs/docker-registry/files/*.key
 envs/mottainai-server/files/certs/*
 envs/simplestreams-builder/vars/secrets.yml
-
+lxd-conf/client.crt
+lxd-conf/client.key
+lxd-conf/servercerts/
