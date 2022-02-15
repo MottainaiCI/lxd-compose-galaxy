@@ -24,14 +24,40 @@ mottainai:
   enable_dashboard_ssl: true
 
   # Using arangodb configuration
-  enable_arangodb_backend: false
+  enable_arangodb_backend: true
 
   # Enable Nginx Frontend
   enable_nginx_frontend: true
 
   # Enable binding on host port
-  enable_nginx_host_binding: false
+  enable_nginx_host_binding: true
 
+  # Enable integration with lenencrypt
+  enable_nginx_lenencrypt: false
+
+  # Using privileged containers for services
+  privileged_containers: true
+
+  # Mottainai agent directory with
+  # clients cert tree.
+  # By default using the project directory.
+  # If the path is relative then is based
+  # on envs/mottainai-agent directory.
+  #  agent_lxd_local_dir: "../lxd-conf/"
+  agent_lxd_local_dir: "/tmp/lxd-conf"
+
+  # Mottainai token to use with nginx reverse proxy.
+  # This is needed until Mottainai will support public namespace.
+  token: "XXXXXXXX"
+
+  # Define the list of the public namespace to configure
+  # in the nginx reverse proxy.
+  public_namespaces:
+    - namespace1
+
+luet:
+  enable_xfs_storage: true
+  xfs_host_path: "/docker-xfs/"
 
 #-------------------------------------------#
 # Steam OS params
