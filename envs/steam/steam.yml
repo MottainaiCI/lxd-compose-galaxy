@@ -108,7 +108,6 @@ projects:
         common_profiles:
           - default
           - net-mottainai0
-          #- docker
           - privileged
           - steam
 
@@ -119,7 +118,7 @@ projects:
         nodes:
           - name: steamos
             image_source: "ubuntu/steam"
-            image_remote_server: "keybase-geaaru"
+            image_remote_server: "macaroni"
 
             hooks:
               - event: post-node-sync
