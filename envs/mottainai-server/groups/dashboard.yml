@@ -18,10 +18,10 @@ common_profiles:
 
 
 # Create the environment container as ephemeral or not.
-ephemeral: true
+ephemeral: {{ .Values.ephemeral }}
 
-{{ if .Values.mottainai.enable_dashboard_ssl }}
 hooks:
+{{ if .Values.mottainai.enable_dashboard_ssl }}
   - event: pre-group
     flags:
       - certificate_selfsigned_creation
@@ -64,7 +64,6 @@ nodes:
           - setup
         commands:
           # DHCP seems slow
-          - sleep 2
           - apt-get update && apt-get upgrade -y
           - apt-get install -y htop vim nodejs curl strace jq git npm
           - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh

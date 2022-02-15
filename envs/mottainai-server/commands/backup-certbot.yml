@@ -1,0 +1,28 @@
+name: mottainai-proxy-backup
+description: |
+  Pull certbot files from container to the host
+  in the directory envs/mottainai-server/files.
+
+  It's possible override the backup directory
+  with the env variable `target_dir`
+
+  Just run:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-proxy-backup
+
+  or:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-proxy-backup --env "target_dir=/backup"
+
+project: mottainai-server-services
+apply_alias: true
+skip_sync: true
+enable_groups:
+  - mottainai-proxy1
+enable_flags:
+  - backup_certbot
+
+include_hooks_files:
+  - hooks/backup-letencrypt.yml

@@ -1,0 +1,39 @@
+hooks:
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+  - event: post-node-sync
+    disable: true
+    flags:
+      - certbot_standalone
+    commands:
+      - >-
+        if [ ! -d /certbot ] ; then mkdir /certbot ; fi &&
+        if [ ! -d /certbot/logs ] ; then mkdir /certbot/logs ; fi &&
+        cd /certbot &&
+        certbot --work-dir . --config-dir . --logs-dir ./logs
+        certificates
+      - systemctl stop nginx
+      - |
+        cd /certbot && \
+        certbot --work-dir . --config-dir . --logs-dir ./logs \
+        --email ${letencrypt_email} \
+        --server ${letencrypt_server} \
+        --agree-tos \
+        -d ${mypublic_domain} --standalone \
+        certonly
+
+  - event: post-node-sync
+    disable: true
+    node: "host"
+    flags:
+      - certbot
+      - certbot_standalone
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    commands:
+      - >-
+        if [ -d envs/files/certbot ] ; then
+        mv envs/files/certbot envs/files/certbot-$(date '+%Y-%m-%d') ;
+        fi
+      - lxc file pull --recursive ${lxd_remote}:mottainai-nginx/certbot envs/files/
+{{ end }}

@@ -1,0 +1,27 @@
+name: mottainai-scheduler-config-backup
+description: |
+  Pull the mottainai-scheduler config with
+  the generated token to the /tmp/mottainai-scheduler.yaml
+  file.
+
+  Just run:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-scheduler-config-backup
+
+  or:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-scheduler-config-backup --env "target_dir=/backup"
+
+project: mottainai-server-services
+apply_alias: true
+skip_sync: true
+enable_groups:
+- mottainai-scheduler
+enable_flags:
+- backup_config
+
+include_hooks_files:
+- hooks/backup-scheduler-cfg.yml
+

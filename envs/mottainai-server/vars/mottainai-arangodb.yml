@@ -6,7 +6,7 @@ envs:
      debug: false
      # Default 
      logfile: '/var/log/mottainai/mottainai-server.log'
-     loglevel: 'DEBUG'
+     loglevel: 'INFO'
      # TLS options
      # tls_cert:
      # tls_key
@@ -71,7 +71,7 @@ envs:
        - "virtualbox"
      # Define operations executed by Agent Healtcheck
      health_check_exec:
-        - docker system prune --force --all --volumes
+     #   - docker system prune --force --all --volumes
      # health_check_clean_path: 
      # ----------------------------------
      # Docker executor options

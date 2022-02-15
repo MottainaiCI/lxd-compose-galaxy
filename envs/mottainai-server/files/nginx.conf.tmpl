@@ -20,6 +20,7 @@ http {
 
   client_header_timeout 10m;
   client_body_timeout 10m;
+  client_max_body_size 3000m;
   send_timeout 10m;
 
   connection_pool_size 256;
@@ -74,8 +75,13 @@ http {
      server_name    {{ .mypublic_domain }};
      server_tokens off;
 
+     {{ if .enable_nginx_lenencrypt }}
+     ssl_certificate /certbot/live/{{ .mypublic_domain }}/fullchain.pem;
+     ssl_certificate_key /certbot/live/{{ .mypublic_domain }}/privkey.pem;
+     {{ else }}
      ssl_certificate /certs/server.crt;
      ssl_certificate_key /certs/server.key;
+     {{ end }}
 
      # Improve HTTPS performance with session resumption
      ssl_session_cache shared:SSL:10m;

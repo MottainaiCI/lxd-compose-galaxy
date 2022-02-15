@@ -1,0 +1,13 @@
+hooks:
+- event: post-node-sync
+  flags:
+    - backup_certbot
+  node: host
+  commands:
+    - >-
+      target_dir="${target_dir:-envs/mottainai-server/files/}" &&
+      echo "Backup certbot directory to ${target_dir}..." &&
+      if [ -e ${target_dir}/certbot ] ; then rm -rf ${target_dir}/certbot ; fi &&
+      lxc file pull {{ .Values.connection }}:mottainai-nginx/certbot/
+      ${target_dir} --recursive
+

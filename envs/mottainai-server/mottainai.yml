@@ -1,4 +1,4 @@
-# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Author: Daniele Rondina, geaaru@funtoo.org
 # Description: Setup Mottainai Server Infrastructure
 
 version: "1"
@@ -22,6 +22,14 @@ include_profiles_files:
 
 include_networks_files:
 - ../common/networks/mottainai0.yml
+
+include_commands_files:
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+- commands/certbot.yml
+- commands/backup-certbot.yml
+{{ end }}
+- commands/backup-scheduler-config.yml
+- commands/mottainai-export.yml
 
 commands:
 - name: mottainai-server-only
@@ -92,7 +100,11 @@ projects:
     # template engine
     include_env_files:
       - vars/common.yml
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+      - vars/letencrypt-secret.yml
+{{ else }}
       - vars/cert.yml
+{{ end }}
 {{ if .Values.mottainai.enable_arangodb_backend }}
       - vars/arangodb.yml
       - vars/mottainai-arangodb.yml
@@ -124,57 +136,32 @@ projects:
           dashboard_git_url: "https://github.com/MottainaiCI/mottainai-dashboard.git"
           dashboard_git_branch: "develop"
 
-          luet_repositories:
-            - repository/mocaccino-extra
-            - repository/mocaccino-os-commons-stable
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+          enable_nginx_lenencrypt: true
+{{ end }}
 
           arangodb_luet_packages:
             - utils/yq
-
-          arangodb_packages:
-            - app-metrics/node_exporter
-
-          server_packages:
             - app-editors/vim
+            - dev-db-3/arangodb
             - app-metrics/node_exporter
+            # Needed until macaroni will supply a tool
+            # that replace env-update
+            - sys-apps/portage
 
           server_luet_packages:
             - utils/yq
+            - app-metrics/node_exporter
+            - app-editors/vim
             - system/entities
             - dev-util/mottainai-server
+            # Needed until macaroni will supply a tool
+            # that replace env-update
+            - sys-apps/portage
+            - net-misc/rsync
+            - sys-apps/net-tools
+            # Needed for handle mime types.
+            - x11-misc/shared-mime-info
 
-    hooks:
-      - event: post-node-creation
-        flags:
-          - setup
-        commands:
-          - sleep 2
-
-          - |
-            cat <<EOF >/etc/systemd/network/default_dhcp.network
-            [Network]
-            DHCP=ipv4
-
-            [Match]
-            Name=eth0
-
-            [DHCP]
-            UseDomains=true
-            EOF
-
-          # Workaround to SystemD issue on setup DHCP network
-          - mkdir /etc/systemd/system/systemd-networkd.service.d
-          - |
-            cat <<EOF >/etc/systemd/system/systemd-networkd.service.d/override.conf
-            [Service]
-            BindReadOnlyPaths=/sys /proc
-            EOF
-          - systemctl enable systemd-networkd
-          - systemctl restart systemd-networkd
-
-          # DNS
-          - echo "Domains=${internal_domain}" >> /etc/systemd/resolved.conf
-          - systemctl enable systemd-resolved
-          - systemctl restart systemd-resolved
-          - cp /var/run/systemd/resolve/resolv.conf /etc/resolv.conf || true
-          - systemctl restart systemd-resolved
+    include_hooks_files:
+    - hooks/systemd-net.yml

@@ -13,13 +13,16 @@ ephemeral: {{ .Values.ephemeral }}
 
 nodes:
 - name: mottainai-server
-  image_source: "sabayon/base"
-  image_remote_server: "keybase-geaaru"
+  image_source: "macaroni/funtoo-systemd-minimal"
+  image_remote_server: "macaroni"
   profiles:
     - mottainai-api
 {{ if .Values.mottainai.enable_storage_from_host }}
     - mottainai-data
 {{ end }}
+
+include_hooks_files:
+- hooks/node_exporter-setup.yml
 
 # Group hooks
 hooks:
@@ -27,37 +30,33 @@ hooks:
     flags:
       - setup
     commands:
-      - |
-        echo "
-        # Repository configuration file automatically generated
-        # by sabayon-repo-generator script.
-        [sabayonlinux.org]
-        desc = Sabayon Linux Official Repository
-        enabled =  true
-        repo = http://sabayonlinux.mirror.garr.it/sabayon/entropy
-        pkg = http://sabayonlinux.mirror.garr.it/sabayon/entropy
-        " > /etc/entropy/repositories.conf.d/entropy_sabayonlinux.org
+      - >-
+        eval 'mkdir /var/lock/ -p' || true &&
+        luet repo update &&
+        luet i utils/jq &&
+        luet install $(echo ${server_luet_packages} | jq '.[]' -r) &&
+        env-update &&
+        ldconfig &&
+        luet cleanup --purge-repos
 
-      - equo update && equo upgrade
-      - equo i enman app-misc/jq
-      - equo i $(echo ${server_packages} | jq '.[]' -r)
-      # Temporary workaround for entities issues.
-      - touch /etc/gshadow
-      - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
-      - luet install --sync-repos $(echo ${luet_repositories} | jq '.[]' -r)
-      - luet install --sync-repos $(echo ${server_luet_packages} | jq '.[]' -r)
       - systemctl daemon-reload
       # TODO: Really, i don't understand why systemd doesn't see the user/group
       # until i run reexec
       - systemctl daemon-reexec
       - systemctl enable mottainai-server
-      - equo cleanup && luet cleanup
+      # TODO: Check how to fix this from server side
+      # text/x-log avoid to open log in tab with Firefox.
+      # I force to use *.log as text/plain
+      - >-
+        update-mime-database /usr/share/mime/ &&
+        sed -e 's|^50:text/x-log.*|#50:text/x-log:*.log|g' -i /usr/share/mime/globs2 &&
+        echo '50:text/plain:*.log' >> /usr/share/mime/globs2
 
   - event: post-node-sync
     flags:
       - upgrade
     commands:
-      - luet upgrade && luet cleanup
+      - luet u --sync-repos && luet cleanup --purge-repos
 
   - event: post-node-sync
     disable: true

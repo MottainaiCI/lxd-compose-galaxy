@@ -20,6 +20,9 @@ nodes:
     - arangodb-data
 {{ end }}
 
+include_hooks_files:
+- hooks/node_exporter-setup.yml
+
 # Group hooks
 hooks:
   - event: post-node-creation
@@ -56,6 +59,8 @@ hooks:
 
 
   - event: post-node-sync
+    flags:
+      - initdb
     commands:
       - |
         echo "${arangod_conf_tmp}" > /etc/arangodb3/arangod.conf
@@ -80,10 +85,12 @@ hooks:
         echo "require('@arangodb/users').permission(\"${arango_user}\", \"${arango_db}\")" | arangosh --server.password "" --quiet true
 
   - event: post-node-sync
+    flags:
+      - update_config
     commands:
       - echo "${arangod_conf}"
       - |
         echo "${arangod_conf}" > /etc/arangodb3/arangod.conf
-      - systemctl restart arangodb3
+      - systemctl restart arangodb3 node_exporter
 
 

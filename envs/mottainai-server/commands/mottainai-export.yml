@@ -1,0 +1,27 @@
+name: mottainai-export
+description: |
+  Run mottainai-export tool and
+  store the backup to the $target_dir.
+
+  Default path is /backup/mottainai/.
+
+  Just run:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-export
+
+  or:
+
+  $> lxd-compose c r mottainai-server-services \
+     mottainai-export --env "target_dir=/backup/"
+
+project: mottainai-server-services
+apply_alias: true
+skip_sync: true
+enable_groups:
+  - mottainai-server
+enable_flags:
+  - export
+
+include_hooks_files:
+- hooks/mottainai-export.yml

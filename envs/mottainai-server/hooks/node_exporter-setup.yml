@@ -1,0 +1,18 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - |-
+      eval 'mkdir /etc/systemd/system/node_exporter.service.d/ -p || true' && \
+      echo "
+      [Service]
+      EnvironmentFile=
+      EnvironmentFile=/etc/sysconfig/node_exporter/sysconfig.node_exporter
+      ExecStart=
+      ExecStart=/usr/bin/node_exporter $OPTIONS
+      " > /etc/systemd/system/node_exporter.service.d/override.conf
+
+    - >-
+      systemctl daemon-reload &&
+      systemctl enable node_exporter

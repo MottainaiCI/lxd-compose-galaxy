@@ -3,15 +3,25 @@ description: "Mottainai Nginx Proxy"
 connection: "{{ .Values.connection }}"
 
 hooks:
+
   - event: pre-group
     flags:
-      - certificate_selfsigned_creation
+      - certificate
     node: host
     commands:
       - mkdir -p envs/mottainai-server/files/certs/ -p || true
       - >
         dhfile=envs/mottainai-server/files/certs/dhparam.pem ;
         if [ ! -e ${dhfile} ] ; then openssl dhparam -out ${dhfile} 4096 ; fi
+
+{{ if not .Values.mottainai.enable_nginx_lenencrypt }}
+  - event: pre-group
+    disable: true
+    flags:
+      - certificate_selfsigned_creation
+    node: host
+    commands:
+      - mkdir -p envs/mottainai-server/files/certs/ -p || true
       - echo "${nginx_ssl_cert_conf}" > /tmp/openssl.cnf
       - sed -i -e "s:COMMON_NAME:${mypublic_domain}:g" /tmp/openssl.cnf
       - openssl rand -out /tmp/rnd -writerand /tmp/rnd
@@ -22,6 +32,8 @@ hooks:
         openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl.cnf ;
         fi ;
         openssl x509 -in ${crtfile} -text -noout
+{{ end }}
+
 
 # Define the list of LXD Profile to use
 # for create the containers
@@ -50,6 +62,11 @@ nodes:
       - "/bin/bash"
       - "-c"
 
+    include_hooks_files:
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+      - hooks/letencrypt.yml
+{{ end }}
+
     # List of commands executed just after the creation of the
     # container.
     hooks:
@@ -57,7 +74,6 @@ nodes:
       - event: post-node-creation
         commands:
           # DHCP seems slow
-          - sleep 2
           - apt-get update
           - apt-get upgrade -y
           - apt-get install -y nginx certbot apache2-utils htop vim
@@ -68,8 +84,24 @@ nodes:
           - nginx
         commands:
           - sed -i -e "s:\trotate.*:\trotate ${nginx_logrotate_days}:g" /etc/logrotate.d/nginx
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+          - chown root:www-data -R /certbot
+{{ else }}
           - chown root:www-data -R /certs
+{{ end }}
           - systemctl restart nginx
+
+      - event: post-node-sync
+        disable: true
+        flags:
+          - logrotate
+        commands:
+          - >-
+            echo "${nginx_logrotate_rule}" > /etc/logrotate.d/nginx &&
+            sed -i -e "s|NGINX_USER|${nginx_user}|g"
+            -e "s|NGINX_GRP|${nginx_grp}|g"
+            /etc/logrotate.d/nginx
+
 
     # List of templates files to compiles before push the
     # result inside container.
@@ -78,6 +110,10 @@ nodes:
         dst: /tmp/nginx/nginx.conf
 
     sync_resources:
+{{ if .Values.mottainai.enable_nginx_lenencrypt }}
+      - source: files/certbot/
+        dst: /
+{{ end }}
       - source: files/certs/
         dst: /
       - source: /tmp/nginx/nginx.conf

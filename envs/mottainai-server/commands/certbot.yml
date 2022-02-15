@@ -1,0 +1,13 @@
+name: mottainai-proxy-update-cerbot
+description: |
+  Update letencrypt certificate
+  on mottainai Proxy.
+
+  NOTE: the container must be already created.
+
+project: mottainai-server-services
+apply_alias: true
+enable_groups:
+  - mottainai-proxy1
+enable_flags:
+  - certbot_standalone

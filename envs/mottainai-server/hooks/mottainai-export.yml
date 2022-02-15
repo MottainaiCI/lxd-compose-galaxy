@@ -1,0 +1,26 @@
+hooks:
+- event: post-node-sync
+  flags:
+    - export
+  commands:
+    - rm -rf /backup/ || true
+    - mkdir /backup/
+    - mottainai-exporter run --target-dir /backup --with-date
+- event: post-node-sync
+  flags:
+    - export
+  node: host
+  commands:
+    - >-
+      export target_dir=${target_dir:-/backup} &&
+      export mserver_container=${mserver_container:-mottainai-server} &&
+      eval 'rm -rf ${target_dir} || true' &&
+      mkdir ${target_dir} &&
+      lxc file pull {{ .Values.connection }}:${mserver_container}/backup/
+      ${target_dir} --recursive
+
+- event: post-node-sync
+  flags:
+    - export
+  commands:
+    - rm -rf /backup/ || true

@@ -21,7 +21,7 @@ envs:
     ssl: true
     key: "/etc/mottainai-dashboard/dashboard.key"
     cert: "/etc/mottainai-dashboard/dashboard.crt"
-    signup_enable: "true"
+    signup_enable: "false"
     skip_auth: "false"
 
   scheduler_config:
@@ -36,7 +36,7 @@ envs:
 
     scheduler:
       # API Key
-      api_key: "xxxxxx"
+      api_key: ""
 
       # Define Queues handled by Agent and number of concurrency tasks
       # queues:

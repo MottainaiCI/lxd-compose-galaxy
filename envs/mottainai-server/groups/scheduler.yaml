@@ -25,7 +25,6 @@ hooks:
       - apt-get update && apt-get upgrade -y
       - apt-get install -y htop vim nodejs curl strace jq
       - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
-      - luet install $(echo ${luet_repositories} | jq '.[]' -r)
       - >-
         luet install --sync-repos
         utils/jq utils/yq system/entities
@@ -39,8 +38,11 @@ hooks:
       - create_token
     commands:
       - >-
+        mott_api_key=$(echo "${scheduler_config}" | jq -r .scheduler.api_key) &&
+        if [ -z "${mott_api_key}" ] ; then
         MOTTAINAI_TOKEN=$(mottainai-cli token create --apiPass "$MOTTAINAI_ADMIN_PASS" --apiUser "$MOTTAINAI_ADMIN_USER" -m ${mottainai_service_url} --json | jq -r .data) &&
-        echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.scheduler-token.yml
+        echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.scheduler-token.yml ;
+        fi
 
   - event: post-node-sync
     flags:

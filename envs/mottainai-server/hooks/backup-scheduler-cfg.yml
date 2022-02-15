@@ -1,0 +1,10 @@
+hooks:
+- event: post-node-sync
+  flags:
+    - backup_config
+  node: host
+  commands:
+   - >-
+     target_dir="${target_dir:-/tmp}" &&
+     echo "Backup scheduler config file to ${target_dir}..." &&
+     lxc file pull {{ .Values.connection }}:mottainai-scheduler/etc/mottainai/mottainai-scheduler.yaml ${target_dir}
