@@ -24,9 +24,9 @@ include_commands_files:
 
 projects:
 
-  - name: "mocaccino-dev-services"
+  - name: "macaroni-dev-services"
     description: |
-      List of groups to run Mocaccino OS Build tasks
+      List of groups to run Macaroni OS Build tasks
 
     include_env_files:
 
@@ -46,9 +46,14 @@ projects:
           - apt-get install -y xorriso squashfs-tools dosfstools file curl
 
       - event: post-node-creation
+        flags:
+          - setup
         commands:
-          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit extension/makeiso
+          - rm -rvf /etc/luet/repos.conf.d/* || true
+          - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit
           - luet cleanup
+          - luet repo list
 
       - event: pre-node-sync
         flags:
@@ -73,13 +78,13 @@ projects:
         commands:
           - >-
             eval 'rm -rf /extensions || true' &&
-            git clone https://github.com/Luet-lab/extensions.git /extensions &&
+            git clone https://github.com/geaaru/extensions.git /extensions &&
             cd /extensions/extensions/geniso && make install
 
     groups:
-      - name: "mocaccino::iso-geniso"
+      - name: "macaroni::iso-geniso"
         description: |
-          Build Mocaccino ISO with luet-geniso extension.
+          Build Macaroni ISO with luet-geniso extension.
 
 
         common_profiles:
@@ -94,7 +99,7 @@ projects:
         connection: "{{ .Values.connection }}"
 
         nodes:
-          - name: mocaccino-iso
+          - name: macaroni-iso
             image_source: "mocaccino/builder"
             image_remote_server: "keybase-geaaru"
 
@@ -114,8 +119,8 @@ projects:
                 commands:
                   - >-
                     cd /repo/${WORKSPACE} &&
-                    eval 'mkdir /var/lib/mocaccino -p || true' &&
-                    wget https://raw.githubusercontent.com/mocaccinoOS/mocaccino-funtoo/master/packages/mocaccino/live-setup/build-iso-hook.sh -O /var/lib/mocaccino/build-iso-hook.sh &&
+                    eval 'mkdir /var/lib/macaroni -p || true' &&
+                    wget https://raw.githubusercontent.com/funtoo/macaroni-funtoo/master/packages/macaroni/live-setup/build-iso-hook.sh -O /var/lib/macaroni/build-iso-hook.sh &&
                     if [ ! -e $TMPDIR ] ; then mkdir $TMPDIR -p ; fi &&
                     bash -x luet-geniso-isospec ${spec_file} &&
                     ls -ltr &&
@@ -129,11 +134,11 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf iso || true' &&
-                    lxc file pull {{ .Values.connection }}:mocaccino-iso/repo/${WORKSPACE}iso/ . --recursive
+                    lxc file pull {{ .Values.connection }}:macaroni-iso/repo/${WORKSPACE}iso/ . --recursive
 
-      - name: "mocaccino::iso-makeiso"
+      - name: "macaroni::iso-makeiso"
         description: |
-          Build Mocaccino ISO with luet-makeiso extension.
+          Build Macaroni ISO with luet-makeiso extension.
 
           Additional render variable to use:
 
@@ -152,7 +157,7 @@ projects:
         connection: "{{ .Values.connection }}"
 
         nodes:
-          - name: mocaccino-makeiso
+          - name: macaroni-makeiso
             image_source: "mocaccino/builder"
             image_remote_server: "keybase-geaaru"
 
@@ -170,7 +175,7 @@ projects:
               - event: post-node-sync
                 node: host
                 commands:
-                  - lxc file push {{ .Values.local_luet_binary }} {{ .Values.connection }}:mocaccino-makeiso/tmp/luet
+                  - lxc file push {{ .Values.local_luet_binary }} {{ .Values.connection }}:macaroni-makeiso/tmp/luet
 
               - event: post-node-sync
                 commands:
@@ -182,7 +187,7 @@ projects:
               - event: post-node-sync
                 node: host
                 commands:
-                  - lxc file push {{ .Values.local_luet_makeiso_binary }} {{ .Values.connection }}:mocaccino-makeiso/tmp/luet-makeiso
+                  - lxc file push {{ .Values.local_luet_makeiso_binary }} {{ .Values.connection }}:macaroni-makeiso/tmp/luet-makeiso
 
               - event: post-node-sync
                 commands:
@@ -210,4 +215,4 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf iso || true' &&
-                    lxc file pull {{ .Values.connection }}:mocaccino-makeiso/repo/iso/ . --recursive
+                    lxc file pull {{ .Values.connection }}:macaroni-makeiso/repo/iso/ . --recursive
