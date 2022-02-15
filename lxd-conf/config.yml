@@ -15,10 +15,7 @@ remotes:
   local:
     addr: unix://
     public: false
-  nevyl:
-    addr: https://192.168.0.91:8443
-    auth_type: tls
-    project: default
-    protocol: lxd
+  local-snapd:
+    addr: unix:///var/snap/lxd/common/lxd/unix.socket
     public: false
 aliases: {}
