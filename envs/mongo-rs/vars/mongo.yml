@@ -54,6 +54,7 @@ envs:
         roles:
           - role: "readWrite"
             db: "mydb"
+
       - db: "admin"
         user: "user2"
         pwd: "user0"

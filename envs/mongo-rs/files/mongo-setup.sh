@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Author: Daniele Rondina, geaaru@funtoo.org
 
 create_admin () {
   local adminDb=$(echo ${mongodb_replica_set} | jq '.superuser.db' -r)

@@ -20,18 +20,23 @@ projects:
 
     vars:
       - envs:
-          packages:
+
+          ubuntu_packages:
+            - gpg
+            - ca-certificates
             - apt-transport-https
             - language-pack-en
             - openssh-client
             - vim
             - systemd
-
             # net tools
             - net-tools
             - iproute2
             - iputils-ping
 
+          # Packages installed after the setup of the
+          # MongoDB repository
+          packages:
             - mongodb-org-server
             - mongodb-org-shell
             - mongodb-org-mongos
@@ -41,7 +46,7 @@ projects:
       - name: "mongo-databases"
         description: "MongoDB Databases"
 
-        connection: "local"
+        connection: "{{ .Values.connection }}"
         # Define the list of LXD Profile to use
         # for create the containers
         common_profiles:
@@ -49,7 +54,10 @@ projects:
           - net-mottainai0
 
         # Create the environment container as ephemeral or not.
-        ephemeral: true
+        ephemeral: {{ .Values.ephemeral }}
+
+        include_hooks_files:
+          - ../common/hooks/ubuntu-setup.yml
 
         hooks:
           - event: post-group
@@ -57,16 +65,20 @@ projects:
             flags:
               - cluster_setup
             commands:
-              - chmod a+x /tmp/mongo-setup.sh
-              - sleep 5
-              - echo "rs.initiate()" | mongo
-              - /tmp/mongo-setup.sh "admin"
-              - /tmp/mongo-setup.sh "join"
-              - /tmp/mongo-setup.sh "users"
-              - |
-                user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) && \
-                pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) && \
-                echo "db.disableFreeMonitoring()" | mongo -u "${user}" -p "${pass}" admin
+              - >-
+                export user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) ;
+                export pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) ;
+                set -x ;
+                if [ ! -e /.cluster-configured ] ; then
+                chmod a+x /tmp/mongo-setup.sh &&
+                sleep 5 &&
+                eval 'echo "rs.initiate()" | mongo' &&
+                /tmp/mongo-setup.sh "admin" &&
+                /tmp/mongo-setup.sh "join" &&
+                /tmp/mongo-setup.sh "users" &&
+                echo "db.disableFreeMonitoring()" | mongo -u "${user}" -p "${pass}" admin ;
+                touch /.cluster-configured ;
+                fi
               - rm /tmp/mongo-setup.sh
 
           - event: post-group
@@ -74,18 +86,19 @@ projects:
             flags:
               - cluster_status
             commands:
-              - |
-                user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) && \
-                pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) && \
+              - >-
+                user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) &&
+                pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) &&
                 echo "printjson(rs.status())" | mongo -u "${user}" -p "${pass}" admin
 
         nodes:
-          - &mongors1
-            name: mongo-rs1
-            image_source: "ubuntu/18.04"
-            # By deafult it use remote images"
-            image_remote_server: "images"
+{{ $nodes := .Values.mongo.replicaset_nodes|int }}
+{{ $source := .Values.default_ubuntu_lts_image }}
+{{ range $i := until $nodes }}
+{{ $instance := add1 $i }}
 
+          - name: mongo-rs{{ $instance }}
+            image_source: "{{ $source }}"
             entrypoint:
               - "/bin/bash"
               - "-c"
@@ -95,49 +108,42 @@ projects:
             hooks:
 
               - event: post-node-creation
-                commands:
-                  # DHCP seems slow
-                  - sleep 5
-                  - apt-get update
-                  - apt-get upgrade -y
-                  - apt-get install wget gpg ca-certificates jq -y
-                  - |
-                    wget -q -O /usr/bin/yq \
-                    https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_amd64
-                  - chmod a+x /usr/bin/yq
-                  - apt-get clean
-
-              - event: post-node-creation
+                flags:
+                  - setup
                 commands:
                   # Setup MongoDB repository
                   - |
                     echo "${mongodb_gpg_key}" > /tmp/mongo-gpg.key
-                  - cat /tmp/mongo-gpg.key
-                  - apt-key add /tmp/mongo-gpg.key && rm /tmp/mongo-gpg.key
+                  - >-
+                    cat /tmp/mongo-gpg.key &&
+                    apt-key add /tmp/mongo-gpg.key &&
+                    rm /tmp/mongo-gpg.key
                   - |
                     echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
                   - apt-get update
 
               - event: post-node-creation
+                flags:
+                  - setup
                 commands:
                   - apt-get install -y $(echo ${packages} | jq '.[]' -r)
                   - apt-get clean
 
               - event: post-node-sync
                 commands:
-                  - |
-                    echo "${mongo_key}" > /tmp/mongodb.key
-                  - |
+                  - >-
+                    echo "${mongo_key}" > /tmp/mongodb.key &&
                     echo "${mongo_config}" | yq r -P - > /tmp/config.yml
                   - |
                     domain=$(echo "${mongodb_replica_set}" | jq '.net_domain' -r) && \
                     yq w /tmp/config.yml net.bindIp "localhost, $(hostname).${domain}" > /etc/mongod.conf
                   - cat /etc/mongod.conf
                   - mv /tmp/mongodb.key /etc/mongodb.key
-                  - chown mongodb:mongodb /etc/mongodb.key
-                  - chmod go-rwx /etc/mongodb.key
-                  - systemctl enable mongod
-                  - systemctl restart mongod
+                  - >-
+                    chown mongodb:mongodb /etc/mongodb.key &&
+                    chmod go-rwx /etc/mongodb.key &&
+                    systemctl enable mongod &&
+                    systemctl restart mongod
                   - tail -n 10 /var/log/mongodb/mongod.log
                   - systemctl status mongod
 
@@ -147,14 +153,8 @@ projects:
                 commands:
                   - rm /tmp/mongo-setup.sh || true
 
-
             sync_resources:
               - source: files/mongo-setup.sh
                 dst: /tmp/mongo-setup.sh
 
-
-          - <<: *mongors1
-            name: mongo-rs2
-
-          - <<: *mongors1
-            name: mongo-rs3
+{{ end }}

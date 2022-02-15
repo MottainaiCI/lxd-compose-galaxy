@@ -1,0 +1,36 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - sleep 2
+
+    - |
+      cat <<EOF >/etc/systemd/network/default_dhcp.network
+      [Network]
+      DHCP=ipv4
+
+      [Match]
+      Name=eth0
+
+      [DHCP]
+      UseDomains=true
+      EOF
+
+    # Workaround to SystemD issue on setup DHCP network
+    - mkdir /etc/systemd/system/systemd-networkd.service.d
+    - |
+      cat <<EOF >/etc/systemd/system/systemd-networkd.service.d/override.conf
+      [Service]
+      BindReadOnlyPaths=/sys /proc
+      EOF
+    - systemctl enable systemd-networkd
+    - systemctl restart systemd-networkd
+
+    # DNS
+    - echo "Domains=${internal_domain}" >> /etc/systemd/resolved.conf
+    - systemctl enable systemd-resolved
+    - systemctl restart systemd-resolved
+    - cp /var/run/systemd/resolve/resolv.conf /etc/resolv.conf || true
+    - systemctl restart systemd-resolved
+

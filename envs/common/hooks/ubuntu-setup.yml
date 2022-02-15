@@ -1,0 +1,20 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+  - >-
+    apt-get update &&
+    apt-get upgrade -y &&
+    apt-get install -y curl wget gpg ca-certificates
+    # Install Luet and common tools. This will permit to use the last release without
+    # force a specific version.
+  - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+  - >-
+    luet i -y utils/jq utils/yq &&
+    luet cleanup --purge-repos
+  - >-
+    if [ "${ubuntu_packages}" != "" ] ; then
+    apt-get install -y $(echo ${ubuntu_packages} | jq '.[]' -r) ;
+    fi &&
+    apt-get clean

@@ -60,6 +60,12 @@ luet:
   xfs_host_path: "/docker-xfs/"
 
 #-------------------------------------------#
+# MongoDB customization
+#-------------------------------------------#
+mongo:
+  replicaset_nodes: 3
+
+#-------------------------------------------#
 # Steam OS params
 #-------------------------------------------#
 steam_user_id: "1000"
@@ -71,4 +77,5 @@ steam_user_gid: "1004"
 connection: "local"
 ephemeral: true
 default_ubuntu_image: "ubuntu/21.04"
+default_ubuntu_lts_image: "ubuntu/18.04"
 
