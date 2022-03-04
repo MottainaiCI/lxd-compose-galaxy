@@ -26,6 +26,7 @@ env_dirs:
 - ./envs/funtoo
 - ./envs/steam
 - ./envs/lxd-setup
+- ./envs/lxd-testing
 # Arm project
 - ./envs-arm/mottainai-agent
 

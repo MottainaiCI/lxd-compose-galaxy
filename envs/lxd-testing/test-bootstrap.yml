@@ -1,0 +1,53 @@
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+projects:
+- name: lxd-test-bootstrap
+  description: |
+    Test unit to check the speedup of the DHCP over different distro.
+
+  hooks:
+    - event: post-node-creation
+      commands:
+        - >
+          wait=true ;
+          timems=$(date +%s%3N) ;
+          while ${wait} ; do
+          withip=$(ip r list | grep "dev eth0" | wc -l) ;
+          if [ "${withip}" = "0" ] ; then sleep 0.001 ; else wait=false ; fi ;
+          done ;
+          endtimems=$(date +%s%3N) ;
+          ms=$((endtimems-timems)) ;
+          echo "Time to get ip (ms): ${ms}" ;
+          if [ -z "${skippoweroff}" ] ; then poweroff ; fi
+
+  groups:
+{{ $privileged_containers := .Values.privileged_containers | default false }}
+{{ $ephemeral := .Values.ephemeral }}
+{{ range $k, $v := .Values.lxd_testing.bootstrap_images }}
+
+    - name: "test-bootstrap-{{ $v.name }}"
+      description: |
+        Setup node to test ip address allocation speed
+        for the image {{ $v.image_source }}.
+      connection: {{ $.Values.connection | default "local" }}
+      common_profiles:
+        - default
+        - net-mottainai0
+        {{- if $privileged_containers  }}
+        - privileged
+        {{ end }}
+
+      ephemeral: {{ $.Values.ephemeral | default true }}
+      entrypoint:
+        - /bin/bash
+        - -c
+
+      nodes:
+        - name: test-dhcp-{{ $v.name }}
+          image_remote_server: "{{ $v.image_server }}"
+          image_source: {{ $v.image_source }}
+{{ end }}
