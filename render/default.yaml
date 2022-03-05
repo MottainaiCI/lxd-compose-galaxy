@@ -78,6 +78,7 @@ connection: "local"
 ephemeral: true
 default_ubuntu_image: "ubuntu/21.04"
 default_ubuntu_lts_image: "ubuntu/18.04"
+default_internal_domain: "mottainai.local"
 
 
 #-------------------------------------------#
@@ -85,6 +86,7 @@ default_ubuntu_lts_image: "ubuntu/18.04"
 #-------------------------------------------#
 lxd_testing:
   bootstrap_images:
+
     - name: macaroni-funtoo
       image_server: macaroni
       image_source: macaroni/funtoo-minimal
@@ -94,34 +96,34 @@ lxd_testing:
       image_source: macaroni/funtoo-systemd-minimal
 
     - name: funtoo
-      image_remote_server: "macaroni"
+      image_server: "macaroni"
       image_source: funtoo/stage3
 
     - name: gentoo
-      image_remote_server: "images"
+      image_server: "images"
       image_source: gentoo/openrc
 
     - name: fedora
-      image_remote_server: "images"
+      image_server: "images"
       image_source: fedora/35
 
     - name: devuan
-      image_remote_server: "images"
+      image_server: "images"
       image_source: devuan/beowulf
 
     - name: debian
-      image_remote_server: "images"
+      image_server: "images"
       image_source: debian/12
 
     - name: archlinux
-      image_remote_server: "images"
+      image_server: "images"
       image_source: archlinux
 
     - name: rockylinux
-      image_remote_server: "images"
+      image_server: "images"
       image_source: rockylinux/8
 
     - name: ubuntu
-      image_remote_server: "images"
+      image_server: "images"
       image_source: ubuntu/21.10
 
