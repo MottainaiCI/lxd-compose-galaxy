@@ -100,30 +100,23 @@ lxd_testing:
       image_source: funtoo/stage3
 
     - name: gentoo
-      image_server: "images"
       image_source: gentoo/openrc
 
     - name: fedora
-      image_server: "images"
       image_source: fedora/35
 
     - name: devuan
-      image_server: "images"
       image_source: devuan/beowulf
 
     - name: debian
-      image_server: "images"
       image_source: debian/12
 
     - name: archlinux
-      image_server: "images"
       image_source: archlinux
 
     - name: rockylinux
-      image_server: "images"
       image_source: rockylinux/8
 
     - name: ubuntu
-      image_server: "images"
       image_source: ubuntu/21.10
 

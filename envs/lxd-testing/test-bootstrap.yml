@@ -48,6 +48,6 @@ projects:
 
       nodes:
         - name: test-dhcp-{{ $v.name }}
-          image_remote_server: "{{ $v.image_server }}"
+          image_remote_server: {{ $v.image_server | default "images" }}
           image_source: {{ $v.image_source }}
 {{ end }}
