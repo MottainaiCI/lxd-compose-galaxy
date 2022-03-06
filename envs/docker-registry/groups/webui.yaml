@@ -2,24 +2,23 @@ name: "registry-ui"
 description: "Docker Registry UI group"
 
 connection: "{{ .Values.connection }}"
-
-# Define the list of LXD Profile to use
-# for create the containers
+ephemeral: {{ .Values.ephemeral }}
 common_profiles:
   - default
   - net-mottainai0
+{{ if .Values.docker_registry.privileged_containers }}
   - privileged
+{{ end }}
   - docker
   - registry-ui
 
-# Create the environment container as ephemeral or not.
-ephemeral: true
+include_hooks_files:
+  - ../common/hooks/ubuntu-setup.yml
+  - hooks/get-reg.yml
 
 nodes:
   - name: docker-registry-webui
-    image_source: "sabayon/base"
-    # By deafult it use remote images"
-    image_remote_server: "dso"
+    image_source: "{{ .Values.default_ubuntu_image }}"
 
     entrypoint:
       - "/bin/bash"
@@ -29,6 +28,13 @@ nodes:
     # container.
     hooks:
 
+{{ if .Values.docker_registry.ubuntu_container }}
+      - event: post-node-creation
+        commands:
+          - >-
+            systemctl stop docker.socket docker &&
+            systemctl disable docker
+{{ end }}
       - event: post-node-creation
         commands:
           # Create user for reg

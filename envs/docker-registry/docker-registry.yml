@@ -43,16 +43,26 @@ projects:
 
     include_groups_files:
       - groups/standalone.yaml
+{{ if .Values.docker_registry.enable_mirror }}
       - groups/mirror.yaml
+{{ end }}
+{{ if .Values.docker_registry.enable_webui }}
       - groups/webui.yaml
+{{ end }}
 
     vars:
       - envs:
-          ACCEPT_LICENSE: "*"
           HTPASSWD_OPTS: "-B"
-          lxd_domain: "mottainai.local"
+          lxd_domain: "{{ .Values.default_internal_domain }}"
           yq_version: "3.4.1"
           reg_version: "0.16.1"
+
+          ubuntu_packages:
+            - wget
+            - docker.io
+            - bridge-utils
+            - docker-registry
+            - apache2-utils
 
     hooks:
 
@@ -63,9 +73,10 @@ projects:
           - certificate_selfsigned_creation
         commands:
           - echo "${docker_registry_ssl_cert_conf}" > /tmp/openssl.cnf
-          - sed -i -e "s:COMMON_NAME:docker-registry1.mottainai.local:g" /tmp/openssl.cnf
+          - sed -i -e "s:COMMON_NAME:docker-registry1.{{ .Values.default_internal_domain }}:g" /tmp/openssl.cnf
           - openssl rand -out /tmp/rnd -writerand /tmp/rnd
 
+{{ if .Values.docker_registry.enable_mirror }}
       # Create docker registry self signed certificate
       - event: pre-group
         node: host
@@ -73,8 +84,9 @@ projects:
           - certificate_selfsigned_creation
         commands:
           - echo "${docker_registry_mirror_ssl_cert_conf}" > /tmp/openssl_mirror.cnf
-          - sed -i -e "s:COMMON_NAME:docker-registry-mirror.mottainai.local:g" /tmp/openssl_mirror.cnf
+          - sed -i -e "s:COMMON_NAME:docker-registry-mirror.{{ .Values.default_internal_domain }}:g" /tmp/openssl_mirror.cnf
           - openssl rand -out /tmp/rnd -writerand /tmp/rnd
+{{ end }}
 
       - event: pre-group
         node: host
@@ -89,6 +101,7 @@ projects:
             fi
           - openssl x509 -in envs/docker-registry/files/dr.crt -text -noout
 
+{{ if .Values.docker_registry.enable_mirror }}
       - event: pre-group
         node: host
         flags:
@@ -101,17 +114,5 @@ projects:
             openssl req -newkey rsa:4096 -nodes -sha256 -keyout ${keyfile} -x509 -days 3000 -out ${crtfile} -config /tmp/openssl_mirror.cnf ;
             fi
           - openssl x509 -in envs/docker-registry/files/dr_mirror.crt -text -noout
+{{ end }}
 
-      - event: post-node-creation
-        commands:
-          # DHCP seems slow
-          - sleep 5
-          - ip a show eth0
-          - equo i app-misc/jq app-emulation/docker
-          - |
-            wget -q -O /usr/bin/yq \
-            https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
-          - |
-            wget -q -O /usr/bin/reg \
-            https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64
-          - chmod a+x /usr/bin/yq /usr/bin/reg

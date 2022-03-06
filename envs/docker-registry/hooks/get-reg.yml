@@ -1,0 +1,8 @@
+event: post-node-creation
+flags:
+  - install_reg
+commands:
+  - >-
+    wget -q -O /usr/bin/reg
+    https://github.com/genuinetools/reg/releases/download/v${reg_version}/reg-linux-amd64 &&
+    chmod a+x /usr/bin/reg

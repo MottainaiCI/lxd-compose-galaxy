@@ -2,42 +2,42 @@ name: "registry-group"
 description: "Docker Registry group"
 
 connection: "{{ .Values.connection }}"
-
-# Define the list of LXD Profile to use
-# for create the containers
+ephemeral: {{ .Values.ephemeral }}
 common_profiles:
   - default
   - net-mottainai0
+{{ if .Values.docker_registry.privileged_containers }}
   - privileged
+{{ end }}
   - docker
   - registry-port
 
-# Create the environment container as ephemeral or not.
-ephemeral: true
+include_hooks_files:
+  - ../common/hooks/ubuntu-setup.yml
+  - hooks/get-reg.yml
 
 nodes:
   - name: docker-registry1
-    image_source: "sabayon/base"
-    # By deafult it use remote images"
-    image_remote_server: "dso"
+    image_source: "{{ .Values.default_ubuntu_image }}"
 
     entrypoint:
       - "/bin/bash"
       - "-c"
 
-    # List of commands executed just after the creation of the
-    # container.
     hooks:
+
+{{ if .Values.docker_registry.ubuntu_container }}
+      - event: post-node-creation
+        commands:
+          - >-
+            systemctl stop docker.socket docker &&
+            systemctl disable docker
+{{ end }}
 
       - event: pre-node-sync
         commands:
           - rm -v /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
           - rm -v /tmp/nginx_auth.sh 2>/dev/null || true
-
-      - event: post-node-creation
-        commands:
-          - equo i docker-registry app-admin/apache-tools
-          - equo cleanup
 
       - event: post-node-sync
         flags:
@@ -59,8 +59,13 @@ nodes:
           - mkdir -p //etc/docker/registry-ssl/ || true
           - mv /tmp/dr.key /etc/docker/registry-ssl/dr.key
           - mv /tmp/dr.crt /etc/docker/registry-ssl/dr.crt
+{{ if .Values.docker_registry.ubuntu_container }}
+          - chown docker-registry:docker-registry -R /etc/docker/registry-ssl
+          - systemctl restart docker-registry
+{{ else }}
           - chown registry:registry -R /etc/docker/registry-ssl
           - systemctl restart registry
+{{ end }}
 
     sync_resources:
       - source: files/dr.key
