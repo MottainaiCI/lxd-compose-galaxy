@@ -55,9 +55,31 @@ mottainai:
   public_namespaces:
     - namespace1
 
+#-------------------------------------------#
+# Docker Registry Service options
+#-------------------------------------------#
+docker_registry:
+  enable_mirror: false
+  enable_webui: false
+  privileged_containers: true
+  ubuntu_container: true
+
 luet:
   enable_xfs_storage: true
-  xfs_host_path: "/docker-xfs/"
+  xfs_host_path: "/storage/docker/"
+  docker_host_privileged: true
+
+  # Enable using of docker host container
+  enable_docker_host: true
+  docker_host: docker-overlay2.mottainai.local:2376
+
+  # Using ubuntu container for docker (true)
+  # or macaroni os (false)
+  docker_host_ubuntu: true
+
+  # Enable this if you use docker registry
+  # with self-signed certificate
+  docker_registry: true
 
 #-------------------------------------------#
 # MongoDB customization
