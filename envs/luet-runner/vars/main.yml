@@ -1,0 +1,9 @@
+envs:
+  docker_daemon:
+    insecure-registries:
+{{ if .Values.docker_registry }}
+      - docker-registry1.{{ .Values.default_internal_domain }}:5000
+{{ end }}
+
+  registry_user: geaaru
+  registry_pass: pass

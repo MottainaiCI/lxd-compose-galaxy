@@ -13,42 +13,52 @@ include_profiles_files:
 include_networks_files:
 - ../common/networks/mottainai0.yml
 
+include_commands_files:
+
+
 projects:
 
   - name: "luet-runner-amd64"
     description: |
       Setup a node to run Luet tasks.
 
+    include_env_files:
+      - vars/main.yml
+
     vars:
       - envs:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
-          yq_version: "3.4.1"
-          luet_repo: "https://github.com/mocaccinoOS/kernel-repo.git"
+          luet_repo: "https://github.com/funtoo/macaroni-commons.git"
           luet_branch: "master"
-          PACKAGES: "kernel/mocaccino-lts-full"
-          #REPO_CACHE: "mocaccinoos/micro-arm-cache"
-          #ARCH: "arm"
+          PACKAGES: "kernel-5.10/macaroni-lts-full"
           BUILD_ARGS: "--no-spinner --emoji=true --color=false --pull --only-target-package"
+{{ if .Values.luet.enable_docker_host }}
+          DOCKER_HOST: "{{ .Values.luet.docker_host }}"
+{{ end }}
+
+          ubuntu_packages:
+            - docker.io
+            - bridge-utils
+            - make
+            - git
 
     groups:
       - name: "luet"
         description: "Luet compilation node"
 
-        connection: "nevyl"
-        # Define the list of LXD Profile to use
-        # for create the containers
+        connection: "{{ .Values.connection }}"
+        ephemeral: {{ .Values.ephemeral }}
         common_profiles:
           - default
           - net-mottainai0
 
-        # Create the environment container as ephemeral or not.
-        ephemeral: true
+        include_hooks_files:
+          - ../common/hooks/ubuntu-setup.yml
 
         nodes:
-          - name: mocaccino-luet
-            image_source: "ubuntu/21.04"
-            # By deafult it use remote images"
+          - name: macaroni-luet
+            image_source: "{{ .Values.default_ubuntu_image }}"
             image_remote_server: "images"
 
             entrypoint:
@@ -56,32 +66,73 @@ projects:
               - "-c"
 
             profiles:
+              {{ if not .Values.enable_docker_host }}
               - docker
+              {{ end }}
               - privileged
 
+            sync_resources:
+{{ if .Values.luet.docker_registry }}
+              - source: ../docker-registry/files/dr.crt
+                dst: /tmp/dr.crt
+{{ end }}
             # List of commands executed just after the creation of the
             # container.
             hooks:
 
-              - event: post-node-creation
+{{ if not .Values.enable_docker_host }}
+              - event: post-node-sync
+                flags:
+                  - configure_docker
                 commands:
-                  # DHCP seems slow
-                  - sleep 5
-                  - apt-get update
-                  - apt-get upgrade -y
-                  - apt-get install -y wget jq docker.io bridge-utils make curl
-                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-                  - luet install repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable
+                  - echo "${docker_daemon}" > /etc/docker/daemon.json
                   - |
-                    wget -q -O /usr/bin/yq \
-                    https://github.com/mikefarah/yq/releases/download/${yq_version}/yq_linux_amd64
-                  - chmod a+x /usr/bin/yq
+                    mkdir /etc/systemd/system/docker.service.d/ -p && \
+                    echo '[Service]
+                    Environment="BUILDKIT_STEP_LOG_MAX_SIZE=3073741824"
+                    Environment="BUILDKIT_STEP_LOG_MAX_SPEED=10240000"
+                    ExecStart=
+                    ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
+                    ' > /etc/systemd/system/docker.service.d/env.conf
+{{ end }}
 
               - event: post-node-sync
+                flags:
+                  - upgrade
                 commands:
-                  - systemctl daemon-reload
-                  - systemctl start docker
-                  - luet upgrade
+                  - >-
+                    luet repo update &&
+                    luet upgrade &&
+                    luet cleanup --purge-repos
+{{ if not .Values.enable_docker_host }}
+                  - >-
+                    systemctl daemon-reload &&
+                    systemctl start docker
+{{ end }}
+
+              - event: pre-node-sync
+                flags:
+                  - clone_repo
+                commands:
+                  - eval 'rm -rf /build /tmp/dr.crt || true'
+                  - echo "Cloning ${luet_repo} for branch ${luet_branch}..."
+                  - git clone ${luet_repo} -b ${luet_branch} /build
+                  - mkdir /build/build/ || true
+
+{{ if .Values.luet.docker_registry }}
+              - event: post-node-sync
+                flags:
+                  - docker_registry_login
+                commands:
+                  #- cp /tmp/mottainai.crt /etc/ssl/certs/
+                  - docker login -u ${registry_user} -p ${registry_pass} docker-registry1.{{ .Values.default_internal_domain }}:5000
+
+              - event: post-node-sync
+                flags:
+                  - copy_registry_certs
+                commands:
+                  - mv /tmp/dr.crt /etc/ssl/certs/
+{{ end }}
 
               - event: post-node-sync
                 flags:
