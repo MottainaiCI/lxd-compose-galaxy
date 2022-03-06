@@ -1,0 +1,111 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+- ../common/profiles/docker-xfs-fs.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+projects:
+
+  - name: "docker-overlay2-service"
+    description: |
+      Setup a container where running
+      docker with overlay2 filesystem.
+
+    include_env_files:
+      - vars/docker-host.yml
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+
+          ubuntu_packages:
+            - docker.io
+            - bridge-utils
+            - make
+
+          luet_packages:
+            - app-emulation/docker
+
+    groups:
+      - name: "docker-xfs-node"
+        description: "Luet compilation node"
+
+        ephemeral: {{ .Values.ephemeral }}
+        connection: "{{ .Values.connection }}"
+        common_profiles:
+          - default
+          - net-mottainai0
+        {{- if .Values.luet.docker_host_privileged }}
+          - privileged
+        {{- end }}
+        {{- if .Values.luet.enable_xfs_storage }}
+          - docker-xfs-fs
+        {{- end }}
+          - docker
+
+
+        include_hooks_files:
+{{ if .Values.luet.docker_host_ubuntu }}
+          - ../common/hooks/ubuntu-setup.yml
+{{ else }}
+          - ../common/hooks/luet-packages.yml
+{{ end }}
+
+        nodes:
+          - name: docker-overlay2
+{{ if .Values.luet.docker_host_ubuntu }}
+            image_source: "{{ .Values.default_ubuntu_image }}"
+            image_remote_server: "images"
+{{ else }}
+            image_source: macaroni/funtoo-systemd-minimal
+            image_remote_server: macaroni
+{{ end }}
+
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            sync_resources:
+{{ if .Values.luet.docker_registry }}
+              - source: ../docker-registry/files/dr.crt
+                dst: /tmp/dr.crt
+{{ end }}
+
+            hooks:
+
+              - event: post-node-sync
+                flags:
+                  - configure_docker
+                commands:
+                  - echo "${docker_daemon}" > /etc/docker/daemon.json
+                  - |
+                    mkdir /etc/systemd/system/docker.service.d/ -p && \
+                    echo '[Service]
+                    Environment="BUILDKIT_STEP_LOG_MAX_SIZE=3073741824"
+                    Environment="BUILDKIT_STEP_LOG_MAX_SPEED=10240000"
+                    ExecStart=
+                    ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
+                    ' > /etc/systemd/system/docker.service.d/env.conf
+
+              - event: post-node-sync
+                flags:
+                  - upgrade
+                commands:
+                  - >-
+                    luet repo update &&
+                    luet upgrade &&
+                    luet cleanup --purge-repos
+                  - systemctl daemon-reload
+                  - systemctl restart docker
+
+# vim: filetype=yaml expandtab

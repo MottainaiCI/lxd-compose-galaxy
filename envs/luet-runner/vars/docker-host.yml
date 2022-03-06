@@ -1,0 +1,10 @@
+envs:
+  docker_daemon:
+    insecure-registries:
+      - docker-registry1.{{ .Values.default_internal_domain }}:5000
+    # TODO: add support for TLS
+    tls: false
+    hosts:
+      - tcp://0.0.0.0:2376
+      - fd://
+

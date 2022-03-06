@@ -1,0 +1,7 @@
+name: docker-xfs-fs
+description: "XFS partion with d_type=true enable"
+devices:
+  storage:
+    path: /var/lib/docker/
+    source: {{ .Values.luet.xfs_host_path }}
+    type: disk
