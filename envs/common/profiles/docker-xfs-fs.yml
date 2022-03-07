@@ -1,0 +1,15 @@
+name: docker-xfs-fs
+description: |
+  Docker filesystem mountpoint to use
+  overlay2 with docker over LXD.
+  Requires that in the host is been
+  created the mountpoint with a partition
+  XFS formatted with the ftype=1 option
+  Example:
+
+  mkfs.xfs -n ftype=1 /dev/sdaX
+devices:
+  storage:
+    path: /var/lib/docker/
+    source: {{ .Values.luet.xfs_host_path }}
+    type: disk
