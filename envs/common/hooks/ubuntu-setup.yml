@@ -4,6 +4,7 @@ hooks:
     - setup
   commands:
   - >-
+    [ -n "${sleep}" ] && sleep ${sleep} ;
     apt-get update &&
     apt-get upgrade -y &&
     apt-get install -y curl wget gpg ca-certificates
