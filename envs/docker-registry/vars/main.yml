@@ -107,7 +107,7 @@ envs:
       maintenance:
         uploadpurging:
           enabled: true
-          age: 1h
+          age: 7d
           interval: 5m
           dryrun: false
         readonly:
@@ -119,10 +119,12 @@ envs:
       tls:
         certificate: /etc/docker/registry-ssl/dr.crt
         key: /etc/docker/registry-ssl/dr.key
+{{- if .Values.docker_registry.basic_auth }}
     auth:
       htpasswd:
         realm: basic-realm
         path: /etc/registry
+{{- end }}
     health:
       storagedriver:
         enabled: true

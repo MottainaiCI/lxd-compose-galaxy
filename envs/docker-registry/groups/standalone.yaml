@@ -10,7 +10,9 @@ common_profiles:
   - privileged
 {{ end }}
   - docker
+{{- if .Values.docker_registry.host_binding }}
   - registry-port
+{{- end }}
 
 include_hooks_files:
   - ../common/hooks/ubuntu-setup.yml
@@ -39,6 +41,7 @@ nodes:
           - rm -v /tmp/dr.key /tmp/dr.crt 2>/dev/null || true
           - rm -v /tmp/nginx_auth.sh 2>/dev/null || true
 
+{{ if .Values.docker_registry.basic_auth }}
       - event: post-node-sync
         flags:
           - auth
@@ -46,6 +49,7 @@ nodes:
           - chmod a+x /tmp/nginx_auth.sh
           - /tmp/nginx_auth.sh
           - rm /tmp/nginx_auth.sh
+{{ end }}
 
       - event: post-node-sync
         flags:
@@ -72,6 +76,8 @@ nodes:
         dst: /tmp/dr.key
       - source: files/dr.crt
         dst: /tmp/dr.crt
+{{ if .Values.docker_registry.basic_auth }}
       - source: ../nginx/files/nginx_auth.sh
         dst: /tmp/nginx_auth.sh
+{{ end }}
 
