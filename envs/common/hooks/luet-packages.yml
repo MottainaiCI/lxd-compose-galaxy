@@ -5,7 +5,7 @@ hooks:
   commands:
     - >-
       [ -n "${sleep}" ] && sleep ${sleep} ;
-      if [ -e /etc/release ] ; then
+      if [ -e /etc/os-release ] ; then
       ubuntu=$(cat /etc/os-release | grep ID| grep ubuntu | wc -l) ;
       else
       ubuntu="0" ;
