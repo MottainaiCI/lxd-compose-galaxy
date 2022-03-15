@@ -46,6 +46,14 @@ mottainai:
   #  agent_lxd_local_dir: "../lxd-conf/"
   agent_lxd_local_dir: "/tmp/lxd-conf"
 
+  # Sync local lxd-config dir to container (true)
+  # or not (false).
+  agent_lxd_config_dir_sync: false
+
+  # Enable local docker host service in the
+  # agent node.
+  agent_docker_local: false
+
   # Mottainai token to use with nginx reverse proxy.
   # This is needed until Mottainai will support public namespace.
   token: "XXXXXXXX"
@@ -63,6 +71,8 @@ docker_registry:
   enable_webui: false
   privileged_containers: true
   ubuntu_container: true
+  host_binding: false
+  basic_auth: false
 
 luet:
   enable_xfs_storage: true
