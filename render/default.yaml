@@ -50,6 +50,11 @@ mottainai:
   # or not (false).
   agent_lxd_config_dir_sync: false
 
+  # Mount the host LXD socker inside the container
+  # (true) or not (false).
+  agent_lxd_socket_host: false
+  agent_lxd_gid: 994
+
   # Enable local docker host service in the
   # agent node.
   agent_docker_local: false
@@ -111,6 +116,8 @@ ephemeral: true
 default_ubuntu_image: "ubuntu/21.04"
 default_ubuntu_lts_image: "ubuntu/18.04"
 default_internal_domain: "mottainai.local"
+
+lxd_socket_path: "/var/lib/lxd/unix.socket"
 
 
 #-------------------------------------------#

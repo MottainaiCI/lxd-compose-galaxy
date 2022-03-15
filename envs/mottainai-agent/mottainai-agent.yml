@@ -10,6 +10,7 @@ include_profiles_files:
 - ../common/profiles/docker.yml
 - ../common/profiles/loop.yml
 - ../common/profiles/flavor-medium.yml
+- ../common/profiles/lxd-socket.yml
 
 projects:
 
@@ -64,6 +65,9 @@ projects:
         common_profiles:
           - default
           - net-mottainai0
+{{ if .Values.mottainai.agent_lxd_socket_host }}
+          - lxd-socket
+{{ end }}
 
         include_hooks_files:
           - ../common/hooks/ubuntu-setup.yml
@@ -109,7 +113,19 @@ projects:
 {{ else }}
                   - >-
                     systemctl stop docker.socket docker &&
-                    systemctl disable docker
+                    systemctl disable docker &&
+                    ip link del docker0
+{{ end }}
+
+{{ if .Values.mottainai.agent_lxd_socket_host }}
+              - event: post-node-creation
+                flags:
+                  - lxd_socket
+                commands:
+                  # TODO: set lxd uid a render end
+                  - >-
+                    groupadd -g {{ .Values.mottainai.agent_lxd_gid }} lxd &&
+                    gpasswd -a mottainai-agent lxd
 {{ end }}
 
               - event: pre-node-sync
