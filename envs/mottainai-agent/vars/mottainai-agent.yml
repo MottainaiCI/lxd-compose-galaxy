@@ -19,14 +19,17 @@ envs:
     web:
       url: "/"
 
-      application_url: "https://mottainai.local"
+      application_url: "http://mottainai-server.mottainai.local:19090/mottainai"
 
     agent:
 
+      # Use force_agent_id to override the random agent id based on hostname.
+      # force_agent_id: mynode
+
       # Agent key
-      agent_key: '<agent-key>'
+      agent_key: ""
       # API Key
-      api_key: '<api-key>'
+      api_key: ""
 
       # Standalone mode. Agent task only specific task
       standalone: true
@@ -34,7 +37,7 @@ envs:
       # Directory where store building data
       build_path: '/srv/mottainai/build'
 
-      concurrency: 1
+      concurrency: 2
       executor:
         - lxd
         - docker
@@ -49,9 +52,9 @@ envs:
 
       # Define Queues handled by Agent and number of concurrency tasks
       queues:
-         lxd: 1
          iso: 1
-
+         lxd: 1
+         geaaru: 1
 
       # Define operations executed by Agent Healtcheck
       health_check_exec:
@@ -75,18 +78,18 @@ envs:
       # ----------------------------------
 
       # Set here the remote defined on your LXD configuration file.
-      lxd_endpoint: "ironman"
+      lxd_endpoint: "mynode"
       lxd_config_dir: "/srv/mottainai/lxc"
       lxd_profiles:
         - default
         - privileged
-        - net-local
+        - net-mottainai0
         - docker
       lxd_ephemeral_containers: true
       lxd_cache_registry:
         type: "p2p"
         remote: "local"
         compression_algorithm: "xz"
-        wait_sleep: 5
+        wait_sleep: 3
 
 

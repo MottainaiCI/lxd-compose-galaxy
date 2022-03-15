@@ -3,91 +3,36 @@ version: "1"
 template_engine:
   engine: "mottainai"
 
-# Define the list of LXD Profiles used by all projects.
-# This profiles are not mandatory. An user could create and
-# handle his profiles without define the list here.
-profiles:
-- name: "default"
-  description: "Default profile"
-  devices:
-    root:
-      path: /
-      pool: pool-btrfs
-      type: disk
-
-- name: docker
-  description: "Docker profile"
-  config:
-    security.nesting: "true"
-
-- name: loop
-  config:
-    security.privileged: "true"
-  description: Mount /dev/loop* stuff
-  devices:
-    loop-control:
-      path: /dev/loop-control
-      type: unix-char
-    loop0:
-      path: /dev/loop0
-      type: unix-block
-    loop1:
-      path: /dev/loop1
-      type: unix-block
-    loop2:
-      path: /dev/loop2
-      type: unix-block
-    loop3:
-      path: /dev/loop3
-      type: unix-block
-    loop4:
-      path: /dev/loop4
-      type: unix-block
-    loop5:
-      path: /dev/loop5
-      type: unix-block
-    loop6:
-      path: /dev/loop6
-      type: unix-block
-    loop7:
-      path: /dev/loop7
-      type: unix-block
-
-- name: privileged
-  config:
-    security.privileged: "true"
-  description: Privileged profile
-  devices:
-    fuse:
-      path: /dev/fuse
-      type: unix-char
-    tuntap:
-      path: /dev/net/tun
-      type: unix-char
-    # Comment this if zfs is not available.
-    zfs:
-      path: /dev/zfs
-      type: unix-char
-
-- name: net-local
-  description: Net lxdbr0
-  devices:
-    eth0:
-      name: eth0
-      nictype: bridged
-      parent: lxdbr0
-      type: nic
-
-- name: docker
-  description: "Docker profile"
-  config:
-    security.nesting: "true"
+include_profiles_files:
+- ../common/profiles/privileged.yml
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/flavor-medium.yml
 
 projects:
 
-  - name: "amd64::ubuntu::mottainai-agent"
+  - name: "mottainai-agent"
     description: |
-      Setup Mottaina Agent as LXD Container.
+      Setup Mottainai Agent as LXD Container.
+
+      You can configure the agent key and token directly
+      on the var file or through the env variables.
+
+      $> lxd-compose a mottainai-agent \
+        --env 'MOTTAINAI_ADMIN_USER=admin' \
+        --env 'MOTTAINAI_ADMIN_PASS=pass' \
+        --env 'MOTTAINAI_TOKEN=xxxx'
+
+      or with --vars-file <credentials-file>.
+
+      Other options:
+
+      --disable-flag: docker to disable container docker setup.
+
+      --render-env 'agentname=mott-agent': to override
+        default node name.
 
     # Environments files to use with engine. Supported files depends on
     # template engine
@@ -96,44 +41,38 @@ projects:
 
     vars:
       - envs:
-          luet_repositories:
-            - repository/mocaccino-extra
-            - repository/mocaccino-os-commons-stable
-
           luet_packages:
             - dev-util/mottainai-agent
+            - dev-util/mottainai-cli
             - utils/yq
+            - utils/jq
+
+          ubuntu_packages:
+            - docker.io
+            - bridge-utils
 
           LUET_NOLOCK: "true"
           LUET_YES: "true"
-          yq_version: "3.4.1"
-          internal_domain: "mottainai.local"
-
+          internal_domain: {{ .Values.default_internal_domain }}
 
     groups:
-      - name: "mottainai-agents-amd64"
-        description: "Mottainai Agent AMD64"
+      - name: "mottainai-agents"
+        description: "Mottainai Agent"
 
-        connection: "local"
-        # Define the list of LXD Profile to use
-        # for create the containers
+        ephemeral: {{ .Values.ephemeral }}
+        connection: "{{ .Values.connection }}"
         common_profiles:
           - default
-          - net-local
+          - net-mottainai0
 
-        # Create the environment container as ephemeral or not.
-        ephemeral: false
+        include_hooks_files:
+          - ../common/hooks/ubuntu-setup.yml
+          - ../common/hooks/luet-packages.yml
 
         nodes:
-          - name: mottainai-agent-amd64-1
-            image_source: "ubuntu/20.10"
-            # By deafult it use remote images"
+          - name: {{ .Values.agentname | default "mottainai-agent-amd64-1" }}
+            image_source: "{{ .Values.default_ubuntu_image }}"
             image_remote_server: "images"
-
-            # Specify directory where build path of templates.
-            # Directory could be an absolute path or a relative path based
-            # on env base dir.
-            # source_dir: "."
 
             entrypoint:
               - "/bin/bash"
@@ -142,8 +81,12 @@ projects:
             # Define the list of LXD Profile to use in additional
             # to group profiles for create the containers
             profiles:
+{{ if .Values.mottainai.agent_docker_local }}
               - docker
+{{ end }}
+{{ if .Values.mottainai.privileged_containers }}
               - privileged
+{{ end }}
               - loop
 
             # List of commands executed just after the creation of the
@@ -152,28 +95,73 @@ projects:
 
               - event: post-node-creation
                 commands:
-                  # DHCP seems slow
-                  - sleep 5
-                  - apt-get update
-                  - apt-get upgrade -y
-                  - apt-get install -y docker.io bridge-utils jq wget
-                  - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-                  - luet install $(echo ${luet_repositories} | jq '.[]' -r)
-                  - luet install $(echo ${luet_packages} | jq '.[]' -r)
-                  #- systemctl start docker
+                  - chown mottainai-agent:mottainai /srv/mottainai/
+                  - mkdir /srv/mottainai/lxc -p || true
 
               - event: post-node-creation
+                flags:
+                  - docker
                 commands:
                   - gpasswd -a mottainai-agent docker
-                  - chown mottainai-agent:mottainai /srv/mottainai/
-                  - systemctl daemon-reload
-                  - systemctl start docker
+{{ if .Values.mottainai.agent_docker_local }}
+                  - >-
+                    systemctl daemon-reload && systemctl start docker
+{{ else }}
+                  - >-
+                    systemctl stop docker.socket docker &&
+                    systemctl disable docker
+{{ end }}
 
               - event: pre-node-sync
                 flags:
                   - update-mottainai
                 commands:
-                  - luet upgrade
+                  - >-
+                    luet repo update &&
+                    luet upgrade &&
+                    luet cleanup --purge-repos
+{{ if .Values.mottainai.agent_lxd_config_dir_sync }}
+                  - rm /srv/mottainai/lxc -rf || true
+{{ end }}
+
+              # I need load mottainai certificate under /etc/ssl/certs.
+              # I can't do this in post-node-creation.
+              - event: post-node-sync
+                flags:
+                  - create_token_and_akey
+                commands:
+                  # TODO: modify node create with --json option when new release will be available.
+                  - >-
+                    if [ "$DEBUG" = "true" ] ; then set -x ; fi ;
+                    export mottainai_url=$(echo ${agent_config} | jq -r .web.application_url) ;
+                    echo "Using mottainai URL ${mottainai_url}" ;
+                    mott_akey=$(echo ${agent_config} | jq -r .agent.agent_key) ;
+                    if [ "${mott_akey}" == "" ] ; then
+                    if [ -z "${MOTTAINAI_ADMIN_USER}" ] ; then echo "Missing MOTTAINAI_ADMIN_USER" ; exit 1 ; fi ;
+                    if [ -z "${MOTTAINAI_ADMIN_PASS}" ] ; then echo "Missing MOTTAINAI_ADMIN_PASS" ; exit 1 ; fi ;
+                    if [ ! -e /etc/mottainai/.agent-key.yml ] ; then
+                    echo "Creating agent key..." ;
+                    auth_opts="-m ${mottainai_url} --apiPass ${MOTTAINAI_ADMIN_PASS} --apiUser ${MOTTAINAI_ADMIN_USER}" ;
+                    res=$(mottainai-cli node create ${auth_opts} | grep ID) ;
+                    if [ $? -ne 0 ] ; then echo "Error on create agent key" ; exit 1 ; fi ;
+                    nodeid=$(echo $res | awk '{ print $2 }') ;
+                    echo ${res} > /etc/mottainai/.agent-key.yml ;
+                    akey=$(mottainai-cli node list ${auth_opts} --json | jq ".[] | select(.ID==\"$nodeid\") | .key" -r) ;
+                    echo "akey: ${akey}" >> /etc/mottainai/.agent-key.yml ;
+                    echo "Created node ${nodeid} agent key ${akey}." ;
+                    fi ;
+                    fi
+                  - >-
+                    export mottainai_url=$(echo ${agent_config} | jq -r .web.application_url) ;
+                    if [ ! -e /etc/mottainai/.agent-token.yml ] ; then
+                    auth_opts="-m ${mottainai_url} --apiPass ${MOTTAINAI_ADMIN_PASS} --apiUser ${MOTTAINAI_ADMIN_USER}" ;
+                    mottainai-cli task list ${auth_opts} ;
+                    mottainai-cli token create ${auth_opts} --json > /tmp/json ;
+                    cat /tmp/json ;
+                    MOTTAINAI_TOKEN=$(cat /tmp/json | jq -r .data) &&
+                    echo "token: $MOTTAINAI_TOKEN" > /etc/mottainai/.agent-token.yml ;
+                    cat /etc/mottainai/.agent-token.yml ;
+                    fi
 
               - event: post-node-sync
                 flags:
@@ -183,12 +171,33 @@ projects:
                   - echo "${agent_config}" | yq r -P -
                   - echo "${agent_config}" | yq r -P - > /tmp/mottainai-agent.yaml
                   - mv /tmp/mottainai-agent.yaml /etc/mottainai/
+{{ if .Values.mottainai.agent_lxd_config_dir_sync }}
                   - mv /srv/mottainai/lxd-conf /srv/mottainai/lxc
+{{ end }}
                   - chown mottainai-agent:mottainai -R /srv/mottainai/lxc
                   - chown mottainai-agent:mottainai -R /etc/mottainai
+                  - ls -l /srv/mottainai/lxc
+
+                  - >-
+                    if [ -e /etc/mottainai/.agent-token.yml ] ; then
+                    MOTTAINAI_TOKEN="$(yq r /etc/mottainai/.agent-token.yml 'token')" &&
+                    yq w /etc/mottainai/mottainai-agent.yaml 'agent.api_key' "$MOTTAINAI_TOKEN" -i ;
+                    echo "Setting token $MOTTAINAI_TOKEN" ;
+                    fi ;
+                    if [ -e /etc/mottainai/.agent-key.yml ] ; then
+                    MOTTAINAI_AKEY="$(yq r /etc/mottainai/.agent-key.yml 'akey')" &&
+                    yq w /etc/mottainai/mottainai-agent.yaml 'agent.agent_key' "$MOTTAINAI_AKEY" -i ;
+                    fi
                   - systemctl restart mottainai-agent
+                  - sleep 2
+                  - systemctl status mottainai-agent -n 100
 
             sync_resources:
+{{ if .Values.mottainai.agent_lxd_config_dir_sync }}
               # Default source path is the directory of the env file.
-              - source: ../lxd-conf/
+              # Note: The path must be a directory with name lxd-conf
+              - source: {{ .Values.mottainai.agent_lxd_local_dir }}
                 dst: /srv/mottainai/
+{{ end }}
+              - source: ../mottainai-server/files/certs/server.crt
+                dst: /etc/ssl/certs/mottainai.crt
