@@ -28,9 +28,14 @@ nodes:
 
     hooks:
 
-{{ if .Values.docker_registry.ubuntu_container }}
       - event: post-node-creation
         commands:
+          - >-
+            rootdir=$(echo ${docker_registry_config} | jq '.docker_registry_config.storage.filesystem.rootdirectory' -r) ;
+            if [ -z "${rootdir}" ] ; then rootdir=/var/lib/registry ; fi ;
+            mkdir -p ${rootdir} || true ;
+            chmod ug+rwx ${rootdir}
+{{ if .Values.docker_registry.ubuntu_container }}
           - >-
             systemctl stop docker.socket docker &&
             systemctl disable docker
