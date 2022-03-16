@@ -89,7 +89,7 @@ envs:
     log:
       accesslog:
         disabled: false
-      level: debug
+      level: info
       formater: text
       fields:
         service: registry
