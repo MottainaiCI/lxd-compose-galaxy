@@ -85,16 +85,20 @@ luet:
   docker_host_privileged: true
 
   # Enable using of docker host container
-  enable_docker_host: true
+  enable_docker_host: false
   docker_host: docker-overlay2.mottainai.local:2376
 
   # Using ubuntu container for docker (true)
   # or macaroni os (false)
-  docker_host_ubuntu: true
+  docker_host_ubuntu: false
 
   # Enable this if you use docker registry
   # with self-signed certificate
-  docker_registry: true
+  docker_registry: false
+
+  # Enable the fetch of the artefacts generated.
+  # locally under ./repo
+  pull_artefacts_locally: true
 
 #-------------------------------------------#
 # MongoDB customization
@@ -113,7 +117,7 @@ steam_user_gid: "1004"
 #-------------------------------------------#
 connection: "local"
 ephemeral: true
-default_ubuntu_image: "ubuntu/21.04"
+default_ubuntu_image: "ubuntu/21.10"
 default_ubuntu_lts_image: "ubuntu/18.04"
 default_internal_domain: "mottainai.local"
 
