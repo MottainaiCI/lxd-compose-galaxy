@@ -20,7 +20,7 @@ projects:
 
   - name: "luet-runner-amd64"
     description: |
-      Setup a node to run Luet tasks.
+      Setup a container to run Luet tasks.
 
     include_env_files:
       - vars/main.yml
@@ -31,17 +31,25 @@ projects:
           LUET_YES: "true"
           luet_repo: "https://github.com/funtoo/macaroni-commons.git"
           luet_branch: "master"
-          PACKAGES: "kernel-5.10/macaroni-lts-full"
+          PACKAGES: "macaroni/entities-catalog"
           BUILD_ARGS: "--no-spinner --emoji=true --color=false --pull --only-target-package"
 {{ if .Values.luet.enable_docker_host }}
           DOCKER_HOST: "{{ .Values.luet.docker_host }}"
 {{ end }}
 
+{{ if .Values.luet.docker_host_ubuntu }}
           ubuntu_packages:
             - docker.io
             - bridge-utils
             - make
             - git
+{{ else }}
+          luet_packages:
+            - app-emulation/docker
+            - dev-vcs/git
+            - net-misc/bridge-utils
+            - sys-devel/make
+{{ end }}
 
     groups:
       - name: "luet"
@@ -54,12 +62,21 @@ projects:
           - net-mottainai0
 
         include_hooks_files:
+{{ if .Values.luet.docker_host_ubuntu }}
           - ../common/hooks/ubuntu-setup.yml
+{{ else }}
+          - ../common/hooks/luet-packages.yml
+{{ end }}
 
         nodes:
           - name: macaroni-luet
+{{ if .Values.luet.docker_host_ubuntu }}
             image_source: "{{ .Values.default_ubuntu_image }}"
             image_remote_server: "images"
+{{ else }}
+            image_source: "macaroni/funtoo-systemd-minimal"
+            image_remote_server: "macaroni"
+{{ end }}
 
             entrypoint:
               - "/bin/bash"
@@ -85,7 +102,9 @@ projects:
                 flags:
                   - configure_docker
                 commands:
-                  - echo "${docker_daemon}" > /etc/docker/daemon.json
+                  - >-
+                    eval 'mkdir -p /etc/docker || true' &&
+                    echo "${docker_daemon}" > /etc/docker/daemon.json
                   - |
                     mkdir /etc/systemd/system/docker.service.d/ -p && \
                     echo '[Service]
@@ -101,10 +120,15 @@ projects:
                   - upgrade
                 commands:
                   - >-
+                    eval 'mkdir /var/lock/ -p || true' &&
                     luet repo update &&
                     luet upgrade &&
                     luet cleanup --purge-repos
 {{ if not .Values.enable_docker_host }}
+{{ if not .Values.luet.docker_host_ubuntu }}
+                  - >-
+                    systemctl start containerd
+{{ end }}
                   - >-
                     systemctl daemon-reload &&
                     systemctl start docker
@@ -140,5 +164,21 @@ projects:
                 commands:
                   - eval 'rm -rf /build || true'
                   - git clone ${luet_repo} -b ${luet_branch} /build
-                  - cd /build && make rebuild
+                  - >-
+                    cd /build &&
+                    eval 'mkdir /build/build || true' &&
+                    make rebuild
 
+{{ if .Values.luet.pull_artefacts_locally }}
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull
+                commands:
+                  - >-
+                    eval 'mkdir ./repos || true' &&
+                    lxc file pull {{ .Values.connection }}:macaroni-luet/build/build/ ./tmprepos
+                    --recursive &&
+                    mv ./tmprepos/build/* ./repos/ &&
+                    rm -rf ./tmprepos
+{{ end }}
