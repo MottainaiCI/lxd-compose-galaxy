@@ -32,5 +32,35 @@ $> lxd-compose c list
 Configure your LXD Configuration directory or add the remote with this command:
 
 ```shell
+$> # deprecated LXD Simplestreams server. Using macaroni remote instead.
 $> lxc remote add keybase-geaaru https://geaaru.keybase.pub/lxd-images --protocol simplestreams --public --accept-certificate
 ```
+
+The lxc config is already available under the `lxd-conf` directory and you can use with `lxc` with this command:
+```shell
+$> # under lxd-compose-galaxy directory
+$> export LXD_CONF=./lxd-conf
+$> lxc remote list
+$ lxc remote list
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+|      NAME       |                      URL                      |   PROTOCOL    |  AUTH TYPE  | PUBLIC | STATIC | GLOBAL |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| images          | https://images.linuxcontainers.org            | simplestreams | none        | YES    | NO     | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| keybase-geaaru  | https://geaaru.keybase.pub/lxd-images         | simplestreams | none        | YES    | NO     | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| local (current) | unix://                                       | lxd           | file access | NO     | YES    | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| local-snapd     | unix:///var/snap/lxd/common/lxd/unix.socket   | lxd           | tls         | NO     | NO     | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| macaroni        | https://images.macaroni.funtoo.org/lxd-images | simplestreams | none        | YES    | NO     | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| ubuntu          | https://cloud-images.ubuntu.com/releases      | simplestreams | none        | YES    | YES    | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+| ubuntu-daily    | https://cloud-images.ubuntu.com/daily         | simplestreams | none        | YES    | YES    | NO     |
++-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
+```
+
+NOTE: Exporting LXD_CONF on snapd based lxc command doesn't work correctly. In this case just copy the config.yml under the
+      snapd comman directory.
+
