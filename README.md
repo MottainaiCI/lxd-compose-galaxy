@@ -61,6 +61,6 @@ $ lxc remote list
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
 ```
 
-NOTE: Exporting LXD_CONF on snapd based lxc command doesn't work correctly. In this case just copy the config.yml under the
+NOTE: Exporting LXD_CONF on lxc command supplied by snapd doesn't work correctly. In this case just copy the config.yml under the
       snapd comman directory.
 
