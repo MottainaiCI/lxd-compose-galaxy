@@ -105,6 +105,8 @@ luet:
 #-------------------------------------------#
 mongo:
   replicaset_nodes: 3
+  enterprise: false
+  version: "4.4"
 
 #-------------------------------------------#
 # Steam OS params

@@ -36,11 +36,20 @@ projects:
 
           # Packages installed after the setup of the
           # MongoDB repository
+            # - mongodb-enterprise
+{{ if .Values.mongo.enterprise }}
+          packages:
+            - mongodb-enterprise-server
+            - mongodb-enterprise-shell
+            - mongodb-enterprise-mongos
+            - mongodb-enterprise-tools
+{{ else }}
           packages:
             - mongodb-org-server
             - mongodb-org-shell
             - mongodb-org-mongos
             - mongodb-org-tools
+{{ end }}
 
     groups:
       - name: "mongo-databases"
@@ -112,14 +121,9 @@ projects:
                   - setup
                 commands:
                   # Setup MongoDB repository
+                  - wget -qO - https://www.mongodb.org/static/pgp/server-{{ $.Values.mongo.version }}.asc | sudo apt-key add -
                   - |
-                    echo "${mongodb_gpg_key}" > /tmp/mongo-gpg.key
-                  - >-
-                    cat /tmp/mongo-gpg.key &&
-                    apt-key add /tmp/mongo-gpg.key &&
-                    rm /tmp/mongo-gpg.key
-                  - |
-                    echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+                    echo "deb [ arch=amd64 ] ${mongo_repo_url}{{ $.Values.mongo.version }} multiverse" | tee ${mongo_repo_file}
                   - apt-get update
 
               - event: post-node-creation
