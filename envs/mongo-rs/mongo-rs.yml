@@ -100,6 +100,20 @@ projects:
                 pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) &&
                 echo "printjson(rs.status())" | mongo -u "${user}" -p "${pass}" admin
 
+{{ if .Values.mongo.enterprise }}
+          - event: post-group
+            node: host
+            flags:
+              - disclaimer
+            commands:
+              - |
+                echo "
+                ATTENTION!!: The MongoDB Enterprise version is under a commercial license.
+                             Contact the MongoDB Support/Sales for the detail.
+                             You can use this deploy only for study and development.
+                "
+{{ end }}
+
         nodes:
 {{ $nodes := .Values.mongo.replicaset_nodes|int }}
 {{ $source := .Values.default_ubuntu_lts_image }}
