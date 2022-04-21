@@ -1,0 +1,18 @@
+name: mongo-master-key
+description: |
+  Create master key to manage client-side field level encryption.
+
+project: mongo-replica-set
+skip_sync: true
+enable_flags:
+#  - mongo_master_key
+{{ if .Values.mongo.enterprise }}
+  - preparemongocryptofiles
+  - getmasterkey
+  - createmasterkeydb
+{{ else }}
+  - nocryptocommunity
+{{ end }}
+include_hooks_files:
+- hooks/mongo-create-masterkey.yml
+- hooks/mongo-get-master-key.yml

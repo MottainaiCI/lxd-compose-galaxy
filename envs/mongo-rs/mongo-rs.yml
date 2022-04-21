@@ -7,6 +7,11 @@ include_profiles_files:
 - ../common/profiles/net-mottainai0.yml
 - ../common/profiles/default.yml
 
+include_commands_files:
+- commands/mongo-master-key.yml
+- commands/mongo-get-client-key.yml
+- commands/mongo-test-crypto.yml
+
 projects:
 
   - name: "mongo-replica-set"
@@ -43,12 +48,14 @@ projects:
             - mongodb-enterprise-shell
             - mongodb-enterprise-mongos
             - mongodb-enterprise-tools
+            - mongodb-mongosh
 {{ else }}
           packages:
             - mongodb-org-server
             - mongodb-org-shell
             - mongodb-org-mongos
             - mongodb-org-tools
+            - mongodb-mongosh
 {{ end }}
 
     groups:

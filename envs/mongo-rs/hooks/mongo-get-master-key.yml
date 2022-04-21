@@ -1,0 +1,17 @@
+hooks:
+- event: post-group
+  node: "host"
+  flags:
+    - getmasterkey
+  commands:
+    - |
+      if [ -f envs/mongo-rs/vars/keymaster.yaml  ]; then
+        mongokey=$(yq r envs/mongo-rs/vars/keymaster.yaml 'envs.mongokey');
+      else
+        mongokey=$(echo -n "$(head -c 96 /dev/urandom | base64 | tr -d '\n')");
+        touch envs/mongo-rs/vars/keymaster.yaml;
+        yq w -i envs/mongo-rs/vars/keymaster.yaml 'envs.mongokey' "${mongokey}";
+      fi;
+      echo -n ${mongokey}
+  out2var: "mongoenckey"
+

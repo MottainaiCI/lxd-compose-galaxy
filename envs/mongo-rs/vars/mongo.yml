@@ -72,3 +72,109 @@ envs:
 
     replication:
       replSetName: "rs0"
+
+  mongo_crypto:
+    keymgmt: |
+      print(`mongo_host=${mongo_host}`)
+      print(`mongo_root_user=${mongo_root_user}`)
+      print(`mongo_root_password=${mongo_root_password}`)
+      print(`encryption_master_key=${encryption_master_key}`)
+      print(`encryption_client_key=${encryption_client_key}`)
+      print(`dbtest=${dbtest}`)
+      var ClientSideFieldLevelEncryptionOptions = {
+          "keyVaultNamespace": "encryption.__datakeys",
+          "kmsProviders": {
+              "local": {
+                  "key": BinData(0, `${encryption_master_key}`)
+              }
+          }
+      }
+      var connection = Mongo(
+          `mongodb://${mongo_root_user}:${mongo_root_password}@${mongo_host}:27017/`,
+          ClientSideFieldLevelEncryptionOptions
+      )
+      var keyVault = connection.getKeyVault()
+
+    getConnection: |
+      print(`mongo_host=${mongo_host}`)
+      print(`mongo_root_user=${mongo_root_user}`)
+      print(`mongo_root_password=${mongo_root_password}`)
+      print(`encryption_master_key=${encryption_master_key}`)
+      print(`encryption_client_key=${encryption_client_key}`)
+      print(`dbtest=${dbtest}`)
+      var connection = Mongo(
+          `mongodb://${mongo_root_user}:${mongo_root_password}@${mongo_host}:27017/`
+      )
+
+    createkey: |
+      var uuid = keyVault.createKey(
+          "local",
+          ["keylocal"]
+      )
+
+    exitjs: |
+      exit
+      
+    getkeys: |
+      var localkey = keyVault.getKeys().toArray()[0]._id
+      print(`localkey=${localkey}`)
+
+    exportKeys: |
+      let base64data = localkey.toJSON();
+      print(`###@@@###${base64data}###@@@###`)
+
+    importKeys: |
+      //let base64data = 'c3RhY2thYnVzZS5jb20=';
+      let base64data = encryption_client_key;
+      localkey = BinData(3, base64data)
+
+    testfindclassic: |
+      print('#####################################')
+      print('find data in collections ')
+      print('with client without encrytion active')
+      print('#####################################')
+      print('------------------------')
+      print('collection test1')
+      print('------------------------')
+      db.test1.find()
+      print('------------------------')
+      print('collection test2_enc')
+      print('------------------------')
+      db.test2_enc.find()
+
+    testfindcrypto: |
+      print('#########################')
+      print('find data in collections ')
+      print('#########################')
+      myDB = connection.getDB(dbtest);
+      myColl = myDB.getCollection("test1");
+      print('------------------------')
+      print('collection test1')
+      print('------------------------')
+      cursor = myColl.find()
+      while ( cursor.hasNext() ) {
+         printjson( cursor.next() );
+      }
+      print('------------------------')
+      print('collection test2_enc')
+      print('------------------------')
+      myColl = myDB.getCollection("test2_enc");
+      cursor = myColl.find()
+      while ( cursor.hasNext() ) {
+         printjson( cursor.next() );
+      }
+        
+    testinsertcrypto: |
+      print('insert in collection test2_enc value encrypted')
+      myDB = connection.getDB(dbtest);
+      clientEncryption = connection.getClientEncryption();
+      var encval = clientEncryption.encrypt( localkey, "value encrypted", "AEAD_AES_256_CBC_HMAC_SHA_512-Random");
+      myColl = myDB.getCollection("test2_enc");
+      myColl.insertOne({ f1: 1000, f2: encval});
+
+    testinsertnormal: |
+      print('insert in collection test1 value not encrypted')
+      myDB = connection.getDB(dbtest);
+      myColl = myDB.getCollection("test1");
+      myColl.insertOne({ f1: 1000, f2: "value not encrypted"});
+

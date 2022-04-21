@@ -1,0 +1,24 @@
+name: mongo-test-crypto
+description: |
+  Simple test to use client-side field level encryption.
+
+project: mongo-replica-set
+skip_sync: true
+#enable_groups:
+#  - {{ .Values.emqx_node | default "emqx1" }}-group
+enable_groups:
+  - "mongo-databases"
+enable_flags:
+#  - mongo_client_key
+{{ if .Values.mongo.enterprise }}
+  - getmasterkey
+  - getclientkey
+  - preparemongocryptofiles
+  - testcrypto
+{{ else }}
+  - nocryptocommunity
+{{ end }}
+include_hooks_files:
+- hooks/mongo-get-master-key.yml
+- hooks/mongo-get-client-key.yml
+- hooks/mongo-test-crypto.yml

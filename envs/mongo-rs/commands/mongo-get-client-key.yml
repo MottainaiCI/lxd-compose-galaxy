@@ -1,0 +1,18 @@
+name: mongo-get-client-key
+description: |
+  Get client key to manage client-side field level encryption.
+
+project: mongo-replica-set
+skip_sync: true
+enable_flags:
+#  - mongo_client_key
+{{ if .Values.mongo.enterprise }}
+  - getmasterkey
+  - preparemongocryptofiles
+  - getclientkey
+{{ else }}
+  - nocryptocommunity
+{{ end }}
+include_hooks_files:
+- hooks/mongo-get-master-key.yml
+- hooks/mongo-get-client-key.yml
