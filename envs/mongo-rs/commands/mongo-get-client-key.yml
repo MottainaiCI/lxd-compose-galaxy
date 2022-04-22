@@ -1,11 +1,11 @@
-name: mongo-get-client-key
+name: mongo-create-client-key
 description: |
-  Get client key to manage client-side field level encryption.
+  Create client key to manage client-side field level encryption.
+  Use --env 'override=true' to override existing key.
 
 project: mongo-replica-set
 skip_sync: true
 enable_flags:
-#  - mongo_client_key
 {{ if .Values.mongo.enterprise }}
   - getmasterkey
   - preparemongocryptofiles
@@ -13,6 +13,7 @@ enable_flags:
 {{ else }}
   - nocryptocommunity
 {{ end }}
+vars_files:
+- vars/keymaster.yaml
 include_hooks_files:
-- hooks/mongo-get-master-key.yml
 - hooks/mongo-get-client-key.yml

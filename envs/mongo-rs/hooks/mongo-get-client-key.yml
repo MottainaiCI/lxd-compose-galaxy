@@ -4,67 +4,63 @@ hooks:
   flags:
     - getclientkey
   commands:
-    - |
+    - >-
       if [ -f envs/mongo-rs/vars/keyclient.yaml ]; then
-        echo "1";
-      else
-        echo "0";
+      if [ "${override}" != "true" ] ; then
+      echo "Mongo Encryption client key already present. Nothing to do." ;
+      exit 1 ;
+      fi ;
       fi
-  out2var: "isThereClientKey"
+    - if [ -z "${mongokey}" ] ; then
+      echo "Mongo Encryption master key not found. Run mongo-master-key command." ;
+      exit 1 ;
+      fi
+
 - event: post-group
   node: mongo-rs1
   flags:
     - preparemongocryptofiles
   commands:
-    - |
-      if [ ${isThereClientKey} == "0" ]; then
-        echo "${mongo_crypto}" | jq -r ".keymgmt" > /root/initialize-key-mgmt.js;
-        echo "${mongo_crypto}" | jq -r ".getkeys" > /root/getKeys.js;
-        echo "${mongo_crypto}" | jq -r ".exportKeys" > /root/exportKeys.js;
-        echo "${mongo_crypto}" | jq -r ".exitjs" > /root/exit.js;
-      fi
+    - >-
+      echo "${mongo_crypto}" | jq -r ".keymgmt" > /root/initialize-key-mgmt.js &&
+      echo "${mongo_crypto}" | jq -r ".getkeys" > /root/getKeys.js &&
+      echo "${mongo_crypto}" | jq -r ".exportKeys" > /root/exportKeys.js &&
+      echo "${mongo_crypto}" | jq -r ".exitjs" > /root/exit.js
+
 - event: post-group
   node: mongo-rs1
   flags:
     - getclientkey
   commands:
     - |
-      if [ ${isThereClientKey} == "0" ]; then
-        export hostmongo=$(echo "${node}" | jq -r '.name')".mottainai.local" && \
-        export rootusermongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.user") && \
-        export rootpwdmongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.pwd") && \
-        export testusr=$(echo "${mongodb_replica_set}" | jq -r ".users[0].user") && \
-        export testpwd=$(echo "${mongodb_replica_set}" | jq -r ".users[0].pwd") && \
-        export testdbname=$(echo "${mongodb_replica_set}" | jq -r ".users[0].roles[0].db") && \
-        export authdb=$(echo "${mongodb_replica_set}" | jq -r ".users[0].db") && \
-        echo "
-        hostmongo     ${hostmongo}
-        rootusermongo ${rootusermongo}
-        rootpwdmongo  ${rootpwdmongo}
-        testusr       ${testusr}
-        testpwd       ${testpwd}
-        testdbname    ${testdbname}
-        authdb        ${authdb}
-        mongoenckey   ${mongoenckey}
-        " && \
-        mongosh --quiet --nodb --shell --eval "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" /root/initialize-key-mgmt.js /root/getKeys.js /root/exportKeys.js /root/exit.js;
-      fi
+      export mongoenckey=${mongokey} && \
+      export hostmongo=$(echo "${node}" | jq -r '.name')".mottainai.local" && \
+      export rootusermongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.user") && \
+      export rootpwdmongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.pwd") && \
+      export testusr=$(echo "${mongodb_replica_set}" | jq -r ".users[0].user") && \
+      export testpwd=$(echo "${mongodb_replica_set}" | jq -r ".users[0].pwd") && \
+      export testdbname=$(echo "${mongodb_replica_set}" | jq -r ".users[0].roles[0].db") && \
+      export authdb=$(echo "${mongodb_replica_set}" | jq -r ".users[0].db") && \
+      echo "
+      hostmongo     ${hostmongo}
+      rootusermongo ${rootusermongo}
+      rootpwdmongo  ${rootpwdmongo}
+      testusr       ${testusr}
+      testpwd       ${testpwd}
+      testdbname    ${testdbname}
+      authdb        ${authdb}
+      mongoenckey   ${mongoenckey}
+      " && \
+      mongosh --quiet --nodb --shell --eval "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" /root/initialize-key-mgmt.js /root/getKeys.js /root/exportKeys.js /root/exit.js;
   out2var: "outputGetClientKey"
+
 - event: post-group
   node: "host"
   flags:
     - getclientkey
   commands:
-#    - echo "outputGetClientKey = ${outputGetClientKey}"
-#    - echo "res `echo "${outputGetClientKey}" | grep "###@@@###" | sed 's/###@@@###//g'`";
-    - |
-      if [ -f envs/mongo-rs/vars/keyclient.yaml ]; then
-        mongoclikey=$(yq r envs/mongo-rs/vars/keyclient.yaml 'envs.mongoclikey');
-      else
-        mongoclikey=$(echo "${outputGetClientKey}" | grep "###@@@###" | sed 's/###@@@###//g');
-        touch envs/mongo-rs/vars/keyclient.yaml;
-        yq w -i envs/mongo-rs/vars/keyclient.yaml 'envs.mongoclikey' "${mongoclikey}";
-      fi;
-      echo -n ${mongoclikey}
-  out2var: "mongoencclikey"
-
+    - >-
+      mongoclikey=$(echo "${outputGetClientKey}" | grep "###@@@###" | sed 's/###@@@###//g') &&
+      touch envs/mongo-rs/vars/keyclient.yaml &&
+      yq w -i envs/mongo-rs/vars/keyclient.yaml 'envs.mongoclikey' "${mongoclikey}" &&
+      echo "Generated client key is ${mongoclikey}"
