@@ -9,6 +9,11 @@ envs/docker-registry/files/*.crt
 envs/docker-registry/files/*.key
 envs/mottainai-server/files/certs/*
 envs/simplestreams-builder/vars/secrets.yml
+
+# mongo-rs project
+envs/mongo-rs/vars/keymaster.yaml
+envs/mongo-rs/vars/keyclient.yaml
+
 lxd-conf/client.crt
 lxd-conf/client.key
 lxd-conf/servercerts/
