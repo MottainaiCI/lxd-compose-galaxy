@@ -75,12 +75,11 @@ envs:
 
   mongo_crypto:
     keymgmt: |
-      print(`mongo_host=${mongo_host}`)
-      print(`mongo_root_user=${mongo_root_user}`)
-      print(`mongo_root_password=${mongo_root_password}`)
-      print(`encryption_master_key=${encryption_master_key}`)
-      print(`encryption_client_key=${encryption_client_key}`)
-      print(`dbtest=${dbtest}`)
+      //print(`mongo_host=${mongo_host}`)
+      //print(`mongo_root_user=${mongo_root_user}`)
+      //print(`mongo_root_password=${mongo_root_password}`)
+      //print(`encryption_master_key=${encryption_master_key}`)
+      //print(`dbtest=${dbtest}`)
       var ClientSideFieldLevelEncryptionOptions = {
           "keyVaultNamespace": "encryption.__datakeys",
           "kmsProviders": {
@@ -96,12 +95,12 @@ envs:
       var keyVault = connection.getKeyVault()
 
     getConnection: |
-      print(`mongo_host=${mongo_host}`)
-      print(`mongo_root_user=${mongo_root_user}`)
-      print(`mongo_root_password=${mongo_root_password}`)
-      print(`encryption_master_key=${encryption_master_key}`)
-      print(`encryption_client_key=${encryption_client_key}`)
-      print(`dbtest=${dbtest}`)
+      //print(`mongo_host=${mongo_host}`)
+      //print(`mongo_root_user=${mongo_root_user}`)
+      //print(`mongo_root_password=${mongo_root_password}`)
+      //print(`encryption_master_key=${encryption_master_key}`)
+      //print(`encryption_client_key=${encryption_client_key}`)
+      //print(`dbtest=${dbtest}`)
       var connection = Mongo(
           `mongodb://${mongo_root_user}:${mongo_root_password}@${mongo_host}:27017/`
       )
@@ -114,7 +113,7 @@ envs:
 
     exitjs: |
       exit
-      
+
     getkeys: |
       var localkey = keyVault.getKeys().toArray()[0]._id
       print(`localkey=${localkey}`)
@@ -124,7 +123,6 @@ envs:
       print(`###@@@###${base64data}###@@@###`)
 
     importKeys: |
-      //let base64data = 'c3RhY2thYnVzZS5jb20=';
       let base64data = encryption_client_key;
       localkey = BinData(3, base64data)
 
@@ -163,7 +161,7 @@ envs:
       while ( cursor.hasNext() ) {
          printjson( cursor.next() );
       }
-        
+
     testinsertcrypto: |
       print('insert in collection test2_enc value encrypted')
       myDB = connection.getDB(dbtest);
