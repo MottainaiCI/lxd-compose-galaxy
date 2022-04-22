@@ -17,18 +17,6 @@ hooks:
     - createmasterkeydb
   commands:
     - |
-      echo "
-        #################################################
-        MASTER KEY GENERATED IS ${mongoenckey}, RECORD IT
-        #################################################
-      "
-
-- event: post-group
-  node: mongo-rs1
-  flags:
-    - createmasterkeydb
-  commands:
-    - |
       export hostmongo=$(echo "${node}" | jq -r '.name')".mottainai.local" && \
       export rootusermongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.user") && \
       export rootpwdmongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.pwd") && \
@@ -46,7 +34,7 @@ hooks:
       authdb        ${authdb}
       " && \
       mongosh --quiet --nodb --shell --eval \
-      "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" \
+      "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongokey}\", dbtest=\"${testdbname}\"" \
       /root/initialize-key-mgmt.js \
       /root/create-mongodb-data-key.js \
       /root/exit.js

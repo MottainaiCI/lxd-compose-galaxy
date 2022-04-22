@@ -4,14 +4,17 @@ hooks:
   flags:
     - getmasterkey
   commands:
-    - |
+    - >-
       if [ -f envs/mongo-rs/vars/keymaster.yaml  ]; then
-        mongokey=$(yq r envs/mongo-rs/vars/keymaster.yaml 'envs.mongokey');
-      else
-        mongokey=$(echo -n "$(head -c 96 /dev/urandom | base64 | tr -d '\n')");
-        touch envs/mongo-rs/vars/keymaster.yaml;
-        yq w -i envs/mongo-rs/vars/keymaster.yaml 'envs.mongokey' "${mongokey}";
+        if [ "${override}" != "true" ] ; then
+        echo "Mongo Encryption master key already present. Nothing to do." ;
+        exit 1 ;
+        fi ;
       fi;
+    - >-
+      mongokey=$(echo -n "$(head -c 96 /dev/urandom | base64 | tr -d '\n')");
+      touch envs/mongo-rs/vars/keymaster.yaml;
+      yq w -i envs/mongo-rs/vars/keymaster.yaml 'envs.mongokey' "${mongokey}";
       echo -n ${mongokey}
-  out2var: "mongoenckey"
+  out2var: "mongokey"
 

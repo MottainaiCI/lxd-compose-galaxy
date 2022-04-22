@@ -21,7 +21,6 @@ hooks:
     - testcrypto
   commands:
     - |
-      export mongoenckey=${mongokey} && \
       export mongoencclikey=${mongoclikey} && \
       export hostmongo=$(echo "${node}" | jq -r '.name')".mottainai.local" && \
       export rootusermongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.user") && \
@@ -38,17 +37,17 @@ hooks:
       testpwd         ${testpwd}
       testdbname      ${testdbname}
       authdb          ${authdb}
-      mongoenckey     ${mongoenckey}
+      mongokey        ${mongokey}
       mongoencclikey  ${mongoencclikey}
       " && \
-      evalvar="var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", encryption_client_key=\"${mongoencclikey}\", dbtest=\"${testdbname}\"" && \
+      evalvar="var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongokey}\", encryption_client_key=\"${mongoencclikey}\", dbtest=\"${testdbname}\"" && \
       set -x && \
       mongosh --quiet --nodb --shell --eval "${evalvar}" \
       /root/initialize-key-mgmt.js /root/importKeys.js /root/testinsertcrypto.js /root/exit.js && \
       mongosh --quiet --nodb --shell --eval "${evalvar}" \
       /root/initialize-key-mgmt.js /root/testinsertnormal.js /root/exit.js && \
       mongosh --quiet --nodb --shell --eval "${evalvar}" \
-      /root/getConnection.js /root/testfindcrypto.js /root/exit.js && \
+      /root/initialize-key-mgmt.js /root/testfindcrypto.js /root/exit.js && \
       cat /root/testfindclassic.js | mongo ${hostmongo}:27017/${testdbname} --username=${testusr} --password=${testpwd} --authenticationDatabase=${authdb}
 
 

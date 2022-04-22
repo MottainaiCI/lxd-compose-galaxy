@@ -2,7 +2,7 @@ hooks:
 - event: post-group
   node: "host"
   flags:
-    - getclientkey
+    - checkClientkey
   commands:
     - >-
       if [ -f envs/mongo-rs/vars/keyclient.yaml ]; then
@@ -33,7 +33,6 @@ hooks:
     - getclientkey
   commands:
     - |
-      export mongoenckey=${mongokey} && \
       export hostmongo=$(echo "${node}" | jq -r '.name')".mottainai.local" && \
       export rootusermongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.user") && \
       export rootpwdmongo=$(echo "${mongodb_replica_set}" | jq -r ".superuser.pwd") && \
@@ -49,9 +48,9 @@ hooks:
       testpwd       ${testpwd}
       testdbname    ${testdbname}
       authdb        ${authdb}
-      mongoenckey   ${mongoenckey}
+      mongokey      ${mongokey}
       " && \
-      mongosh --quiet --nodb --shell --eval "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" /root/initialize-key-mgmt.js /root/getKeys.js /root/exportKeys.js /root/exit.js;
+      mongosh --quiet --nodb --shell --eval "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongokey}\", dbtest=\"${testdbname}\"" /root/initialize-key-mgmt.js /root/getKeys.js /root/exportKeys.js /root/exit.js;
   out2var: "outputGetClientKey"
 
 - event: post-group

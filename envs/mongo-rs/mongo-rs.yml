@@ -9,7 +9,7 @@ include_profiles_files:
 
 include_commands_files:
 - commands/mongo-master-key.yml
-- commands/mongo-get-client-key.yml
+- commands/mongo-create-client-key.yml
 - commands/mongo-test-crypto.yml
 
 projects:
@@ -73,6 +73,7 @@ projects:
         ephemeral: {{ .Values.ephemeral }}
 
         include_hooks_files:
+          - ../common/hooks/systemd-net.yml
           - ../common/hooks/ubuntu-setup.yml
 
         hooks:

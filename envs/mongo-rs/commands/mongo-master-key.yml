@@ -1,6 +1,7 @@
 name: mongo-master-key
 description: |
-  Create master key to manage client-side field level encryption.
+  Create master key and client key to manage client-side field level encryption.
+  Use --env 'override=true' to override existing key.
 
 project: mongo-replica-set
 skip_sync: true
@@ -9,13 +10,15 @@ enable_flags:
   - preparemongocryptofiles
   - getmasterkey
   - createmasterkeydb
+  - getclientkey
 {{ else }}
   - nocryptocommunity
 {{ end }}
 include_hooks_files:
 {{ if .Values.mongo.enterprise }}
 - hooks/mongo-get-master-key.yml
-- hooks/mongo-create-masterkey.yml
+- hooks/mongo-record-keys.yml
+- hooks/mongo-get-client-key.yml
 {{ else }}
 - hooks/mongo-comm-noenc.yml
 {{ end }}
