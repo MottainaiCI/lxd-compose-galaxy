@@ -20,4 +20,8 @@ vars_files:
 - vars/keymaster.yaml
 - vars/keyclient.yaml
 include_hooks_files:
+{{ if .Values.mongo.enterprise }}
 - hooks/mongo-test-crypto.yml
+{{ else }}
+- hooks/mongo-comm-noenc.yml
+{{ end }}

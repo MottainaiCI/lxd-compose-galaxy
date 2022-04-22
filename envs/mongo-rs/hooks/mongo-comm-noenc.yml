@@ -1,0 +1,12 @@
+hooks:
+- event: post-group
+  node: host
+  flags:
+    - nocryptocommunity
+  commands:
+    - |
+      echo "
+        #################################################
+        # MONGODB COMMUNITY NOT HAS ENCRYPTION SUPPORT! #
+        #################################################
+      "

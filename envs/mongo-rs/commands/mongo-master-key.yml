@@ -13,5 +13,9 @@ enable_flags:
   - nocryptocommunity
 {{ end }}
 include_hooks_files:
+{{ if .Values.mongo.enterprise }}
 - hooks/mongo-get-master-key.yml
 - hooks/mongo-create-masterkey.yml
+{{ else }}
+- hooks/mongo-comm-noenc.yml
+{{ end }}

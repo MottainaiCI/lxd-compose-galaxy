@@ -3,17 +3,6 @@ hooks:
 - event: post-group
   node: mongo-rs1
   flags:
-    - nocryptocommunity
-  commands:
-    - |
-      echo "
-        ###############################################
-        # MONGODB COMMUNITY NOT HAS ENCRYPTION ENABLED 
-        ###############################################
-      "
-- event: post-group
-  node: mongo-rs1
-  flags:
     - preparemongocryptofiles
   commands:
     - >-
