@@ -1,14 +1,5 @@
 hooks:
-#- event: pre-node-sync
-#  node: mongo-rs1
-#  flags:
-#    - luet
-#  commands:
-#    - |
-#      apt install -y curl && \
-#      curl https://get.mocaccino.org/luet/get_luet_root.sh | sh && \
-#      luet install -y repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable && \
-#      luet install -y utils/jq utils/yq
+
 - event: post-group
   node: mongo-rs1
   flags:
@@ -20,21 +11,17 @@ hooks:
         # MONGODB COMMUNITY NOT HAS ENCRYPTION ENABLED 
         ###############################################
       "
-#- event: post-group
-#  node: mongo-rs1
-#  flags:
-#    - installmongosh
-#  commands:
-#    - apt install -y mongodb-mongosh
 - event: post-group
   node: mongo-rs1
   flags:
     - preparemongocryptofiles
   commands:
-    - echo "${mongo_crypto}" | jq -r ".keymgmt" > /root/initialize-key-mgmt.js
-    - echo "${mongo_crypto}" | jq -r ".createkey" > /root/create-mongodb-data-key.js
-    - echo "${mongo_crypto}" | jq -r ".getkeys" > /root/getKeys.js
-    - echo "${mongo_crypto}" | jq -r ".exitjs" > /root/exit.js
+    - >-
+      echo "${mongo_crypto}" | jq -r ".keymgmt" > /root/initialize-key-mgmt.js &&
+      echo "${mongo_crypto}" | jq -r ".createkey" > /root/create-mongodb-data-key.js &&
+      echo "${mongo_crypto}" | jq -r ".getkeys" > /root/getKeys.js &&
+      echo "${mongo_crypto}" | jq -r ".exitjs" > /root/exit.js
+
 - event: post-group
   node: mongo-rs1
   flags:
@@ -46,6 +33,7 @@ hooks:
         MASTER KEY GENERATED IS ${mongoenckey}, RECORD IT
         #################################################
       "
+
 - event: post-group
   node: mongo-rs1
   flags:
@@ -68,5 +56,9 @@ hooks:
       testdbname    ${testdbname}
       authdb        ${authdb}
       " && \
-      mongosh --quiet --nodb --shell --eval "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" /root/initialize-key-mgmt.js /root/create-mongodb-data-key.js /root/exit.js
+      mongosh --quiet --nodb --shell --eval \
+      "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongoenckey}\", dbtest=\"${testdbname}\"" \
+      /root/initialize-key-mgmt.js \
+      /root/create-mongodb-data-key.js \
+      /root/exit.js
 
