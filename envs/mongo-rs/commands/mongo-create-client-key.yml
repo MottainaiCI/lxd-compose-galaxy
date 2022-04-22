@@ -7,8 +7,8 @@ project: mongo-replica-set
 skip_sync: true
 enable_flags:
 {{ if .Values.mongo.enterprise }}
-  - getmasterkey
   - preparemongocryptofiles
+  - createmasterkeydb
   - checkClientkey
   - getclientkey
 {{ else }}

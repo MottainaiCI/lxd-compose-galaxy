@@ -32,6 +32,7 @@ hooks:
       testpwd       ${testpwd}
       testdbname    ${testdbname}
       authdb        ${authdb}
+      mongokey      ${mongokey}
       " && \
       mongosh --quiet --nodb --shell --eval \
       "var mongo_root_user=\"${rootusermongo}\", mongo_root_password=\"${rootpwdmongo}\", mongo_host=\"${hostmongo}\", encryption_master_key=\"${mongokey}\", dbtest=\"${testdbname}\"" \

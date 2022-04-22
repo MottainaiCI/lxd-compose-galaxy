@@ -115,7 +115,7 @@ envs:
       exit
 
     getkeys: |
-      var localkey = keyVault.getKeys().toArray()[0]._id
+      var localkey = keyVault.getKeys().toArray()[keyVault.getKeys().toArray().length-1]._id
       print(`localkey=${localkey}`)
 
     exportKeys: |
