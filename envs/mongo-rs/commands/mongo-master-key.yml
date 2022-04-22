@@ -5,7 +5,6 @@ description: |
 project: mongo-replica-set
 skip_sync: true
 enable_flags:
-#  - mongo_master_key
 {{ if .Values.mongo.enterprise }}
   - preparemongocryptofiles
   - getmasterkey
@@ -14,5 +13,5 @@ enable_flags:
   - nocryptocommunity
 {{ end }}
 include_hooks_files:
-- hooks/mongo-create-masterkey.yml
 - hooks/mongo-get-master-key.yml
+- hooks/mongo-create-masterkey.yml
