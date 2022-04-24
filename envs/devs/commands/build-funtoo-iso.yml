@@ -17,13 +17,14 @@ description: |
 
   The ISOs will be available under the iso/ directory.
 
+  Set --env "spec_file=<file>.yaml" to change ISO spec.
+
 project: "macaroni-dev-services"
 apply_alias: true
 disable_groups:
   - "macaroni::iso-makeiso"
 enable_flags:
   - setup
-  - 
   #  - luet_master
   - upgrade
   - install_geniso

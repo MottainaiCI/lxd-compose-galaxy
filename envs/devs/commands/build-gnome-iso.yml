@@ -1,35 +1,36 @@
 # Author: Daniele Rondina, geaaru@sabayonlinux.org
 # Description: Command for build Mocaccino Desktop ISO.
 
-name: mocaccino-build-gnome-iso
+name: macaroni-build-gnome-iso
 description: |
-  Build Mocaccino Gnome Desktop ISO.
+  Build Macaroni Gnome Desktop ISO.
 
   The generated ISO is copy locally from the container.
 
-  $> lxd-compose c r mocaccino-dev-services mocaccino-build-gnome-iso \
+  $> lxd-compose c r macaroni-dev-services macaroni-build-gnome-iso \
      --destroy
 
   or on rewrite target LXD Instance:
 
-  $> lxd-compose c r mocaccino-dev-services mocaccino-build-gnome-iso \
+  $> lxd-compose c r macaroni-dev-services macaroni-build-gnome-iso \
      --destroy --render-env "connection=your-remote"
 
   The ISOs will be available under the iso/ directory.
 
-project: "mocaccino-dev-services"
+project: "macaroni-dev-services"
 apply_alias: true
 disable_groups:
-  - "mocaccino::iso-geniso"
+  - "macaroni::iso-geniso"
 envs:
   envs:
-    repo: "https://github.com/mocaccinoOS/mocaccino.git"
+    repo: "https://github.com/funtoo/macaroni-funtoo.git"
     repo_branch: "master"
-    spec_file: "specs/gnome.yaml"
+    spec_file: "funtoo-live-testing.yaml"
+    WORKSPACE: "iso/"
     TMPDIR: "./tmp"
     LUET_CONFIG_PROTECT_SKIP: "true"
     #LUET_GENERAL__DEBUG: "true"
     BUILD_ISO: "1"
     HTTP_TIMEOUT: 0
     LUET_FORCE: "true"
-    LUET_GENERAL__CONCURRENCY: "2"
+    LUET_GENERAL__CONCURRENCY: "8"

@@ -26,7 +26,7 @@ projects:
 
   - name: "macaroni-dev-services"
     description: |
-      List of groups to run Macaroni OS Build tasks
+      Macaroni OS Build tasks for ISOs
 
     include_env_files:
 
@@ -43,7 +43,7 @@ projects:
         commands:
           # DHCP seems slow
           - sleep 2
-          - apt-get install -y xorriso squashfs-tools dosfstools file curl
+          - apt-get install -y xorriso squashfs-tools dosfstools file curl git make wget
 
       - event: post-node-creation
         flags:
@@ -51,7 +51,7 @@ projects:
         commands:
           - rm -rvf /etc/luet/repos.conf.d/* || true
           - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
-          - luet install utils/yq utils/jq system/luet-extensions system/luet-devkit
+          - luet install utils/yq utils/jq system/luet-devkit
           - luet cleanup
           - luet repo list
 
@@ -60,6 +60,15 @@ projects:
           - upgrade
         commands:
           - luet upgrade && luet cleanup
+
+      - event: pre-node-sync
+        flags:
+          - install_geniso
+        commands:
+          - >-
+            eval 'rm -rf /extensions || true' &&
+            git clone https://github.com/geaaru/extensions.git /extensions &&
+            cd /extensions/extensions/geniso && make install
 
       - event: post-node-sync
         disable: true
@@ -71,15 +80,6 @@ projects:
           - >-
             curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh
             | sudo sh
-
-      - event: pre-node-sync
-        flags:
-          - install_geniso
-        commands:
-          - >-
-            eval 'rm -rf /extensions || true' &&
-            git clone https://github.com/geaaru/extensions.git /extensions &&
-            cd /extensions/extensions/geniso && make install
 
     groups:
       - name: "macaroni::iso-geniso"
@@ -100,8 +100,8 @@ projects:
 
         nodes:
           - name: macaroni-iso
-            image_source: "mocaccino/builder"
-            image_remote_server: "keybase-geaaru"
+            image_source: "ubuntu/21.10"
+            image_remote_server: "images"
 
             hooks:
               - event: pre-node-sync
@@ -144,6 +144,9 @@ projects:
 
             * local_luet_binary: to set with the path of the local luet binary to push
               in the container. If not set it's used official binary.
+
+          NOTE: luet-makeiso doesn't manage a chroot env correctly and it's experimental.
+                Use luet-geniso group for now.
 
         common_profiles:
           - default
