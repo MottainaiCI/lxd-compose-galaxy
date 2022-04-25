@@ -100,7 +100,7 @@ projects:
 
         nodes:
           - name: macaroni-iso
-            image_source: "ubuntu/21.10"
+            image_source: "{{ .Values.default_ubuntu_image }}"
             image_remote_server: "images"
 
             hooks:

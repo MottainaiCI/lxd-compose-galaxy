@@ -1,5 +1,5 @@
 # Author: Daniele Rondina, geaaru@sabayonlinux.org
-# Description: Command for build Mocaccino Desktop ISO.
+# Description: Command for build Macaroni Desktop ISO.
 
 name: macaroni-build-gnome-iso
 description: |
