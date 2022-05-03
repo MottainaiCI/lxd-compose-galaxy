@@ -3,6 +3,6 @@ description: Default Storage
 devices:
   root:
     path: /
-    pool: default
+    pool: {{ .Values.default_storage | default "default" }}
     type: disk
 
