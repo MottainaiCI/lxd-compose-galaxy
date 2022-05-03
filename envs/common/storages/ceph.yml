@@ -1,0 +1,17 @@
+name: ceph-source
+description: |
+  Ceph Storage pool.
+
+  NOTE: Not tested.
+
+driver: "ceph"
+config:
+{{ if .Values.ceph_source }}
+  source: "{{ .Values.ceph_source }}"
+{{ end }}
+{{ if .Values.ceph_cluster_name }}
+  ceph.cluster_name: {{ .Values.ceph_cluster_name }}
+{{ end }}
+{{ if .Values.ceph_osd_pool_name }}
+  ceph.osd.pool_name: {{ .Values.ceph_osd_pool_name }}
+{{ end }}

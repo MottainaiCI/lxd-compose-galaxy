@@ -1,0 +1,14 @@
+name: lvm-loopback
+description: |
+  LVM Loopback Storage pool.
+
+driver: "lvm"
+config:
+  source: {{ .Values.storage_source | default "lvm" }}
+  size: {{ .Values.storage_size | default "100GB" }}
+{{ if .Values.lvm_thinpool_name }}
+  lvm.thinpool_name: {{ .Values.lvm_thinpool_name }}
+{{ end }}
+{{ if .Values.lvm_vg_name }}
+  lvm.vg_name: {{ .Values.lvm_vg_name }}
+{{ end }}

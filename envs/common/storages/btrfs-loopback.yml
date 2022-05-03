@@ -1,0 +1,17 @@
+name: btrfs-loopback
+description: |
+  BTRFS Storage Pool Loop disk.
+
+  Use --render-env "storage_size=200GB" to override
+  default 150GB size.
+
+  Use --render-env "storage_mount_options=compress=zstd:3"
+  to enable additional btrfs mount options for compression
+  or other.
+
+driver: "btrfs"
+config:
+  size: {{ .Values.storage_size | default "150GB" }}
+{{ if .Values.storage_mount_options }}
+  btrfs.mount_options: {{ .Values.storage_mount_options }}
+{{ end }}

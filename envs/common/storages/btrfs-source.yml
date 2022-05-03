@@ -1,0 +1,10 @@
+name: btrfs-source
+description: |
+  BTRFS Storage Pool using existing path or device.
+
+  Using --render-env "storage_source=/dev/sdX" to override
+  default /lxd path.
+
+driver: "btrfs"
+config:
+  source: {{ .Values.storage_source | default "/lxd" }}

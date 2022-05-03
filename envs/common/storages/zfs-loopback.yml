@@ -1,0 +1,10 @@
+name: zfs-loopback
+description: |
+  ZFS Loopback Storage pool.
+
+driver: "zfs"
+config:
+  size: {{ .Values.storage_size | default "100GB" }}
+{{ if .Values.zfs_pool_name }}
+  zfs.pool_name: {{ .Values.zfs_pool_name | default "lxd-compose-pool" }}
+{{ end }}

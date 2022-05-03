@@ -1,0 +1,11 @@
+name: zfs-source
+description: |
+  ZFS Storage pool using existing ZFS Pool or dataset
+  or create a new ZFS Zpool on the specified device.
+
+driver: "zfs"
+config:
+  source: {{ .Values.storage_source | default "zfs-pool" }}
+{{ if .Values.zfs_pool_name }}
+  zfs.pool_name: {{ .Values.zfs_pool_name }}
+{{ end }}

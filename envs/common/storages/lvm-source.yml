@@ -1,0 +1,15 @@
+name: lvm-source
+description: |
+  LVM Storage Pool using existing path or device.
+
+  Using --render-env "storage_source=/dev/sdx" to
+  override existing `lvm` volume group.
+driver: "lvm"
+config:
+  source: {{ .Values.storage_source | default "lvm" }}
+{{ if .Values.lvm_thinpool_name }}
+  lvm.thinpool_name: {{ .Values.lvm_thinpool_name }}
+{{ end }}
+{{ if .Values.lvm_vg_name }}
+  lvm.vg_name: {{ .Values.lvm_vg_name }}
+{{ end }}
