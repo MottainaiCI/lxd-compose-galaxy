@@ -1,4 +1,4 @@
-# Author: Daniele Rondina, geaaru@sabayonlinux.org
+# Author: Daniele Rondina, geaaru@funtoo.org
 # Description: Setup LXD environment.
 
 version: "1"
@@ -17,6 +17,16 @@ include_profiles_files:
 include_networks_files:
 - ../common/networks/mottainai0.yml
 
+include_storage_files:
+- ../common/storages/dir-source.yml
+- ../common/storages/btrfs-source.yml
+- ../common/storages/btrfs-loopback.yml
+- ../common/storages/zfs-source.yml
+- ../common/storages/zfs-loopback.yml
+- ../common/storages/lvm-source.yml
+- ../common/storages/lvm-loopback.yml
+- ../common/storages/ceph.yml
+
 include_commands_files:
 
 projects:
@@ -25,11 +35,12 @@ projects:
     description: |
       Setup LXD instance and test container.
 
-      NOTE: ATM, lxd-compose initialize LXD connection before
-            runs hooks. LXD must be running for the setup.
+      NOTE: You need jq cli tool.
 
     include_env_files:
       - vars/common.yaml
+
+    {{ $os := .Values.os | default "unknown" }}
 
     vars:
       - envs:
@@ -37,7 +48,53 @@ projects:
           LUET_YES: "true"
           SUDO: "sudo"
 
+          {{ if eq $os "funtoo" }}
+          funtoo_packages: app-emulation/lxd net-misc/bridge-utils app-misc/jq
+          {{ end }}
+
+          {{ if eq $os "macaroni" }}
+          luet_packages:
+            - app-emulation/lxd
+            - net-misc/bridge-utils
+          {{ end }}
+
+
     hooks:
+
+      - event: pre-project
+        node: "host"
+        flags:
+          - install_packages
+        commands:
+
+        {{ if eq $os "funtoo" }}
+        - emerge -j ${funtoo_packages} -t -u
+        # Setup bootstrap auto starting of the needed service
+        - >-
+          rc-update add lxd &&
+          rc-update add lxcfs &&
+          /etc/init.d/lxd start
+        {{ end }}
+
+        {{ if eq $os "macaroni" }}
+        - luet repo update
+        - >-
+          yq_present=$(jq --help 2>&1 1>/dev/null) ;
+          if [ ${yq_present} -ne 0 ] ; then
+          luet i -y utils/jq ;
+          fi
+
+        - >-
+          luet i -y $(echo ${luet_packages} | jq '.[]' -r) &&
+          luet cleanup
+        # Setup bootstrap auto starting of the needed service
+        - >-
+          rc-update add lxd &&
+          rc-update add lxcfs &&
+          /etc/init.d/lxd start
+        {{ end }}
+
+
       - event: pre-project
         node: "host"
         flags:
@@ -89,13 +146,32 @@ projects:
             $SUDO modprobe tun || exit 1 ;
             fi
 
+      {{ if .Values.storage_name }}
+      - event: pre-project
+        node: "host"
+        flags:
+          - storage_setup
+        commands:
+          - >-
+            {{- if .Values.storage_render_values }}
+            lxd-compose storage create lxd-setup-and-test {{ .Values.storage_name }}
+            --render-values {{ .Values.storage_render_values }}
+            {{- else }}
+            lxd-compose storage create lxd-setup-and-test {{ .Values.storage_name }}
+            {{ end }}
+      {{ end }}
+
       - event: pre-project
         node: "host"
         flags:
           - setup_lxd_resources
         commands:
           - >-
+            {{- if .Values.storage_name }}
+            lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -a &&
+            {{- else }}
             lxd-compose profile create lxd-setup-and-test -a &&
+            {{- end }}
             lxd-compose network create lxd-setup-and-test -a
 
 
