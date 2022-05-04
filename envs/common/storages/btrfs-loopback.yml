@@ -9,6 +9,9 @@ description: |
   to enable additional btrfs mount options for compression
   or other.
 
+  Other compressions options:
+  storage_mount_options=rw,relatime,space_cache,user_subvol_rm_allowed,subvolid=5,subvol=/,compress=zstd
+
 driver: "btrfs"
 config:
   size: {{ .Values.storage_size | default "150GB" }}
