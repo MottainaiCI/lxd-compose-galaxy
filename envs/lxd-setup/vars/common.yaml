@@ -67,4 +67,15 @@ envs:
       # It seems that for cluster it's better define the
       # server interface used.
       core.https_address: "[::]:8443"
-      images.auto_update_interval: 15
+
+      # images.auto_update_interval: 15
+
+      # Configure HTTPS proxy to use
+      # core.proxy_https: "http://192.168.10.1:8080"
+      # Configure HTTP proxy to use
+      # core.proxy_http: "http://192.168.10.1:8080"
+      # Configure Proxy Ignore hosts
+      # core.proxy_ignore_hosts
+
+      # See https://linuxcontainers.org/lxd/docs/master/server/
+      # for all available options.

@@ -47,6 +47,7 @@ projects:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
           SUDO: "sudo"
+          os: {{ $os }}
 
           {{ if eq $os "funtoo" }}
           funtoo_packages: app-emulation/lxd net-misc/bridge-utils app-misc/jq
@@ -73,13 +74,20 @@ projects:
         - >-
           rc-update add lxd &&
           rc-update add lxcfs &&
-          /etc/init.d/lxd start
+          /etc/init.d/lxd start &&
+          sleep 3 &&
+          /etc/init.d/lxd status &&
+          lxc list
+        # Initialize LXD with the selected configuration.
+        # TODO: Integrate the cluster configuration too.
+        - >-
+          echo ${lxd_config} | yq r -P - | lxd init --preseed
         {{ end }}
 
         {{ if eq $os "macaroni" }}
         - luet repo update
         - >-
-          yq_present=$(jq --help 2>&1 1>/dev/null) ;
+          jq --help 2>&1 1>/dev/null ; yq_present=$? ;
           if [ ${yq_present} -ne 0 ] ; then
           luet i -y utils/jq ;
           fi
@@ -91,7 +99,14 @@ projects:
         - >-
           rc-update add lxd &&
           rc-update add lxcfs &&
-          /etc/init.d/lxd start
+          /etc/init.d/lxd start &&
+          sleep 3 &&
+          /etc/init.d/lxd status &&
+          lxc list
+        # Initialize LXD with the selected configuration.
+        # TODO: Integrate the cluster configuration too.
+        - >-
+          echo ${lxd_config} | yq r -P - | lxd init --preseed
         {{ end }}
 
 
@@ -168,6 +183,8 @@ projects:
         commands:
           - >-
             {{- if .Values.storage_name }}
+            # The default profile is created automatically so we need to update it.
+            lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -u default &&
             lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -a &&
             {{- else }}
             lxd-compose profile create lxd-setup-and-test -a &&
