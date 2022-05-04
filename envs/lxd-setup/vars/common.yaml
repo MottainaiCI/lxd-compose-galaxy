@@ -68,8 +68,6 @@ envs:
       # server interface used.
       core.https_address: "[::]:8443"
 
-      # images.auto_update_interval: 15
-
       # Configure HTTPS proxy to use
       # core.proxy_https: "http://192.168.10.1:8080"
       # Configure HTTP proxy to use
@@ -79,3 +77,17 @@ envs:
 
       # See https://linuxcontainers.org/lxd/docs/master/server/
       # for all available options.
+
+      # Number of days after which an unused cached remote
+      # image will be flushed
+      images.remote_cache_expiry: 5
+
+      # Whether to automatically update any image that
+      # LXD caches
+      # images.auto_update_cached: true
+
+      # Interval in hours at which
+      # to look for update to cached images
+      # (0 disables it)
+      # images.auto_update_interval: 15
+
