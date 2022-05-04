@@ -1,5 +1,5 @@
 name: lvm-source
-description: |
+documentation: |
   LVM Storage Pool using existing path or device.
 
   Using --render-env "storage_source=/dev/sdx" to

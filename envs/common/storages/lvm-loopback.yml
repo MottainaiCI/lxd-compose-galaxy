@@ -1,5 +1,5 @@
 name: lvm-loopback
-description: |
+documentation: |
   LVM Loopback Storage pool.
 
 driver: "lvm"

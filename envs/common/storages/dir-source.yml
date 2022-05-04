@@ -1,5 +1,5 @@
 name: dir-source
-description: |
+documentation: |
   Directory Storage Pool using existing path {{ .Values.storage_source | default "/lxd" }}.
 
   Using --render-env "storage_source=/mydir" to

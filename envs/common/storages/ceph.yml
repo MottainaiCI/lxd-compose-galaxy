@@ -1,5 +1,5 @@
 name: ceph-source
-description: |
+documentation: |
   Ceph Storage pool.
 
   NOTE: Not tested.

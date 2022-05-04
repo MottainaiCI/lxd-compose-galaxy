@@ -1,5 +1,5 @@
 name: btrfs-loopback
-description: |
+documentation: |
   BTRFS Storage Pool Loop disk.
 
   Use --render-env "storage_size=200GB" to override
@@ -11,11 +11,14 @@ description: |
 
   Other compressions options:
 
-  storage_mount_options=rw,relatime,space_cache,user_subvol_rm_allowed,subvolid=5,subvol=/,compress=zstd:3
+  storage_mount_options=rw,relatime,space_cache,compress=zstd:3
 
 driver: "btrfs"
 config:
   size: {{ .Values.storage_size | default "150GB" }}
 {{ if .Values.storage_mount_options }}
   btrfs.mount_options: {{ .Values.storage_mount_options }}
+{{ end }}
+{{ if .Values.storage_source }}
+  source: {{ .Values.storage_source | default "/lxd" }}
 {{ end }}

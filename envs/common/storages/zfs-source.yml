@@ -1,5 +1,5 @@
 name: zfs-source
-description: |
+documentation: |
   ZFS Storage pool using existing ZFS Pool or dataset
   or create a new ZFS Zpool on the specified device.
 

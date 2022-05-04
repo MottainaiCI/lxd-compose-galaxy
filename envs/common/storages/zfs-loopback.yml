@@ -1,6 +1,12 @@
 name: zfs-loopback
-description: |
+documentation: |
   ZFS Loopback Storage pool.
+
+  Use --render-env "zfs_pool_name=pool" to override
+  default ZFS pool name lxd-compose-pool.
+
+  Use --render-env "storage_size=XGB" to override
+  default storage size of {{ .Values.storage_size | default "100GB" }}
 
 driver: "zfs"
 config:

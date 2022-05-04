@@ -1,5 +1,5 @@
 name: btrfs-source
-description: |
+documentation: |
   BTRFS Storage Pool using existing path or device.
 
   Using --render-env "storage_source=/dev/sdX" to override
