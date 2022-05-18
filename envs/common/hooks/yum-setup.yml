@@ -1,0 +1,26 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+  - >-
+    [ -n "${sleep}" ] && sleep ${sleep} ;
+    yum update &&
+    yum upgrade &&
+    yum install -y oraclelinux-release-el${oraclelinux_release:-8} &&
+    yum install -y wget
+    # Install Luet and common tools. This will permit to use the last release without
+    # force a specific version.
+  - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+  - >-
+    luet i -y utils/jq utils/yq &&
+    luet cleanup --purge-repos
+  - >-
+    if [ "${yum_preinstall}" != "" ] ; then
+    bash -c "${yum_preinstall}" ;
+    fi
+  - >-
+    if [ "${yum_packages}" != "" ] ; then
+    yum install -y $(echo ${yum_packages} | jq '.[]' -r) ;
+    fi &&
+    yum clean all

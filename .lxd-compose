@@ -16,6 +16,7 @@ env_dirs:
 - ./envs/nginx
 - ./envs/docker-registry
 - ./envs/mongo-rs
+- ./envs/mysql8-cluster
 - ./envs/mottainai-server
 - ./envs/mottainai-agent
 - ./envs/luet-runner

@@ -1,0 +1,18 @@
+envs:
+
+  # Mysql Cluster configuration
+  mysql_root_pwd: "lxdCompose!01"
+  mysql_cluster_user: clusteradmin
+  mysql_cluster_user_pwd: "LxdComposeCluster!01"
+  mysql_cluster_name: "lxdcomposeCluster"
+  # https://dev.mysql.com/doc/refman/8.0/en/mysql-innodb-cluster-working-with-cluster.html#mysql-innodb-cluster-securing
+  mysql_cluster_ssl_mode: "REQUIRED"
+  mysql_cluster_recovery_method: 'clone'
+
+  # mysqlsh clusteradmin@localhost:6446 --password='FreeR@dius123' --mysql
+
+  # Service database configuration
+  mysql_service_database: "mydb"
+  mysql_service_user: "myuser"
+  mysql_service_pwd: "myuserpwd"
+  mysql_use_native_password: True

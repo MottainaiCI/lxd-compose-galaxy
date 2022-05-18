@@ -1,0 +1,300 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+
+projects:
+
+  - name: "mysql8-router"
+    description: |
+      Setup MySQL Router(s)
+
+    include_env_files:
+      - vars/mysql.yml
+
+    vars:
+      - envs:
+
+          lxd_network_domain: {{ .Values.default_internal_domain }}
+
+          yum_preinstall: |
+            yum install -y mysql-release-el8.x86_64 ;
+            yum update
+
+          yum_packages:
+            - cronie
+            - cronie-noanacron
+            - curl
+            - dhclient
+            - initscripts
+            - openssh-clients
+            - passwd
+            - policycoreutils
+            - rootfiles
+            - rsyslog
+            - vim
+            - net-tools
+            # Mysql stuff
+            - mysql-shell
+            - mysql-router
+            - mysql-server
+
+
+{{ $rnodes := .Values.mysql8.router_nodes|int }}
+
+    groups:
+      - name: "mysql-routers"
+        description: "MySQL Router"
+
+        connection: "{{ .Values.connection }}"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+
+        include_hooks_files:
+          - ../common/hooks/yum-setup.yml
+
+        nodes:
+{{ range $i := until $rnodes }}
+{{ $instance := add1 $i }}
+
+          - name: mrouter{{ $instance }}
+            image_source: "oracle/8"
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    echo ${mysql_cluster_user_pwd} |
+                    mysqlrouter --user=mysqlrouter --bootstrap
+                    ${mysql_cluster_user}@mysql1.${lxd_network_domain} &&
+                    systemctl start mysqlrouter &&
+                    systemctl status mysqlrouter &&
+                    systemctl enable mysqlrouter
+
+{{ end }}
+
+
+
+  - name: "mysql8-rs"
+    description: |
+      Setup MySQL Cluster Replica Set
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/mysql.yml
+
+    vars:
+      - envs:
+
+          lxd_network_domain: {{ .Values.default_internal_domain }}
+
+          yum_preinstall: |
+            yum install -y mysql-release-el8.x86_64 ;
+            yum update
+
+          yum_packages:
+            - cronie
+            - cronie-noanacron
+            - curl
+            - dhclient
+            - initscripts
+            - openssh-clients
+            - passwd
+            - policycoreutils
+            - rootfiles
+            - rsyslog
+            - vim
+            - net-tools
+            # Mysql stuff
+            - mysql-shell
+            - mysql-router
+            - mysql-server
+
+{{ $nodes := .Values.mysql8.replicaset_nodes|int }}
+
+    groups:
+      - name: "mysql-databases"
+        description: "MySQL Replica Set Databases"
+
+        connection: "{{ .Values.connection }}"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+
+        include_hooks_files:
+          - ../common/hooks/yum-setup.yml
+
+        hooks:
+          - event: post-group
+            node: mysql1
+            flags:
+              - cluster_setup
+            commands:
+
+              # Prepare create-cluster.js
+              - |
+                echo "
+                cluster=dba.createCluster('${mysql_cluster_name}',
+                  { memberSslMode: '${mysql_cluster_ssl_mode}'});
+                print(cluster.status());
+                {{- range $i := until $nodes }}
+                {{- $instance := add1 $i }}
+                {{- if ne $instance 1 }}
+                cluster.addInstance('${mysql_cluster_user}@mysql{{ $instance }}.${lxd_network_domain}:3306', {
+                  password: '${mysql_cluster_user_pwd}',
+                  recoveryMethod: '${mysql_cluster_recovery_method}'
+                });
+                print(cluster.status());
+                {{- end }}
+                {{- end }}
+                print(cluster.status());
+                " > /tmp/create-cluster.js
+              - cat /tmp/create-cluster.js
+              - >-
+                if [ ! -e /.cluster_configured ] ; then
+                echo "mysqlsh ${mysql_cluster_user}@localhost
+                --password='${mysql_cluster_user_pwd}'
+                --js -f /tmp/create-cluster.js" &&
+                mysqlsh ${mysql_cluster_user}@localhost
+                -p"${mysql_cluster_user_pwd}"
+                --js -f /tmp/create-cluster.js &&
+                touch /.cluster_configured ;
+                fi
+              - rm /tmp/create-cluster.js
+
+              # Creating the service database.
+              - |
+                identified="IDENTIFIED" ;
+                if [ "${mysql_use_native_password}" = "True" ] ; then
+                identified="${identified} WITH mysql_native_password" ;
+                fi ;
+                echo "
+                CREATE DATABASE ${mysql_service_database};
+                SELECT \"Created Database ${mysql_service_database} correctly\";
+                CREATE USER \`${mysql_service_user}\`
+                ${identified}
+                BY '${mysql_service_pwd}' ;
+                GRANT ALL PRIVILEGES on ${mysql_service_database}.* TO \`${mysql_service_user}\`@'%' WITH GRANT OPTION;
+                SELECT \"Create user ${mysql_service_user} correctly!\";
+                " > /tmp/create-db.sql &&
+                cat /tmp/create-db.sql
+              - >-
+                if [ ! -e /.db_configured ] ; then
+                mysqlsh root@localhost -p"${mysql_root_pwd}" --sql -f /tmp/create-db.sql &&
+                touch /.db_configured ;
+                fi
+              - rm /tmp/create-db.sql
+
+
+              # Initialize timezones
+              - >-
+                if [ ! -e /.timezone_configured ] ; then
+                mysql_tzinfo_to_sql /usr/share/zoneinfo/ > /tmp/timezone.sql &&
+                mysqlsh root@localhost -p"${mysql_root_pwd}"
+                --sql --force --database=mysql -f /tmp/timezone.sql &&
+                rm /tmp/timezone.sql &&
+                touch /.timezone_configured ;
+                fi
+
+        nodes:
+{{ range $i := until $nodes }}
+{{ $instance := add1 $i }}
+
+          - name: mysql{{ $instance }}
+            image_source: "oracle/8"
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            labels:
+              server_id: {{ $instance }}
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    systemctl start mysqld &&
+                    systemctl status mysqld
+                  # Setup mysql cluster user and update root password.
+                  - |
+                    echo "
+
+                    SET password='${mysql_root_pwd}' ;
+                    SELECT 'Updated root password correctly!';
+                    CREATE USER \`${mysql_cluster_user}\` IDENTIFIED BY '${mysql_cluster_user_pwd}' ;
+                    GRANT ALL PRIVILEGES on *.* TO \`${mysql_cluster_user}\`@'%' WITH GRANT OPTION ;
+                    SELECT 'Create cluster admin user ${mysql_cluster_user} correctly!';
+                    RESET master;
+                    " > /tmp/initialize-mysql.sql
+                  - cat /tmp/initialize-mysql.sql
+
+                  - sleep 2
+                  - tail -n 10 /var/log/mysql/mysqld.log
+                  # root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option
+                  - >-
+                    mysqlsh root@localhost
+                    --password=''
+                    --sql -f /tmp/initialize-mysql.sql
+                  - rm /tmp/initialize-mysql.sql
+
+                  # Here MySQL it's very stupid. If you try to ping and resolve
+                  # mysqlX.domain drop domain and use localhost name.
+                  - >-
+                    sed -i -e 1d /etc/hosts
+
+                # The default configuration of the MySQL Server enable
+                # compatibility with mysql 5.7 authentication.
+                # To disable this modify the file: /etc/my.cnf.d/mysql-default-authentication-plugin.cnf
+
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - |
+                    echo "
+                    [mysqld]
+                    binlog_transaction_dependency_tracking=WRITESET
+                    enforce_gtid_consistency=ON
+                    gtid_mode=ON
+                    replica_parallel_type=LOGICAL_CLOCK
+                    replica_preserve_commit_order=ON
+                    " > /etc/my.cnf.d/lxd-compose.cnf
+
+                  - |
+                    echo "
+                    [mysqld]
+                    server-id=${server_id}
+                    " > /etc/my.cnf.d/id.cnf
+
+                  - systemctl restart mysqld
+
+{{ end }}
