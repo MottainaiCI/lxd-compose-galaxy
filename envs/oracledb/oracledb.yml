@@ -169,3 +169,116 @@ projects:
           - >
             timedatectl set-timezone ${local_timezone} || true ;
             timedatectl set-timezone ${local_timezone}
+
+  - name: "oracledb::19c"
+    description: "DATABASE ORACLE 19C"
+
+    vars:
+      - envs:
+          LC_ALL: "en_US.utf8"
+          TZ: "Europe/Rome"
+
+    # Define optional directory where retrieve the groups
+    # of the environment. The relative path is based on
+    # directory of the environment file.
+    include_groups_files:
+     - 19c/groups/19c.yaml
+     #- 21c/groups/21c.yaml
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+     - 19c/vars/databases.yml
+
+    include_hooks_files:
+      - ../common/hooks/yum-setup.yml
+
+    # This hooks are executed to all nodes of all groups
+    hooks:
+      - event: pre-node-sync
+        flags:
+          - general
+        commands:
+          - >
+            echo "##################" &&
+            echo "GENERAL" &&
+            echo "##################"
+          - >
+            rm -r /tmp/*.rsp || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.service || echo "NO FILE FOUND" && 
+            rm -r /tmp/.profile* || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.zip || echo "NO FILE FOUND"
+      - event: pre-node-sync
+        flags:
+          - general
+        commands:
+          - hostname | xargs | tr '\n' ' '
+        out2var: "hostnamevar"
+      - event: post-node-creation
+        flags:
+          - sysctlcfg
+        commands:
+          - cat /proc/meminfo | grep MemTotal | cut -d":" -f2 | sed "s/ kB//" | xargs | tr '\n' ' '
+        out2var: "memtotal"
+      - event: post-node-creation
+        flags:
+          - sysctlcfg
+        commands:
+          - echo "0.4 * ${memtotal} / 1 * 1024 / 4096 / 1" | bc | tr -d '\n'
+        out2var: "kshma"
+      - event: post-node-postnode
+        flags:
+          - sysctlcfg
+        commands:
+          - echo "0.5 * ${memtotal} * 1024 / 1" | bc | tr -d '\n' 2> /dev/null
+        out2var: "kshmx"
+      #- event: pre-node-sync
+      #  node: "host"
+      #  flags:
+      #    - sysctlcfg
+      #  commands:
+      #    - sudo sysctl -w kernel.shmall=${kshma}
+      #    - sudo sysctl -w kernel.shmmax=${kshmx}
+      #    - sudo sysctl -w kernel.shmmni=4096
+      #    - sudo sysctl -w kernel.sem="250 32000 100 128"
+      #    - sudo sysctl -w fs.file-max=6815744
+      #    - sudo sysctl -w fs.aio-max-nr=1048576
+      #    - sudo sysctl -w net.ipv4.ip_local_port_range="9000 65500"
+      #    - sudo sysctl -w net.core.rmem_default=262144
+      #    - sudo sysctl -w net.core.rmem_max=4194304
+      #    - sudo sysctl -w net.core.wmem_default=262144
+      #    - sudo sysctl -w net.core.wmem_max=1048576
+      #    - sudo sysctl -w kernel.panic_on_oops=1
+      #    - sudo sysctl -w vm.min_free_kbytes=524288
+      #    - sudo sysctl -a | grep -e kernel -e fs -e net -e vm | grep -e shm[am] -e "sem " -e aio -e "core\..mem" -e port_range -e oops -e free_k
+      - event: post-node-creation
+        flags:
+          - sysctlcfg
+        commands:
+          - >
+            echo "##################" &&
+            echo "CREATE SYSCTL FILE" &&
+            echo "##################"
+          - > 
+            mount -o remount rw /proc/sys
+            echo "# Oracle specific parameters" >> /etc/sysctl.conf && 
+            echo "kernel.shmall=${kshma}" >> /etc/sysctl.conf && 
+            echo "kernel.shmmax=${kshmx}" >> /etc/sysctl.conf && 
+            echo "${sysctlvar}" >> /etc/sysctl.conf &&
+            cat /etc/sysctl.conf &&
+            /sbin/sysctl --system
+      #- event: post-node-creation
+      #  flags:
+      #    - luet
+      #  commands:
+      #    - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+      #    - luet install -y utils/jq utils/yq
+      - event: pre-node-sync
+        flags:
+          - postnode
+        commands:
+
+          # It seems fail the first time
+          - >
+            timedatectl set-timezone ${local_timezone} || true ;
+            timedatectl set-timezone ${local_timezone}

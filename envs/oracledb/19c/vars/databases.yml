@@ -1,0 +1,221 @@
+envs:
+
+  oraclelinux_release: 7
+  oracle_inventory_loc: "/u01/app/oraInventory"
+  default_dbpass: "qwe123"
+  default_gipass: "Oracle123"
+  configure_cluster: False
+  dbca_templatename: "General_Purpose.dbc"
+  dbca_initParams: ""
+  motdfile: |
+    ----------------------------------------
+    Welcome to HOSTNAME
+    RELEASE ARCH
+    FQDN:### HOSTNAME.DOMAINNAME
+    IPs 
+    LISTIP
+    
+    Processor:### CPUINFO
+    
+    #CPU's:### NUMCPU
+    Memory:### TOTMEM
+    Kernel:### KERNEL
+    
+    ----------------------------------------
+  
+  sysctlvar: |
+    kernel.shmmni=4096
+    kernel.sem="250 32000 100 128"
+    fs.file-max=6815744
+    fs.aio-max-nr=1048576
+    net.ipv4.ip_local_port_range="9000 65500"
+    net.core.rmem_default=262144
+    net.core.rmem_max=4194304
+    net.core.wmem_default=262144
+    net.core.wmem_max=1048576
+    kernel.panic_on_oops=1
+    vm.min_free_kbytes=524288
+
+  kernel_shmall: 419430
+  kernel_shmmax: 2147483648
+  kernel_shmmni: 4096
+  kernel_sem: "250 32000 100 128"
+  fs_file_max: 6815744
+  fs_aio_max_nr: 1048576
+  net_ipv4_ip_local_port_range: "9000 65500"
+  net_core_rmem_default: 262144
+  net_core_rmem_max: 4194304
+  net_core_wmem_default: 262144
+  net_core_wmem_max: 1048576
+  kernel_panic_on_oops: 1
+  vm_min_free_kbytes: 524288
+  epel_repo: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+  ol7_repo_prefix: "http://public-yum.oracle.com/"
+  ol7_repo: "public-yum-ol7.repo"
+  local_timezone: "Europe/Rome"
+  install_files:
+    files:
+      - "V982063-01.zip"
+  yum_preinstall: ""
+  yum_packages:
+    - cronie
+    - cronie-noanacron
+    - curl
+    - dhclient
+    - initscripts
+    - openssh-clients
+    - passwd
+    - policycoreutils
+    - policycoreutils-python
+    - rootfiles
+    - rsyslog
+    - vim-minimal
+    - screen
+  common_packages_ora:
+    - facter
+    - procps
+    - module-init-tools
+    - ethtool
+    - bc
+    - nc
+    - bind-utils
+    - nfs-utils
+    - make
+    - sysstat
+    - unzip
+    - compat-libcap1
+    - collectl
+    - rlwrap
+    - tigervnc-server
+    - ntp
+    - expect
+    - git
+    - lvm2
+    - xfsprogs
+    - btrfs-progs
+    - python-devel
+    - python-pip
+    - libselinux-python
+    - autofs
+    - parted
+    - mlocate
+    - ntp
+    - ksh
+    - lvm2
+    - xfsprogs
+    - btrfs-progs
+    - procps
+    - psmisc
+    - htop
+    - tree
+    - rlwrap
+  specific_packages_ora:
+    - bind-utils
+    - nfs-utils
+    - util-linux-ng
+    - xorg-x11-utils
+    - xorg-x11-xauth
+    - net-tools
+    - binutils
+    - compat-libstdc++-33
+    - compat-libstdc++-33.i686
+    - unixODBC-devel
+    - unixODBC-devel.i686
+    - gcc
+    - gcc-c++
+    - glibc
+    - glibc.i686
+    - glibc-devel
+    - glibc-devel.i686
+    - libaio
+    - libaio-devel
+    - libaio.i686
+    - libaio-devel.i686
+    - libgcc
+    - libgcc.i686
+    - libstdc++
+    - libstdc++-devel
+    - libstdc++.i686
+    - libstdc++-devel.i686
+    - libXext
+    - libXext.i686
+    - libXrender
+    - libXrender-devel
+    - zlib-devel
+    - zlib-devel.i686
+    - sysstat
+    - compat-libcap1
+    - xorg-x11-xauth
+    - xorg-x11-xinit
+    - libXtst
+    - libxcb
+    - xdpyinfo
+    - xterm
+    - xsetroot
+    - libXp
+    - libXt
+    - libXau
+    - libXau.i686
+    - libXi
+    - libXi.i686
+    - libX11
+    - libX11.i686
+    - smartmontools
+    - elfutils-libelf-devel.i686
+    - elfutils-libelf-devel
+    - cpp
+
+  databases:
+
+    - name: "CNT1"
+      type: "oracle"
+      address: "172.16.122.133"
+      port: 1521
+      db_identifier: "M2M_DEV_DB"
+      oracle_db_type: "SI"
+      username: "SCHEMA1"
+      password: "SCHEMA10"
+      # if enable is true, db is inserted in databases.xml
+      enable: true
+      pwd:
+        system: qwe123
+        sys: qwe123
+        dbsnmp: qwe123
+        pdbadmin: qwe123
+        PLUGPDB1:
+           appuser1: qwe123
+      is_container: True
+      num_pdbs_pluggable: 0
+      list_pluggable:
+        - name: PDPLUG1
+          datafile_dest: "/u01/app/oracle/oradata/CNT1/PDPLUG1"
+          usrAdmin: pdb_plug_user1
+          pwdAdmin: qwe123
+      num_pdbs: 0
+      pdb_prefix: ""
+      memory: 4096 #memory in MB
+      oracle_base: "/u01/app/oracle"
+      oracle_home_db: "/u01/app/oracle/product/19.0.0/dbhome_1"
+      oracle_user: "oracle"
+      oracle_group: oinstall                          # Primary group for oracle_user.
+      oracle_sw_location: "/oracle-sources/database"
+      oracle_inventory_loc: "/u01/app/oraInventory"
+      oracle_stage: "/u01/stage"
+      oracle_rsp_stage: "/u01/stage/rsp"
+      dba_group: "dba"
+      configure_cluster: false
+      edition: "EE"
+      db_version: "19.0.0"
+      datafile_dest: "/u01/app/oracle/oradata"
+      recoveryfile_dest: "/u01/app/oracle/recovery_area"
+      storage_type: "FS"
+      listener_name: "LISTENER"
+      characterset: "AL32UTF8"
+      oracle_init_params: "db_recovery_file_dest_size=5120,sga_target=1024,sga_max_size='2G',open_cursors=300,processes=500"
+      oracle_database_type: "MULTIPURPOSE"
+      oracle_db_mem_totalmb: 2048
+      redolog_size_in_mb: 50
+      listener_protocols: TCP
+      listener_port: 1521
+
+
