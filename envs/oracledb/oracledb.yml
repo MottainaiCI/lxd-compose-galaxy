@@ -82,6 +82,7 @@ projects:
     vars:
       - envs:
           LC_ALL: "en_US.utf8"
+          TZ: "Europe/Rome"
 
     # Define optional directory where retrieve the groups
     # of the environment. The relative path is based on
@@ -95,8 +96,24 @@ projects:
     include_env_files:
      - 12cr1/vars/databases.yml
 
+    include_hooks_files:
+      - ../common/hooks/yum-setup.yml
+
     # This hooks are executed to all nodes of all groups
     hooks:
+      - event: pre-node-sync
+        flags:
+          - general
+        commands:
+          - >
+            echo "##################" &&
+            echo "GENERAL" &&
+            echo "##################"
+          - >
+            rm -r /tmp/*.rsp || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.service || echo "NO FILE FOUND" && 
+            rm -r /tmp/.profile* || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.zip || echo "NO FILE FOUND"
       - event: pre-node-sync
         flags:
           - general
@@ -113,7 +130,7 @@ projects:
         flags:
           - sysctlcfg
         commands:
-          - echo "1.4 * ${memtotal} / 1 * 1024 / 4096 / 1" | bc | tr -d '\n'
+          - echo "0.4 * ${memtotal} / 1 * 1024 / 4096 / 1" | bc | tr -d '\n'
         out2var: "kshma"
       - event: post-node-postnode
         flags:
@@ -148,18 +165,20 @@ projects:
             echo "##################" &&
             echo "CREATE SYSCTL FILE" &&
             echo "##################"
-          - echo "# Oracle specific parameters" >> /etc/sysctl.conf
-          - echo "kernel.shmall=${kshma}" >> /etc/sysctl.conf
-          - echo "kernel.shmmax=${kshmx}" >> /etc/sysctl.conf
-          - echo "${sysctlvar}" >> /etc/sysctl.conf
-          - cat /etc/sysctl.conf
-      - event: post-node-creation
-        flags:
-          - luet
-        commands:
-          - curl https://get.mocaccino.org/luet/get_luet_root.sh | sh
-          - luet install -y repository/mocaccino-extra-stable repository/mocaccino-os-commons-stable
-          - luet install -y utils/jq utils/yq
+          - > 
+            mount -o remount rw /proc/sys
+            echo "# Oracle specific parameters" >> /etc/sysctl.conf && 
+            echo "kernel.shmall=${kshma}" >> /etc/sysctl.conf && 
+            echo "kernel.shmmax=${kshmx}" >> /etc/sysctl.conf && 
+            echo "${sysctlvar}" >> /etc/sysctl.conf &&
+            cat /etc/sysctl.conf &&
+            /sbin/sysctl --system
+      #- event: post-node-creation
+      #  flags:
+      #    - luet
+      #  commands:
+      #    - curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+      #    - luet install -y utils/jq utils/yq
       - event: pre-node-sync
         flags:
           - postnode

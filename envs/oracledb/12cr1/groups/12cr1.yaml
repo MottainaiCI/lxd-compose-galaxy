@@ -29,6 +29,9 @@ nodes:
     # on env base dir.
     source_dir: "12cr1/templates/"
 
+    # Create the environment container as ephemeral or not.
+    ephemeral: {{ .Values.ephemeral }}
+
     # List of commands executed just after the creation of the
     # container.
     hooks:
@@ -36,8 +39,6 @@ nodes:
         flags:
           - packets-install
         commands:
-          # general packets
-          - yum install -y $(echo ${general_packages} | jq '.[]' -r)
           # common packages specific for oracle
           - yum install -y $(echo ${common_packages_ora} | jq '.[]' -r)
           # specific packages for oracle database
@@ -51,9 +52,10 @@ nodes:
           - generalpost
           - oradbpluggables
         commands:
-          - rm -r /tmp/*.rsp || echo "NO FILE FOUND"
-          - rm -r /tmp/*.service || echo "NO FILE FOUND"
-          - rm -r /tmp/.profile* || echo "NO FILE FOUND"
+          - > 
+            rm -r /tmp/*.rsp || echo "NO FILE FOUND" &&
+            rm -r /tmp/*.service || echo "NO FILE FOUND" &&
+            rm -r /tmp/.profile* || echo "NO FILE FOUND"
 
       - event: pre-node-sync
         flags:
@@ -106,19 +108,20 @@ nodes:
             echo "PREPARE HOST" &&
             echo "############"
           - echo "`ip addr show type veth | grep "inet " | sed 's/.*inet \(\([0-9]\{1,3\}\.\)\{1,3\}[0-9]\{1,3\}\)\/.*/\1/'`    `hostname`" >> /etc/hosts
-          - sed -i "s/#*\(127.*`hostname`\).*/#\1/" /etc/hosts
-          - groupadd -g 54318 asmdba
-          - groupadd -g 54319 asmoper
-          - groupadd -g 54320 asmadmin
-          - groupadd -g 54321 oinstall
-          - groupadd -g 54322 dba
-          - groupadd -g 54323 backupdba
-          - groupadd -g 54324 oper
-          - groupadd -g 54325 dgdba
-          - groupadd -g 54326 kmdba
-          - useradd -g oinstall -G dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper -u 54321 oracle
-          - echo oracle0 | passwd oracle --stdin
-          - sudo -u oracle ssh-keygen -N "" -f /home/oracle/.ssh/id_rsa
+          - > 
+            sed -i "s/#*\(127.*`hostname`\).*/#\1/" /etc/hosts && 
+            groupadd -g 54318 asmdba && 
+            groupadd -g 54319 asmoper && 
+            groupadd -g 54320 asmadmin && 
+            groupadd -g 54321 oinstall && 
+            groupadd -g 54322 dba && 
+            groupadd -g 54323 backupdba && 
+            groupadd -g 54324 oper && 
+            groupadd -g 54325 dgdba && 
+            groupadd -g 54326 kmdba && 
+            useradd -g oinstall -G dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper -u 54321 oracle && 
+            echo oracle0 | passwd oracle --stdin && 
+            sudo -u oracle ssh-keygen -N "" -f /home/oracle/.ssh/id_rsa
       - event: post-node-sync
         flags:
           - orahost
@@ -210,21 +213,22 @@ nodes:
             echo "#################################" &&
             echo "PREPARE INSTALLATION OF SW ORACLE" &&
             echo "#################################"
-          - mkdir -p ${orabase}/recovery_area
-          - mkdir -p ${orabase}/oradata
-          - mkdir -p ${orabase}/cfgtoollogs
-          - mkdir -p ${orabase}/cfgtoollogs/dbca
-          - mkdir -p ${orabase}/cfgtoollogs/sqlpatch
-          - mkdir -p ${orabase}/cfgtoollogs/netca
-          - mkdir -p ${orabase}/admin
-          - mkdir -p ${orabase}/audit
-          - mkdir -p ${oracle_rsp_stage}
-          - mkdir -p /home/oracle/.Scripts
-          - mkdir -p ${orahome}
-          - chown -R oracle:oinstall /u01
-          - chmod -R 775 /u01
-          - echo "inventory_loc=/u01/app/oraInventory" > /etc/oraInst.loc
-          - echo "inst_group=oinstall" >> /etc/oraInst.loc
+          - >
+            mkdir -p ${orabase}/recovery_area && 
+            mkdir -p ${orabase}/oradata && 
+            mkdir -p ${orabase}/cfgtoollogs && 
+            mkdir -p ${orabase}/cfgtoollogs/dbca && 
+            mkdir -p ${orabase}/cfgtoollogs/sqlpatch && 
+            mkdir -p ${orabase}/cfgtoollogs/netca && 
+            mkdir -p ${orabase}/admin && 
+            mkdir -p ${orabase}/audit && 
+            mkdir -p ${oracle_rsp_stage} && 
+            mkdir -p /home/oracle/.Scripts && 
+            mkdir -p ${orahome} && 
+            chown -R oracle:oinstall /u01 && 
+            chmod -R 775 /u01 && 
+            echo "inventory_loc=/u01/app/oraInventory" > /etc/oraInst.loc && 
+            echo "inst_group=oinstall" >> /etc/oraInst.loc
       - event: post-node-sync
         flags:
           - oraswdb
