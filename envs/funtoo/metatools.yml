@@ -36,6 +36,9 @@ projects:
           repo: "https://code.funtoo.org/bitbucket/scm/~geaaru/funtoo-metatools.git"
           repo_branch: "master"
 
+          subpop_repo: "https://code.funtoo.org/bitbucket/scm/~drobbins/subpop.git"
+          subpop_branch: "legacy"
+
     hooks:
       - event: post-node-creation
         commands:
@@ -53,6 +56,18 @@ projects:
           - upgrade
         commands:
           - luet repo update && luet upgrade && luet cleanup
+
+      # Until reposcan will be fixed on master. We need to downgrade
+      # to subpop 0.4.x
+      - event: pre-node-sync
+        flags:
+          - subpop_clone
+        commands:
+          - >-
+            if [ ! -d /subpop ] ; then
+            echo "Cloning ${subpop_repo} for branch ${subpop_branch}..." &&
+            git clone ${subpop_repo} -b ${subpop_branch} /subpop || exit 1 ;
+            fi
 
       - event: pre-node-sync
         flags:
@@ -117,7 +132,7 @@ projects:
                     if [ -n "${overlay_specs}" ] ; then
                     REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/overlay.yml" ;
                     fi &&
-                    PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
+                    PYTHONPATH=/subpop:. ./bin/reposcan $REPOSCAN_OPTS
 
               - event: post-node-sync
                 node: host
@@ -174,7 +189,7 @@ projects:
                     name=$(echo $i | jq '.name' -r) ;
                     REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${name}.yml" ;
                     done &&
-                    PYTHONPATH=. ./bin/reposcan $REPOSCAN_OPTS
+                    PYTHONPATH=/subpop:. ./bin/reposcan $REPOSCAN_OPTS
                   # Store git version of every kits used to generate specs.
                   - >-
                     export dir="/reposcan/repo_tmp/tmp/kit_cache/kits-versions" &&
