@@ -301,3 +301,55 @@ projects:
           - >
             timedatectl set-timezone ${local_timezone} || true ;
             timedatectl set-timezone ${local_timezone}
+
+  - name: "oracledb::rac"
+    description: "ORACLE RAC"
+
+    vars:
+      - envs:
+          LC_ALL: "en_US.utf8"
+          TZ: "Europe/Rome"
+
+    # Define optional directory where retrieve the groups
+    # of the environment. The relative path is based on
+    # directory of the environment file.
+    include_groups_files:
+     - rac/groups/rac.yaml
+     #- 21c/groups/21c.yaml
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+     - rac/vars/rac.yml
+
+    include_hooks_files:
+      - ../common/hooks/yum-setup.yml
+
+    # This hooks are executed to all nodes of all groups
+    hooks:
+      - event: pre-node-sync
+        flags:
+          - general
+        commands:
+          - >
+            echo "##################" &&
+            echo "GENERAL" &&
+            echo "##################"
+          - >
+            rm -r /tmp/*.rsp || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.service || echo "NO FILE FOUND" && 
+            rm -r /tmp/.profile* || echo "NO FILE FOUND" && 
+            rm -r /tmp/*.zip || echo "NO FILE FOUND"
+      - event: pre-node-sync
+        flags:
+          - general
+        commands:
+          - hostname | xargs | tr '\n' ' '
+        out2var: "hostnamevar"
+      - event: post-node-creation
+        flags:
+          - sysctlcfg
+        commands:
+          - cat /proc/meminfo | grep MemTotal | cut -d":" -f2 | sed "s/ kB//" | xargs | tr '\n' ' '
+        out2var: "memtotal"
+

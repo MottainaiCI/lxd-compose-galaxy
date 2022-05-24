@@ -1,0 +1,140 @@
+name: "oracledb::19c"
+description: "DB Oracle 19c"
+
+# Define the LXD Remote to use and where
+# create the environment.
+connection: "local"
+# Define the list of LXD Profile to use
+# for create the containers
+common_profiles:
+  - default
+  - net-mottainai0
+  - privileged
+  - memory4g
+{{ if .Values.oracledb.enable_storage_from_host }}
+  - oracledb
+{{ end }}
+
+# Create the environment container as ephemeral or not.
+ephemeral: true
+
+nodes:
+
+  - name: oracle19c
+    image_source: "oracle/7"
+    image_remote_server: "images"
+
+    # Specify directory where build path of templates.
+    # Directory could be an absolute path or a relative path based
+    # on env base dir.
+    source_dir: "rac/templates/"
+
+    # Create the environment container as ephemeral or not.
+    ephemeral: {{ .Values.ephemeral }}
+
+    # List of commands executed just after the creation of the
+    # container.
+    hooks:
+      - event: post-node-creation
+        flags:
+          - asm-packets-install
+        commands:
+          # common packages specific for oracle asm
+          - yum install -y $(echo ${asm_packages_ora} | jq '.[]' -r)
+
+      - event: pre-node-sync
+        flags:
+          - oraswgrid
+        commands:
+          - hostname | xargs | tr '\n' ' '
+
+      - event: pre-node-sync
+        flags:
+          - checkifgiinstall
+        commands:
+          - cat "$oracle_inventory_loc/ContentsXML/inventory.xml" | grep -w grid | awk  '{print $3}' | cut -f2 -d'"'
+        out2var: "checkgiinstall"
+
+      - event: post-node-creation
+        flags:
+          - orahostgrid
+        commands:
+          - > 
+            echo "############" &&
+            echo "PREPARE HOST" &&
+            echo "############"
+          - echo "`ip addr show type veth | grep "inet " | sed 's/.*inet \(\([0-9]\{1,3\}\.\)\{1,3\}[0-9]\{1,3\}\)\/.*/\1/'`    `hostname`" >> /etc/hosts
+          - > 
+            sed -i "s/#*\(127.*`hostname`\).*/#\1/" /etc/hosts && 
+            groupadd -g 54318 asmdba && 
+            groupadd -g 54319 asmoper && 
+            groupadd -g 54320 asmadmin && 
+            groupadd -g 54321 oinstall && 
+            groupadd -g 54322 dba && 
+            groupadd -g 54323 backupdba && 
+            groupadd -g 54324 oper && 
+            groupadd -g 54325 dgdba && 
+            groupadd -g 54326 kmdba && 
+            useradd -g oinstall -G dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper -u 54321 oracle && 
+            echo oracle0 | passwd oracle --stdin && 
+            sudo -u oracle ssh-keygen -N "" -f /home/oracle/.ssh/id_rsa
+      - event: post-node-sync
+        flags:
+          - oragridprofile
+        commands:
+          - mv /tmp/.profile_grid /home/oracle/.profile_grid 
+          - chown oracle:oinstall /home/oracle/.profile_grid 
+
+
+      - event: post-node-sync
+        flags:
+          - oraasm
+        commands:
+          - > 
+            set -x;
+            diskver=$(echo "${databases}" | jq -M -r -c '.[0].oracle_install_version_gi') && 
+            for i in $(echo "${asm_diskgroups}" | jq -M -r -c '.[].diskgroup') ; do
+
+              disk=$(echo "${asm_diskgroups}" | jq -M ".[] | select(.diskgroup==\"$i\")")
+
+              asmlabel=$(echo "${disk}" | jq -M -r ".disk_asmlabel")
+              dev=$(echo "${disk}" | jq -M -r ".disk_device")
+
+              oracleasm createdisk $asmlabel $dev
+            done
+
+
+    # List of templates files to compiles before push the
+    # result inside container.
+    config_templates:
+      - source: dotprofile-gi.j2
+        dst: dotprofile-gi.dbprof
+     # - source: db-install.rsp.19.0.0.j2
+     #   dst: db-install.rsp.19.0.0.rsp
+     # - source: oracle-rdbms-service.j2
+     #   dst: oracle-rdbms-service.srv
+     # - source: netca.rsp.19.0.0.j2
+     #   dst: netca.rsp.19.0.0.net
+     # - source: dbca-create-db.rsp.19.0.0.j2
+     #   dst: dbca-create-db.rsp.19.0.0.rsp
+     # - source: dotprofile-db.j2
+     #   dst: dotprofile-db.dbprof
+
+    sync_resources:
+#      # source: File or directory to push
+#      # dst: File or directory target. For directory is needed "/" at the end
+      - source: dotprofile-gi.dbprof
+        dst: "/tmp/.profile_grid"
+      #- source: db-install.rsp.19.0.0.rsp
+      #  dst: "/tmp/19_tmp.rsp"
+      #- source: oracle-rdbms-service.srv
+      #  dst: "/tmp/oracle-rdbms.service"
+      #- source: netca.rsp.19.0.0.net
+      #  dst: "/tmp/netca_db1_LISTENER.rsp"
+      #- source: dbca-create-db.rsp.19.0.0.rsp
+      #  dst: "/tmp/dbca_tmp.rsp"
+      #- source: dotprofile-db.dbprof
+      #  dst: "/tmp/.profile_tmp"
+      #- source: V982063-01.zip
+      #  dst: "/tmp/V982063-01.zip"
+
