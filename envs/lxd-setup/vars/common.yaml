@@ -13,54 +13,7 @@ envs:
   # Create LXD cluster node (true) or standalone node (false)
   lxd_cluster: false
 
-# Override lxd server name. Default ansible_hostname is used.
-# (to define on var of the specific host)
-# lxd_server_name: "mynode"
-
-# LXD Cluster bootstrap node
-# Define the node that is the first node of the cluster.
-  lxd_bootstrap_node: "node1"
-
-# LXD Cluster bootstrap node IP Address
-# Define the master cluster node to use for add new node to the cluster
-  lxd_cluster_address: "node1:8443"
-
-# LXD Interface to use for cluster node
-  lxd_cluster_node_iface: "eth0"
-
-# LXD Port for cluster node.
-# lxd_cluster_node_port: 8443
-
-# LXD Cluster Certificate file path
-  lxd_cluster_cert_file: "/tmp/sabayon-ansible/lxd-cluster.crt"
-
-# LXD Cluster password
-  lxd_cluster_password: mysecret
-
-# Define HTTP Proxy to set on systemd service
-#lxd_http_proxy: http://127.0.0.1:8080
-
-# Define HTTPS Proxy to set on systemd service
-#lxd_https_proxy: http://127.0.0.1:80
-
-# Define NO Proxy rule
-#lxd_no_proxy: node1,node2,node3
-
-# Define member_config for node to add in existing cluster.
-# NOTE: this is needed for initialize correctly node of the cluster.
-  lxd_member_config:
-    member_config:
-      - entity: storage-pool
-        name: default
-        key: source
-        value: ""
-
-# Configure LXD configuration options.
-# NOTE: server_name option is added automatically.
-#lxd_cluster_config:
-#  cluster:
-#    enabled: true
-
+  # LXD Instance configuration
   lxd_config:
     config:
       core.trust_password: mysecret
