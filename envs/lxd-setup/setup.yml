@@ -78,10 +78,6 @@ projects:
           sleep 3 &&
           /etc/init.d/lxd status &&
           lxc list
-        # Initialize LXD with the selected configuration.
-        # TODO: Integrate the cluster configuration too.
-        - >-
-          echo ${lxd_config} | yq r -P - | lxd init --preseed
         {{ end }}
 
         {{ if eq $os "macaroni" }}
@@ -103,12 +99,17 @@ projects:
           sleep 3 &&
           /etc/init.d/lxd status &&
           lxc list
+        {{ end }}
+
+      - event: pre-project
+        node: "host"
+        flags:
+          - lxd_init
+        commands:
         # Initialize LXD with the selected configuration.
         # TODO: Integrate the cluster configuration too.
         - >-
           echo ${lxd_config} | yq r -P - | lxd init --preseed
-        {{ end }}
-
 
       - event: pre-project
         node: "host"
@@ -181,15 +182,18 @@ projects:
         flags:
           - setup_lxd_resources
         commands:
+          # The network must be created before profile to avoid issue on create
+          # profile that use a specific network.
+          - lxd-compose network create lxd-setup-and-test -a
+
+          # The default profile is created automatically so we need to update it.
           - >-
             {{- if .Values.storage_name }}
-            # The default profile is created automatically so we need to update it.
             lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -u default &&
-            lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -a &&
+            lxd-compose profile create lxd-setup-and-test --render-env "default_storage={{ .Values.storage_name }}" -a
             {{- else }}
-            lxd-compose profile create lxd-setup-and-test -a &&
+            lxd-compose profile create lxd-setup-and-test -a
             {{- end }}
-            lxd-compose network create lxd-setup-and-test -a
 
 
     groups:
@@ -200,7 +204,6 @@ projects:
           - default
           - net-mottainai0
           - privileged
-          - loop
 
         # Create the environment container as ephemeral or not.
         ephemeral: true
