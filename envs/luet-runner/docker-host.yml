@@ -91,13 +91,18 @@ projects:
                     eval 'mkdir -p /etc/docker || true' &&
                     echo "${docker_daemon}" > /etc/docker/daemon.json
                   - |
+                    proxy="" ; \
+                    if [ -n "${docker_proxy}" ] ; then \
+                    proxy="${docker_proxy}" ; \
+                    fi && \
                     mkdir /etc/systemd/system/docker.service.d/ -p && \
-                    echo '[Service]
-                    Environment="BUILDKIT_STEP_LOG_MAX_SIZE=3073741824"
-                    Environment="BUILDKIT_STEP_LOG_MAX_SPEED=10240000"
+                    echo "[Service]
+                    Environment=\"BUILDKIT_STEP_LOG_MAX_SIZE=3073741824\"
+                    Environment=\"BUILDKIT_STEP_LOG_MAX_SPEED=10240000\"
+                    ${proxy}
                     ExecStart=
                     ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
-                    ' > /etc/systemd/system/docker.service.d/env.conf
+                    " > /etc/systemd/system/docker.service.d/env.conf
 
               - event: post-node-sync
                 flags:
@@ -107,6 +112,11 @@ projects:
                     luet repo update &&
                     luet upgrade &&
                     luet cleanup --purge-repos
+{{- if eq .Values.luet.docker_host_ubuntu "false" }}
+                  - >-
+                    systemctl restart containerd &&
+                    systemctl enable containerd
+{{- end }}
                   - systemctl daemon-reload
                   - systemctl restart docker
 

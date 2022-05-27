@@ -10,3 +10,7 @@ envs:
       - tcp://0.0.0.0:2376
       - fd://
 
+  # Configure HTTP Proxy for Docker
+  #docker_proxy: |
+  #  Environment="HTTP_PROXY=http://proxy.example.com:80"
+  #  Environment="HTTPS_PROXY=http://proxy.example.com:80"
