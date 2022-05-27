@@ -126,7 +126,7 @@ steam_user_gid: "1004"
 #-------------------------------------------#
 connection: "local"
 ephemeral: true
-default_ubuntu_image: "ubuntu/21.10"
+default_ubuntu_image: "ubuntu/22.04"
 default_ubuntu_lts_image: "ubuntu/18.04"
 default_internal_domain: "mottainai.local"
 
