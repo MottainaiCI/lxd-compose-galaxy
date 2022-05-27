@@ -87,7 +87,9 @@ projects:
                 flags:
                   - configure_docker
                 commands:
-                  - echo "${docker_daemon}" > /etc/docker/daemon.json
+                  - >-
+                    eval 'mkdir -p /etc/docker || true' &&
+                    echo "${docker_daemon}" > /etc/docker/daemon.json
                   - |
                     mkdir /etc/systemd/system/docker.service.d/ -p && \
                     echo '[Service]
