@@ -14,7 +14,7 @@ jobs:
 
       - name: Install lxd-compose
         run: |
-          sudo curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+          curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sudo -E sh
           sudo luet install -y app-emulation/lxd-compose
           sudo luet cleanup
 
