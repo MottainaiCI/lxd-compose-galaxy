@@ -112,7 +112,7 @@ projects:
                     luet repo update &&
                     luet upgrade &&
                     luet cleanup --purge-repos
-{{- if eq .Values.luet.docker_host_ubuntu "false" }}
+{{- if eq .Values.luet.docker_host_ubuntu false }}
                   - >-
                     systemctl restart containerd &&
                     systemctl enable containerd
