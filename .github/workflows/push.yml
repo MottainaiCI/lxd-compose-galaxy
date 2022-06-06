@@ -1,0 +1,22 @@
+on: push
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}-${{ github.repository }}
+  cancel-in-progress: true
+name: Build on push
+jobs:
+  tests-unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install lxd-compose
+        run: |
+          sudo curl https://raw.githubusercontent.com/geaaru/luet/geaaru/contrib/config/get_luet_root.sh | sh
+          sudo luet install -y app-emulation/lxd-compose
+          sudo luet cleanup
+
+      - name: Validate specs
+        run: sudo -E env "PATH=$PATH" lxd-compose vaidate
