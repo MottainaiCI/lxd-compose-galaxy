@@ -153,9 +153,9 @@ projects:
           - setup_lxd_kernel_resources
         commands:
           - >-
-            if [ ! -e /etc/modules.load.d/tun.conf ] ; then
-              $SUDO mkdir /etc/modules.load.d || true ;
-              $SUDO echo "tun" > /etc/modules.load.d/tun.conf
+            if [ ! -e /etc/modules-load.d/tun.conf ] ; then
+              $SUDO mkdir /etc/modules-load.d || true ;
+              $SUDO echo "tun" > /etc/modules-load.d/tun.conf
             fi
           - >-
             if [ "$(lsmod | grep tun | wc -l)" != "1" ] ; then
