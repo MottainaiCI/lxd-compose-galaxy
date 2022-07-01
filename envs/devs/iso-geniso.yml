@@ -34,6 +34,7 @@ projects:
       - envs:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
+          LUET_SOLVER__IMPLEMENTATION: "solverv2"
           internal_domain: "mottainai.local"
 
     hooks:
@@ -59,7 +60,9 @@ projects:
         flags:
           - upgrade
         commands:
-          - luet upgrade && luet cleanup
+          - >-
+            set -x &&
+            luet upgrade && luet cleanup
 
       - event: pre-node-sync
         flags:
