@@ -13,19 +13,20 @@ hooks:
       [Service]
       User=node_exporter
       EnvironmentFile=/etc/conf.d/node_exporter
-      ExecStart=/usr/sbin/node_exporter $EXPORTER_ARGS
+      ExecStart=/usr/bin/node_exporter $EXPORTER_ARGS
 
       [Install]
       WantedBy=multi-user.target
-      " > /usr/lib/systemd/system/node_exporter.service
+      " > /lib/systemd/system/node_exporter.service
 
     - >-
+      systemctl daemon-reaload &&
       entities merge --specs-dir /usr/share/macaroni/entities -e node_exporter
 
     - >-
       conffile=${node_exporter_conf:-/etc/conf.d/node_exporter} ;
       if [ -n "${node_exporter_opts}" ] ; then
-      sed -e "s|^EXPORTER_ARGS.*|EXPORTER_ARGS=\"${node_exporter_opts}"|g"
+      sed -e "s|^EXPORTER_ARGS.*|EXPORTER_ARGS=\"${node_exporter_opts}\"|g"
       -i ${conffile} ;
       fi &&
       systemctl enable node_exporter &&
