@@ -1,0 +1,172 @@
+# Author: Daniele Rondina, geaaru@sabayonlinux.org
+
+name: reposcan-funtoo-next-kits
+description: |
+  Generate the reposcan JSON file for the funtoo tree.
+
+  $> lxd-compose c r metatools-services reposcan-funtoo-next-kits \
+     --destroy
+
+  The generated file is copy locally from the container to local
+  kit_cache directory.
+
+project: "metatools-services"
+apply_alias: true
+disable_flags:
+  - upgrade
+enable_groups:
+  - "metatools::reposcan-funtoo-kits"
+envs:
+  envs:
+    kits:
+
+      - name: "core-kit"
+        url: "https://github.com/funtoo/core-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "core-server-kit"
+        url: "https://github.com/funtoo/core-server-kit"
+        branch: "next"
+        kind: "independent"
+
+        #commit_sha1": None,  # You should be able to set commit SHA1 here.
+        #
+      - name: "core-gl-kit"
+        url: "https://github.com/funtoo/core-gl-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "core-hw-kit"
+        url: "https://github.com/funtoo/core-hw-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "net-kit"
+        url: "https://github.com/funtoo/net-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "llvm-kit"
+        url: "https://github.com/funtoo/llvm-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "perl-kit"
+        url: "https://github.com/funtoo/perl-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "python-kit"
+        url: "https://github.com/funtoo/python-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "python-modules-kit"
+        url: "https://github.com/funtoo/python-modules-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "desktop-kit"
+        url: "https://github.com/funtoo/desktop-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "dev-kit"
+        url: "https://github.com/funtoo/dev-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "editors-kit"
+        url: "https://github.com/funtoo/editors-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "games-kit"
+        url: "https://github.com/funtoo/games-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "gnome-kit"
+        url: "https://github.com/funtoo/gnome-kit"
+        branch: "next-3.36-prime"
+        kind: "independent"
+
+      - name: "haskell-kit"
+        url: "https://github.com/funtoo/haskell-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "browser-kit"
+        url: "https://github.com/funtoo/browser-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "java-kit"
+        url: "https://github.com/funtoo/java-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "kde-kit"
+        url: "https://github.com/funtoo/kde-kit"
+        branch: "next-5.24-release"
+        kind: "independent"
+
+      - name: "lang-kit"
+        url: "https://github.com/funtoo/lang-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "lisp-scheme-kit"
+        url: "https://github.com/funtoo/lisp-scheme-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "mate-kit"
+        url: "https://github.com/funtoo/mate-kit"
+        branch: "next-1.24-prime"
+        kind: "independent"
+
+      - name: "media-kit"
+        url: "https://github.com/funtoo/media-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "ml-lang-kit"
+        url: "https://github.com/funtoo/ml-lang-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "qt-kit"
+        url: "https://github.com/funtoo/qt-kit"
+        branch: "next-5.15.2-release"
+        kind: "independent"
+
+      - name: "ruby-kit"
+        url: "https://github.com/funtoo/ruby-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "science-kit"
+        url: "https://github.com/funtoo/science-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "security-kit"
+        url: "https://github.com/funtoo/security-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "text-kit"
+        url: "https://github.com/funtoo/text-kit"
+        branch: "next"
+        kind: "independent"
+
+      - name: "xfce-kit"
+        url: "https://github.com/funtoo/xfce-kit"
+        branch: "next-4.16-release"
+        kind: "independent"
+
+    TMPDIR: "/luettmp"
+    HTTP_TIMEOUT: 0
+    LUET_GENERAL__CONCURRENCY: "1"

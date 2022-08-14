@@ -21,6 +21,7 @@ include_commands_files:
 - commands/reposcan-gentoo-portage.yml
 - commands/reposcan-geaaru-overlay.yml
 - commands/reposcan-funtoo-kits.yml
+- commands/reposcan-funtoo-next-kits.yml
 
 projects:
 
