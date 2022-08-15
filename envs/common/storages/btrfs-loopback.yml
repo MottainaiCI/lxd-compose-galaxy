@@ -1,4 +1,4 @@
-name: btrfs-loopback
+name: {{ .Values.storage_btrfs_loopback | default "btrfs-loopback" }}
 documentation: |
   BTRFS Storage Pool Loop disk.
 
