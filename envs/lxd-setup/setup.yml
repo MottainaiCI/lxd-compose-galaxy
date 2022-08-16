@@ -16,6 +16,7 @@ include_profiles_files:
 
 include_networks_files:
 - ../common/networks/mottainai0.yml
+- ../common/networks/ovs0.yml
 
 include_storage_files:
 - ../common/storages/dir-source.yml

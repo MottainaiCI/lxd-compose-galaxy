@@ -1,0 +1,12 @@
+name: "ovs0"
+type: "bridge"
+config:
+  bridge.driver: openvswitch
+  dns.domain: macaroni.local
+  dns.mode: managed
+  ipv4.address: 172.25.0.1/23
+  ipv4.dhcp: "true"
+  ipv4.firewall: "true"
+  ipv4.nat: "true"
+  ipv6.nat: "false"
+  ipv6.dhcp: "false"
