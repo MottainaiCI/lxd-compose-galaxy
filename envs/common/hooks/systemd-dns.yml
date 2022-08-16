@@ -1,0 +1,37 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - >-
+      if [ ! -d /etc/systemd/resolved.conf.d/ ] ; then
+      mkdir -p /etc/systemd/resolved.conf.d ;
+      fi
+    - >-
+      node_dns_options="$(echo ${node} | jq .name -r)_resolved" &&
+      eval files="\$$node_dns_options" &&
+      n_files=$(echo $files | jq '. | length') ;
+      for ((i=0; i<${n_files};i++)) ; do
+      f=$(echo $files | jq .[${i}] -r) ;
+      file=$(echo $f | jq .file -r ) ;
+      content=$(echo $f | jq .content -r) ;
+      echo "Creating file /etc/systemd/resolved.conf.d/${file}..." ;
+      echo "${content}" > /etc/systemd/resolved.conf.d/${file} ;
+      done
+
+    # Override the /etc/systemd/resolved.conf to disable LLMNR
+    - >-
+      node_dns_resolve="$(echo ${node} | jq .name -r)_resolved_conf" &&
+      if [ -n "${node_dns_resolve}" ] ; then
+      echo ${node_dns_resolve} > /etc/systemd/resolved.conf ;
+      cat /etc/systemd/resolved.conf ;
+      fi
+
+    - >-
+      ubuntu=$(cat /etc/os-release | grep ID| grep ubuntu | wc -l) ;
+      systemctl daemon-reload &&
+      systemctl restart systemd-resolved ;
+      if [ "${ubuntu}" == "1" ] ;  then
+      systemd-resolve --status ;
+      else
+      resolvectl ; fi
