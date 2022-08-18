@@ -1,0 +1,18 @@
+name: lxd-socket-proxy
+description: |
+  Create a Proxy socket for LXD socket to
+  manage from the container the host LXD
+  instance.
+
+devices:
+  lxd-socket:
+    bind: container
+    connect: unix:/var/lib/lxd/unix.socket
+    listen: unix:/var/lib/lxd/unix.socket
+    security.gid: {{ .Values.lxd_gid | default "994" }}
+    security.uid: 0
+    uid: 0
+    gid: {{ .Values.lxd_gid | default "994" }}
+    mode: "0777"
+    type: proxy
+
