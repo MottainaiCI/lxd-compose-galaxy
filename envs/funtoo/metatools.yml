@@ -50,6 +50,7 @@ projects:
         flags:
           - mongodb_config
         commands:
+          - chown mongodb:mongodb /var/lib/mongodb /var/log/mongodb
           - /etc/init.d/mongodb start && sleep 2
 
       - event: pre-node-sync
@@ -99,6 +100,21 @@ projects:
             image_remote_server: "macaroni"
 
             hooks:
+
+              {{- if eq .Values.setup_git_credentials "true" }}
+              - event: pre-node-sync
+                flags:
+                  - set_git_credentials
+                commands:
+                  - >-
+              {{- if .Values.setup_custom_hosts }}
+                    echo "{{ .Values.setup_custom_hosts }}" >> /etc/hosts
+              {{- end }}
+                    echo "https://${user}:${pass}@${scm_url}" > ~/.git-credentials &&
+                    git config --global credential.helper 'store'
+              {{- end }}
+
+
               - event: pre-node-sync
                 flags:
                   - setup_portage_specs
@@ -165,6 +181,20 @@ projects:
             image_remote_server: "macaroni"
 
             hooks:
+
+              {{- if eq .Values.setup_git_credentials "true" }}
+              - event: pre-node-sync
+                flags:
+                  - set_git_credentials
+                commands:
+                  - >-
+              {{- if .Values.setup_custom_hosts }}
+                    echo "{{ .Values.setup_custom_hosts }}" >> /etc/hosts &&
+              {{- end }}
+                    echo "https://${user}:${pass}@${scm_url}" > ~/.git-credentials &&
+                    git config --global credential.helper 'store'
+              {{- end }}
+
               - event: pre-node-sync
                 flags:
                   - setup_portage_specs
