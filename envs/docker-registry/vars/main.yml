@@ -22,7 +22,7 @@ envs:
     #default_keyfile = privkey.pem
     distinguished_name = req_distinguished_name
     req_extensions = v3_req
-    #x509_extensions = v3_ca
+    x509_extensions = v3_req
     prompt = no
     # string_mask = utf8only
 
@@ -37,7 +37,7 @@ envs:
     #organizationName_default = MottainaiCI Organization
     #organizationalUnitName_default = LXD Compose Unit
     #commonName_default = COMMON_NAME
-    #emailAddress_default = geaaru@sabayonlinux.org
+    #emailAddress_default = geaaru@funtoo.org
 
     [ v3_req ]
     # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
@@ -73,7 +73,7 @@ envs:
     #organizationName_default = MottainaiCI Organization
     #organizationalUnitName_default = LXD Compose Unit
     #commonName_default = COMMON_NAME
-    #emailAddress_default = geaaru@sabayonlinux.org
+    #emailAddress_default = geaaru@funtoo.org
 
     [ v3_req ]
     # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
@@ -107,7 +107,7 @@ envs:
       maintenance:
         uploadpurging:
           enabled: true
-          age: 7d
+          age: 168h
           interval: 5m
           dryrun: false
         readonly:
