@@ -1,0 +1,13 @@
+name: lxd-vm
+description: |
+  Using VMs with LXD requires /dev/vsock.
+  NOTE: this profile requires kvm profile too.
+config:
+    linux.kernel_modules: virtio
+    security.nesting: "true"
+devices:
+  vsock:
+    mode: "0600"
+    path: /dev/vsock
+    type: unix-char
+
