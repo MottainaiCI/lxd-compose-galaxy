@@ -1,0 +1,8 @@
+name: net-phy-srv
+description: "Physical Service Iface"
+devices:
+  srv0:
+    name: srv0
+    nictype: physical
+    parent: srv0
+    type: nic
