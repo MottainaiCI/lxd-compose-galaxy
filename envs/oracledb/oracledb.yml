@@ -251,6 +251,18 @@ projects:
         commands:
           - echo "0.5 * ${memtotal} * 1024 / 1" | bc | tr -d '\n' 2> /dev/null
         out2var: "kshmx"
+      - event: post-node-creation
+        flags:
+          - seclimit
+        commands:
+          - echo "0.9 * ${memtotal} / 1" | bc | tr -d '\n' 2> /dev/null
+        out2var: "sml"
+      - event: post-node-postnode
+        flags:
+          - seclimit
+        commands:
+          - echo "0.9 * ${memtotal} / 1" | bc | tr -d '\n' 2> /dev/null
+        out2var: "hml"
       #- event: pre-node-sync
       #  node: "host"
       #  flags:
@@ -286,6 +298,39 @@ projects:
             echo "${sysctlvar}" >> /etc/sysctl.conf &&
             cat /etc/sysctl.conf &&
             /sbin/sysctl --system
+
+      - event: post-node-creation
+        flags:
+          - seclimit
+        commands:
+          - >
+            echo "##########################" &&
+            echo "CREATE SECURITY LIMIT FILE" &&
+            echo "##########################"
+          - > 
+            echo "# Oracle recommended security limits" >> /etc/security/limits.d/99-oracle-limits.conf && 
+            orauser=$(echo "${databases}" | jq -M -r -c '.[0].oracle_user ') && 
+            echo "${seclimits}" | sed "s/@#user#@/${orauser}/" | sed "s/@#sml#@/${sml}/" | sed "s/@#hml#@/${hml}/" >> /etc/security/limits.d/99-oracle-limits.conf &&
+            cat /etc/security/limits.d/99-oracle-limits.conf &&
+            ulimit -Su $(echo "$seclimits" | grep "soft nproc" | awk '{print $4}') &&
+            ulimit -Hu $(echo "$seclimits" | grep "hard nproc" | awk '{print $4}') &&
+            ulimit -Sn $(echo "$seclimits" | grep "soft nfile" | awk '{print $4}') &&
+            ulimit -Hn $(echo "$seclimits" | grep "hard nfile" | awk '{print $4}') &&
+            ulimit -Ss $(echo "$seclimits" | grep "soft stack" | awk '{print $4}') &&
+            ulimit -Hs $(echo "$seclimits" | grep "hard stack" | awk '{print $4}') &&
+            ulimit -Sl $(echo "$seclimits" | grep "soft memlock" | awk '{print $4}') &&
+            ulimit -Hl $(echo "$seclimits" | grep "hard memlock" | awk '{print $4}')
+
+  #oracle_seclimits:
+  #    - { name: 'soft nproc', value: 16384 }
+  #    - { name: 'hard nproc', value: 16384 }
+  #    - { name: 'soft nofile', value: 4096 }
+  #    - { name: 'hard nofile', value: 65536 }
+  #    - { name: 'soft stack', value: 10240 }
+  #    - { name: 'hard stack', value: 32768 }
+  #    - { name: 'soft memlock', value: "{{ ((0.9 * ansible_memtotal_mb)*1024)|round|int }}" }
+  #    - { name: 'hard memlock', value: "{{ ((0.9 * ansible_memtotal_mb)*1024)|round|int }}" }
+      
       #- event: post-node-creation
       #  flags:
       #    - luet

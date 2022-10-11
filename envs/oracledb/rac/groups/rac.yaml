@@ -75,7 +75,7 @@ nodes:
             groupadd -g 54324 oper && 
             groupadd -g 54325 dgdba && 
             groupadd -g 54326 kmdba && 
-            useradd -g oinstall -G dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper -u 54321 oracle && 
+            useradd -g oinstall -G dba,asmadmin,asmdba,asmoper,backupdba,dgdba,kmdba,oper -u 54321 oracle && 
             echo oracle0 | passwd oracle --stdin && 
             sudo -u oracle ssh-keygen -N "" -f /home/oracle/.ssh/id_rsa
       - event: post-node-sync
@@ -85,6 +85,7 @@ nodes:
           - mv /tmp/.profile_grid /home/oracle/.profile_grid 
           - chown oracle:oinstall /home/oracle/.profile_grid 
 
+# parted -s /dev/sdc "mklabel gpt mkpart FRA xfs 1 -1"
 
       - event: post-node-sync
         flags:
@@ -103,6 +104,61 @@ nodes:
               oracleasm createdisk $asmlabel $dev
             done
 
+      - event: pre-node-sync
+        flags:
+          - oraswdb
+        commands:
+          - >
+            echo "#################################" &&
+            echo "PREPARE INSTALLATION OF SW RAC   " &&
+            echo "#################################"
+          - >
+            gihome=$(echo "${databases}" | jq -M -r -c '.[0].oracle_install_version_gi ') && 
+            mkdir -p /u01/app/${gihome}/grid && 
+            mkdir -p ${orabase}/recovery_area && 
+            mkdir -p ${orabase}/oradata && 
+            mkdir -p ${orabase}/cfgtoollogs && 
+            mkdir -p ${orabase}/cfgtoollogs/dbca && 
+            mkdir -p ${orabase}/cfgtoollogs/sqlpatch && 
+            mkdir -p ${orabase}/cfgtoollogs/netca && 
+            mkdir -p ${orabase}/admin && 
+            mkdir -p ${orabase}/audit && 
+            mkdir -p ${oracle_rsp_stage} && 
+            mkdir -p /home/oracle/.Scripts && 
+            mkdir -p ${orahome} && 
+            mkdir -p /u01/app/oraInventory &&
+            chown -R oracle:oinstall /u01 && 
+            chmod -R 775 /u01 && 
+            echo "inventory_loc=/u01/app/oraInventory" > /etc/oraInst.loc && 
+            echo "inst_group=oinstall" >> /etc/oraInst.loc
+
+      - event: pre-node-sync
+        flags:
+          - orassh
+        commands:
+          - >
+            echo "#####################" &&
+            echo "PREPARE RAC NETWORK  " &&
+            echo "#####################"
+          - >
+            echo "network"
+
+      - event: pre-node-sync
+        flags:
+          - installgi
+        commands:
+          - >
+            echo "#####################" &&
+            echo "PREPARE RAC NETWORK  " &&
+            echo "#####################"
+          - >
+            echo "copy sw on node1" &&
+            echo "change permission" &&
+            echo "install cvuqdisk" &&
+            echo "setup ssh keys" &&
+            echo "run runcluvfy" &&
+            echo "NOZEROCONF=yes" &&
+            echo "install gi"
 
     # List of templates files to compiles before push the
     # result inside container.
@@ -135,6 +191,6 @@ nodes:
       #  dst: "/tmp/dbca_tmp.rsp"
       #- source: dotprofile-db.dbprof
       #  dst: "/tmp/.profile_tmp"
-      #- source: V982063-01.zip
-      #  dst: "/tmp/V982063-01.zip"
+      - source: LINUX.X64_193000_grid_home.zip
+        dst: "/tmp/LINUX.X64_193000_grid_home.zip"
 

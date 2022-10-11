@@ -4,10 +4,24 @@ envs:
   oracle_inventory_loc: "/u01/app/oraInventory"
   default_dbpass: "qwe123"
   default_gipass: "Oracle123"
-  configure_cluster: False
+  configure_cluster: True
   dbca_templatename: "General_Purpose.dbc"
   dbca_initParams: ""
   
+  seclimits: |
+    @#user#@ soft nproc 16384
+    @#user#@ hard nproc 16384
+    @#user#@ soft nofile 4096
+    @#user#@ hard nofile 65536
+    @#user#@ soft stack 10240
+    @#user#@ hard stack 32768
+    @#user#@ soft memlock @#sml#@
+    @#user#@ hard memlock @#hml#@
+
+#@#user#@ ssoft memlock "{{ ((0.9 * ansible_memtotal_mb)*1024)|round|int }}"
+#@#user#@ shard memlock "{{ ((0.9 * ansible_memtotal_mb)*1024)|round|int }}"
+
+
   sysctlvar: |
     kernel.shmmni=4096
     kernel.sem="250 32000 100 128"
@@ -207,6 +221,8 @@ envs:
       memory: 4096 #memory in MB
       oracle_base: "/u01/app/oracle"
       #oracle_install_version_gi: 12.2.0.1
+      oracle_home_db: "/u01/app/oracle/product/19.0.0/dbhome_1"
+      oracle_home_gi: "/u01/app/19.0.0/grid"
       oracle_install_version_gi: 19.0.0
  
       oracle_user: "oracle"
