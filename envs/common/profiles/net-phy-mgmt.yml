@@ -1,0 +1,8 @@
+name: net-phy-mgmt
+description: "Physical MGMT Iface"
+devices:
+  mgmt:
+    name: man0
+    nictype: physical
+    parent: man0
+    type: nic
