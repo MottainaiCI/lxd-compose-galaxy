@@ -1,0 +1,11 @@
+name: update-systemd-file-19c
+description: |
+  Update all systemd file for oracle startup
+
+  $> lxd-compose c r oracledb::19c update-systemd-file
+project: {{ .Values.projectoracle | default oracledb::19c }}
+apply_alias: true
+skip_sync: true
+enable_flags:
+  - oraconfigfile
+

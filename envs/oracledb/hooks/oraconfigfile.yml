@@ -1,0 +1,17 @@
+hooks:
+- event: post-group
+  #node: oracle19c
+  flags:
+    - oraconfigfile
+  commands:
+    - > 
+      echo "#################" &&
+      echo "SYNC CONFIG FILE " &&
+      echo "#################"
+    - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
+    - mv /tmp/manage_oracle_rdbms_procs.sh /usr/local/bin/manage_oracle_rdbms_procs.sh
+    - chmod 755 /usr/local/bin/manage_oracle_rdbms_procs.sh
+    - systemctl daemon-reload
+    - systemctl enable oracle-rdbms.service
+ 
+

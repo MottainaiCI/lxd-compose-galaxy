@@ -78,6 +78,9 @@ networks:
     description: ""
     type: bridge
 
+include_commands_files:
+- commands/update_systemd_config.yml
+
 projects:
 
   - name: "oracledb::12cr1"

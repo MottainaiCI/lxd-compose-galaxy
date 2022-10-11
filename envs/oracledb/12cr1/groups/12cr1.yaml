@@ -18,6 +18,9 @@ common_profiles:
 # Create the environment container as ephemeral or not.
 ephemeral: true
 
+include_hooks_files:
+  - hooks/oraconfigfile.yml
+
 nodes:
 
   - name: oracle12cr1
@@ -226,9 +229,9 @@ nodes:
             su - oracle -c "${oracle_stage}/database/runInstaller -responseFile ${oracle_rsp_stage}/12102_oracle12cr1.rsp -ignorePrereq -ignoreSysPrereqs -silent -waitforcompletion"
           - ${orahome}/root.sh
           - su - oracle -c "${orahome}/OPatch/opatch lspatches"
-          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
-          - systemctl daemon-reload
-          - systemctl enable oracle-rdbms.service
+#          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
+#          - systemctl daemon-reload
+#          - systemctl enable oracle-rdbms.service
       - event: post-node-sync
         flags:
           - oralistener
@@ -286,6 +289,8 @@ nodes:
         dst: db-install.rsp.12.1.0.2.rsp
       - source: oracle-rdbms-service.j2
         dst: oracle-rdbms-service.srv
+      - source: manage_oracle_rdbms_procs.j2
+        dst: manage_oracle_rdbms_procs.srvsh
       - source: netca.rsp.12.1.0.2.j2
         dst: netca.rsp.12.1.0.2.net
       - source: dbca-create-db.rsp.12.1.0.2.j2
@@ -302,6 +307,8 @@ nodes:
         dst: "/tmp/12102_tmp.rsp"
       - source: oracle-rdbms-service.srv
         dst: "/tmp/oracle-rdbms.service"
+      - source: manage_oracle_rdbms_procs.srvsh
+        dst: "/tmp/manage_oracle_rdbms_procs.sh"
       - source: netca.rsp.12.1.0.2.net
         dst: "/tmp/netca_db1_LISTENER.rsp"
       - source: dbca-create-db.rsp.12.1.0.2.rsp

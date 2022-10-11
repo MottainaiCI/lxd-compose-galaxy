@@ -18,6 +18,9 @@ common_profiles:
 # Create the environment container as ephemeral or not.
 ephemeral: true
 
+include_hooks_files:
+  - hooks/oraconfigfile.yml
+
 nodes:
 
   - name: oracle19c
@@ -189,9 +192,9 @@ nodes:
             su - oracle -c "${orahome}/runInstaller -responseFile ${oracle_rsp_stage}/1900_oracle19c.rsp -ignorePrereqFailure -silent -waitforcompletion" || "WARNING - SOME ERROR OCCURRED" | exit 0
           - ${orahome}/root.sh
           - su - oracle -c "${orahome}/OPatch/opatch lspatches"
-          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
-          - systemctl daemon-reload
-          - systemctl enable oracle-rdbms.service
+#          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
+#          - systemctl daemon-reload
+#          - systemctl enable oracle-rdbms.service
       - event: post-node-sync
         flags:
           - oralistener
@@ -239,6 +242,19 @@ nodes:
             plugdb1=$(echo "${databases}" | yq r -P - '[0].list_pluggable[0].name') &&
             plugdest=$(echo "${databases}" | yq r -P - '[0].list_pluggable[0].datafile_dest') &&
             su - oracle -c "time ${orahome}/bin/dbca -silent -createPluggableDatabase -sourceDB ${namedbcnt} -pdbName ${plugdb1} -createPDBFrom default -pdbAdminUserName pdb_orauser1 -pdbAdminPassword qwe123 -createUserTableSpace true -pdbDatafileDestination ${plugdest}"
+#      - event: post-node-sync
+#        flags:
+#          - oraconfigfile
+#        commands:
+#          - > 
+#            echo "#################" &&
+#            echo "SYNC CONFIG FILE " &&
+#            echo "#################"
+#          - mv /tmp/oracle-rdbms.service /etc/systemd/system/oracle-rdbms.service
+#          - mv /tmp/manage_oracle_rdbms_procs.sh /usr/local/bin/manage_oracle_rdbms_procs.sh
+#          - chmod 755 /usr/local/bin/manage_oracle_rdbms_procs.sh
+#          - systemctl daemon-reload
+#          - systemctl enable oracle-rdbms.service
  
        
     # List of templates files to compiles before push the
@@ -250,6 +266,8 @@ nodes:
         dst: db-install.rsp.19.0.0.rsp
       - source: oracle-rdbms-service.j2
         dst: oracle-rdbms-service.srv
+      - source: manage_oracle_rdbms_procs.j2
+        dst: manage_oracle_rdbms_procs.srvsh
       - source: netca.rsp.19.0.0.j2
         dst: netca.rsp.19.0.0.net
       - source: dbca-create-db.rsp.19.0.0.j2
@@ -266,6 +284,8 @@ nodes:
         dst: "/tmp/19_tmp.rsp"
       - source: oracle-rdbms-service.srv
         dst: "/tmp/oracle-rdbms.service"
+      - source: manage_oracle_rdbms_procs.srvsh
+        dst: "/tmp/manage_oracle_rdbms_procs.sh"
       - source: netca.rsp.19.0.0.net
         dst: "/tmp/netca_db1_LISTENER.rsp"
       - source: dbca-create-db.rsp.19.0.0.rsp
