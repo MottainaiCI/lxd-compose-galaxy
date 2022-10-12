@@ -1,0 +1,8 @@
+name: "logs-disk"
+description: "Mount logs directory on /logs"
+devices:
+  storage:
+    source: /logs/
+    path: /logs/
+    type: disk
+
