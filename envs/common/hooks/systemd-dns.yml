@@ -18,15 +18,6 @@ hooks:
       echo "Creating file /etc/systemd/resolved.conf.d/${file}..." ;
       echo "${content}" > /etc/systemd/resolved.conf.d/${file} ;
       done
-
-    # Override the /etc/systemd/resolved.conf to disable LLMNR
-    - >-
-      node_dns_resolve="$(echo ${node} | jq .name -r)_resolved_conf" &&
-      if [ -n "${node_dns_resolve}" ] ; then
-      echo ${node_dns_resolve} > /etc/systemd/resolved.conf ;
-      cat /etc/systemd/resolved.conf ;
-      fi
-
     - >-
       ubuntu=$(cat /etc/os-release | grep ID| grep ubuntu | wc -l) ;
       systemctl daemon-reload &&
