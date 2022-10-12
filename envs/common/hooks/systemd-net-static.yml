@@ -1,0 +1,58 @@
+# Configure the systemd-networkd service
+# with the files defined in the variable
+# <node_name>_net
+#
+# NOTE: At the moment it works only when the
+#       node name is without dashes.
+#
+# The format must be with:
+# <node_name>_net:
+#   - file: 01-srv0.network
+#     content: |
+#       [Match]
+#       Name=srv0
+#       [Network]
+#       Address=172.18.20.100/24
+#       Gateway=172.18.20.1
+#       LLMNR=no
+#       # Disable binding of port ::58
+#       IPv6AcceptRA=no
+
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - >-
+      if [ -e /etc/systemd/network/default_dhcp.network ] ; then
+      rm /etc/systemd/network/default_dhcp.network ;
+      fi
+    - >-
+      if [ -n "$DEBUG" ] ; then set -x ; fi ;
+      if [ -n "${bootstrap_setup}" ] ; then eval "${bootstrap_setup}" ; fi
+    - >-
+      if [ -n "$DEBUG" ] ; then set -x ; fi ;
+      node_files="$(echo ${node} | jq .name -r)_net" &&
+      eval files="\$$node_files" &&
+      n_files=$(echo $files | jq '. | length') ;
+      for ((i=0; i<${n_files};i++)) ; do
+      f=$(echo $files | jq .[${i}] -r) ;
+      file=$(echo $f | jq .file -r ) ;
+      content=$(echo $f | jq .content -r) ;
+      echo "Creating file /etc/systemd/network/${file}..." ;
+      echo "${content}" > /etc/systemd/network/${file} ;
+      done
+
+    # Workaround to SystemD issue on setup DHCP network
+    - mkdir /etc/systemd/system/systemd-networkd.service.d
+    - |
+      cat <<EOF >/etc/systemd/system/systemd-networkd.service.d/override.conf
+      [Service]
+      BindReadOnlyPaths=/sys /proc
+      EOF
+    - systemctl enable systemd-networkd
+
+    - >-
+      systemctl daemon-reload &&
+      systemctl restart systemd-networkd &&
+      ip a
