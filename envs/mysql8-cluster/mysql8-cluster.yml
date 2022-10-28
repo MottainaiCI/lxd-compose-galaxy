@@ -242,8 +242,26 @@ projects:
                   - setup
                 commands:
                   - >-
-                    systemctl start mysqld &&
+                    systemctl start mysqld --no-block
+                  # Sleep until the initial setup is completed
+                  # NOTE: it seems that the first start fails.
+                  - >-
+                    if [ -n "$DEBUG" ] ; then set -x ; fi ;
+                    bootstrap=true ;
+                    i=1;
+                    while $bootstrap ; do
+                    started=$(tail -n 10 /var/log/mysql/mysqld.log | grep "ready for connections" | wc -l) ;
+                    if [ ${started} -gt 0 ] ; then
+                    bootstrap=false ;
+                    else
+                    echo "Waiting MySQL bootstrap ($i)...($started) 💤" ;
+                    let i++ ;
+                    sleep 3 ;
+                    fi ;
+                    done ;
                     systemctl status mysqld
+
+                  - >-
                   # Setup mysql cluster user and update root password.
                   - |
                     echo "
