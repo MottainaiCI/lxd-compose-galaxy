@@ -167,6 +167,11 @@ envs:
         branch: "next-4.16-release"
         kind: "independent"
 
+      - name: "geaaru-kit"
+        url: "https://github.com/geaaru/geaaru_overlay.git"
+        branch: "funtoo"
+        kind: "independent"
+
     TMPDIR: "/luettmp"
     HTTP_TIMEOUT: 0
     LUET_GENERAL__CONCURRENCY: "1"
