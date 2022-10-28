@@ -1,0 +1,16 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - >-
+      [ -n "${sleep}" ] && sleep ${sleep} ;
+      luet repo update &&
+      luet i -y utils/jq utils/yq system/entities &&
+      if [ -n "${luet_repositories2remove}" ] ; then
+      luet rm -y $(echo ${luet_repositories2remove} | jq '.[]' -r) && ;
+      fi &&
+      if [ -n "${luet_repositories}" ] ; then
+      luet i -y $(echo ${luet_repositories} | jq '.[]' -r) --force ;
+      fi &&
+      luet cleanup --purge-repos ;
