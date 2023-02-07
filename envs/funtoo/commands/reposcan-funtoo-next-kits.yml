@@ -109,7 +109,7 @@ envs:
 
       - name: "kde-kit"
         url: "https://github.com/funtoo/kde-kit"
-        branch: "next-5.24-release"
+        branch: "next/5.25-release"
         kind: "independent"
 
       - name: "lang-kit"
