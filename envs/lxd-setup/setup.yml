@@ -147,6 +147,8 @@ projects:
           - chmod 4755 /usr/bin/newuidmap
           - chmod 4755 /usr/bin/newgidmap
           - echo "${lxc_conf}" > /etc/lxc/lxc.conf
+          - >-
+            echo "You need restart lxd to get new subuid,subgid values."
 
       - event: pre-project
         node: "host"
@@ -253,4 +255,35 @@ projects:
                   - ls -l /
                   - poweroff
 
+      - name: "containers-tests-unprivileged-isolated"
+        description: |
+          Start container to verify correct LXC/LXD setup
+          of unprivileged containers with isolation.
+
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: true
+        connection: "{{ .Values.connection }}"
+
+        nodes:
+          - name: lxd-test-unpriv-1
+            image_source: "alpine/edge"
+            image_remote_server: "images"
+
+            config:
+              security.idmap.isolated: true
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - test
+                entrypoint:
+                  - /bin/sh
+                  - -c
+                commands:
+                  - ls -l /
+                  - poweroff
 
