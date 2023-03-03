@@ -60,6 +60,10 @@ projects:
             - net-misc/bridge-utils
           {{ end }}
 
+          {{- if eq $os "ubuntu" }}
+          ubuntu_packages: uidmap
+          {{- end }}
+
 
     hooks:
 
@@ -100,6 +104,13 @@ projects:
           sleep 3 &&
           /etc/init.d/lxd status &&
           lxc list
+        {{ end }}
+
+        {{ if eq $os "ubuntu" }}
+        - >-
+            apt-get update &&
+            apt-get install ${ubuntu_packages} &&
+            apt-get clean
         {{ end }}
 
       - event: pre-project
@@ -144,9 +155,11 @@ projects:
             done
           - cat /etc/subgid
           # Check if it's yet needed or if we could to use the capabilities.
-          - chmod 4755 /usr/bin/newuidmap
-          - chmod 4755 /usr/bin/newgidmap
-          - echo "${lxc_conf}" > /etc/lxc/lxc.conf
+          - >-
+            chmod 4755 /usr/bin/newuidmap &&
+            chmod 4755 /usr/bin/newgidmap &&
+            eval 'mkdir -p /etc/lxc || true' &&
+            echo "${lxc_conf}" > /etc/lxc/lxc.conf
           - >-
             echo "You need restart lxd to get new subuid,subgid values."
 
@@ -286,4 +299,24 @@ projects:
                 commands:
                   - ls -l /
                   - poweroff
+
+          - name: lxd-test-unpriv-swap
+            image_source: "alpine/edge"
+            image_remote_server: "images"
+
+            config:
+              limits.memory: 1GB
+              limits.memory.enforce: hard
+              limits.memory.swap: false
+
+            hooks:
+              - event: pre-node-sync
+                flags:
+                  - test
+                entrypoint:
+                  - /bin/sh
+                  - -c
+                commands:
+                  - ls -l /
+                  - sleep 1 && poweroff
 
