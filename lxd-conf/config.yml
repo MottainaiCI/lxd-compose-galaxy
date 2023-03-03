@@ -17,5 +17,6 @@ remotes:
     public: false
   local-snapd:
     addr: unix:///var/snap/lxd/common/lxd/unix.socket
+    auth_type: tls
     public: false
 aliases: {}
