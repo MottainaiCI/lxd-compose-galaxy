@@ -28,6 +28,7 @@ env_dirs:
 - ./envs/steam
 - ./envs/lxd-setup
 - ./envs/lxd-testing
+- ./envs/postgresql-standalone
 # Arm project
 - ./envs-arm/mottainai-agent
 

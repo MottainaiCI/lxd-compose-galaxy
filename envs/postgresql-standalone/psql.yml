@@ -1,0 +1,113 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+
+include_commands_files:
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+projects:
+
+  - name: "postgresql-standalone"
+    description: |
+      Setup a PostgreSQL Cluster Standalone node.
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/common.yml
+      - vars/db.yml
+
+    vars:
+      - envs:
+
+          luet_packages:
+            - dev-db-{{ .Values.postgres.slot }}/postgresql
+            - app-editors/vim
+            - sys-apps/net-tools
+            - sys-apps/which
+            # find needed by eselect
+            - sys-apps/findutils
+            - net-misc/wget
+            - app-misc/ca-certificates
+            - app-eselect/eselect-python
+            - app-eselect/eselect-postgresql
+            - sys-libs/timezone-data
+            - app-admin/whip
+            - app-admin/macaronictl
+            - macaroni/whip-catalog
+            - whip-profiles/macaroni
+            - system/entities
+            - macaroni/entities-catalog
+            - database/database-release-manager
+
+    groups:
+      - name: "postgres-database"
+        description: "PostgreSQL Database"
+
+        connection: "{{ .Values.connection }}"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+
+        include_hooks_files:
+          - ../common/hooks/luet-packages.yml
+
+        hooks:
+
+        nodes:
+          - name: psql-standalone
+            image_remote_server: "macaroni"
+            image_source: "macaroni/terragon-minimal-devel"
+            entrypoint:
+              - "/bin/bash"
+              - "-c"
+
+            sync_resources:
+              - source: files/psql-setup.sh
+                dst: /tmp/psql-setup.sh
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    eval 'mkdir -p /root || true' &&
+                    macaronictl env-update &&
+                    eval 'mkdir -p /usr/share/pkgconfig || true' &&
+                    eselect postgresql set {{ .Values.postgres.slot }} &&
+                    wget -O /usr/share/macaroni/whip-catalog/commons/postgresql.yaml
+                    https://raw.githubusercontent.com/macaroni-os/whip-catalog/master/catalog/commons/postgresql.yaml &&
+                    whip hook postgresql.postgres_setup
+
+              - event: pre-node-sync
+                commands:
+                  - rm -f /tmp/psql-setup.sh 2>/dev/null || true
+
+              - event: post-node-sync
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    echo "${pg_hba_conf}" > /etc/postgresql-{{ .Values.postgres.slot }}/pg_hba.conf &&
+                    echo "${psql_conf}" > /etc/postgresql-{{ .Values.postgres.slot }}/postgresql.conf &&
+                    /etc/init.d/postgresql-{{ .Values.postgres.slot }} restart
+                  - >-
+                    if [ ! -e /root/.psql-configured ] ; then
+                    bash /tmp/psql-setup.sh ; touch /root/.psql-configured ;
+                    fi
+                  - rm -f /tmp/psql-setup.sh 2>/dev/null || true

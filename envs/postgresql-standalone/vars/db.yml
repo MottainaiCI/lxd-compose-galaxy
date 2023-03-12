@@ -1,0 +1,24 @@
+envs:
+  psql_databases:
+    # Name of the database
+    - name: mydb
+      # Database owner
+      user: user1
+      # Database owner password.
+      pass: pass
+      # Main tablespace assigned on database creation.
+      maintbs: "tablespace1"
+      encoding: "UTF8"
+      template: template0
+      # List of the table space to create
+      tablespaces:
+        - name: tablespace1
+          location: /var/lib/postgresql/{{ .Values.postgres.slot }}/tb1_datafile
+
+      users:
+        - name: user2
+          pass: pass2
+
+      schemas:
+        - name: schema1
+          user: user1

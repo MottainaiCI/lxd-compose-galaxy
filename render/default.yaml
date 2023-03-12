@@ -116,6 +116,14 @@ mysql8:
   router_nodes: 1
 
 #-------------------------------------------#
+# PostgreSQL customization
+#-------------------------------------------#
+postgres:
+  nodes: 1
+  # Available slot are 13|11
+  slot: 13
+
+#-------------------------------------------#
 # Steam OS params
 #-------------------------------------------#
 steam_user_id: "1000"
@@ -131,7 +139,6 @@ default_ubuntu_lts_image: "ubuntu/18.04"
 default_internal_domain: "mottainai.local"
 
 lxd_socket_path: "/var/lib/lxd/unix.socket"
-
 
 #-------------------------------------------#
 # LXD testing params
