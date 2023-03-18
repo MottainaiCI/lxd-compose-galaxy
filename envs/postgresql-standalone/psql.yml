@@ -40,7 +40,6 @@ projects:
             - app-eselect/eselect-postgresql
             - sys-libs/timezone-data
             - app-admin/whip
-            - app-admin/macaronictl
             - macaroni/whip-catalog
             - whip-profiles/macaroni
             - system/entities
@@ -70,6 +69,7 @@ projects:
           - name: psql-standalone
             image_remote_server: "macaroni"
             image_source: "macaroni/terragon-minimal-devel"
+            wait_ip: 100
             entrypoint:
               - "/bin/bash"
               - "-c"
@@ -90,8 +90,6 @@ projects:
                     macaronictl env-update &&
                     eval 'mkdir -p /usr/share/pkgconfig || true' &&
                     eselect postgresql set {{ .Values.postgres.slot }} &&
-                    wget -O /usr/share/macaroni/whip-catalog/commons/postgresql.yaml
-                    https://raw.githubusercontent.com/macaroni-os/whip-catalog/master/catalog/commons/postgresql.yaml &&
                     whip hook postgresql.postgres_setup
 
               - event: pre-node-sync
