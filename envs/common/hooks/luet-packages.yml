@@ -11,11 +11,8 @@ hooks:
       ubuntu="0" ;
       fi &&
       luet repo update &&
-      luet i -y utils/jq utils/yq &&
-      luet i -y $(echo ${luet_packages} | jq '.[]' -r) &&
+      luet upgrade -y --skip-config-protect &&
+      luet repo update --force &&
+      luet i -y utils/jq utils/yq macaroni/ctl &&
+      luet i -y $(echo ${luet_packages} | jq '.[]' -r) --skip-config-protect &&
       luet cleanup --purge-repos ;
-      if [ "${ubuntu}" == "0" ] ; then
-      env-update && ldconfig ;
-      fi
-# TODO: check if move env-update in another section. Or maybe will be
-#       dropped when macaroni will manage better finalizer.
