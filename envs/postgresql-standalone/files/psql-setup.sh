@@ -142,7 +142,7 @@ main () {
 
   ndb=$(echo "${psql_databases}" | jq ". | length")
   for ((i=0; i<${ndb}; i++)) ; do
-    dbdata=$(echo "$psql_databases}" | jq -r ".[${i}]")
+    dbdata=$(echo "${psql_databases}" | jq -r ".[${i}]")
     process_db_data "${dbdata}" || return 1
   done
 
