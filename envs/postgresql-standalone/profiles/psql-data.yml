@@ -1,0 +1,11 @@
+name: "psql-data"
+description: "Mount PostgreSQL data dir from Host"
+{{- $slot := .Values.postgres.slot }}
+{{- $psql_data_def := print "/srv/postgresql/" $slot "/" }}
+{{- $psql_data := .Values.psql_mount | default $psql_data_def }}
+{{- $target_path := print "/var/lib/postgresql/" $slot "/" }}
+devices:
+  storage:
+    source: {{ $psql_data }}
+    path: {{ $target_path }}
+    type: disk

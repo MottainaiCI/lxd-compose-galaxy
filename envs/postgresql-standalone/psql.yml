@@ -6,6 +6,7 @@ template_engine:
 include_profiles_files:
 - ../common/profiles/net-mottainai0.yml
 - ../common/profiles/default.yml
+- profiles/psql-data.yml
 
 include_commands_files:
 
@@ -56,6 +57,9 @@ projects:
         common_profiles:
           - default
           - net-mottainai0
+          {{- if .Values.postgres.persistence_data }}
+          - psql-data
+          {{- end }}
 
         # Create the environment container as ephemeral or not.
         ephemeral: {{ .Values.ephemeral }}
@@ -69,10 +73,8 @@ projects:
           - name: psql-standalone
             image_remote_server: "macaroni"
             image_source: "macaroni/terragon-minimal-devel"
+            #image_source: "macaroni/terragon-minimal"
             wait_ip: 100
-            entrypoint:
-              - "/bin/bash"
-              - "-c"
 
             sync_resources:
               - source: files/psql-setup.sh
