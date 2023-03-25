@@ -122,6 +122,9 @@ postgres:
   nodes: 1
   # Available slot are 13|11
   slot: 13
+  # Using the host persistence (true) or
+  # not (false). You need load psql_data profile.
+  persistence_data: false
 
 #-------------------------------------------#
 # Steam OS params
