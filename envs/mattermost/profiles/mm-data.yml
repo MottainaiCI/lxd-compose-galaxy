@@ -1,0 +1,10 @@
+name: "mm-data"
+description: "Mount Mattermost data dir from Host"
+{{- $mm_data_def := "/srv/mattermost/data/" }}
+{{- $mm_data := .Values.mm_mount | default $mm_data_def }}
+{{- $target_path := "/mattermost/data/" }}
+devices:
+  storage:
+    source: {{ $mm_data }}
+    path: {{ .Values.mm_tdata | default $target_path }}
+    type: disk

@@ -29,6 +29,7 @@ env_dirs:
 - ./envs/lxd-setup
 - ./envs/lxd-testing
 - ./envs/postgresql-standalone
+- ./envs/mattermost
 # Arm project
 - ./envs-arm/mottainai-agent
 

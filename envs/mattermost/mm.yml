@@ -1,0 +1,132 @@
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- profiles/mm-data.yml
+
+include_commands_files:
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+projects:
+
+  - name: "mattermost-services"
+    description: |
+      Setup a Mattermost services.
+
+      {{- if .Values.mattermost.luet_install }}
+      You have select the installation from Macaroni package.
+      To use directly the binary set the render option to false
+      and then you can override the installed version with
+      --env "mm_version=7.9.1"
+      {{- end }}
+
+    # Environments files to use with engine. Supported files depends on
+    # template engine
+    include_env_files:
+      - vars/systemd.yml
+      - vars/mm.yml
+
+    vars:
+      - envs:
+
+          mm_version: "7.9.1"
+
+          luet_packages:
+            - app-editors/vim
+            - sys-apps/net-tools
+            - sys-apps/which
+            # find needed by eselect
+            - sys-apps/findutils
+            - net-misc/wget
+            - app-misc/ca-certificates
+            - sys-libs/timezone-data
+            - app-admin/whip
+            - macaroni/whip-catalog
+            - whip-profiles/macaroni
+            - system/entities
+            - macaroni/entities-catalog
+            - tcpdump
+            {{ if .Values.mattermost.luet_install }}
+            - mattermost
+            {{ end }}
+
+
+    groups:
+      - name: "mattermost-server"
+        description: "Mattermost Server"
+
+        connection: "{{ .Values.connection }}"
+        # Define the list of LXD Profile to use
+        # for create the containers
+        common_profiles:
+          - default
+          - net-mottainai0
+          {{- if .Values.mattermost.persistence_data }}
+          - mm-data
+          {{- end }}
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+
+        include_hooks_files:
+          - ../common/hooks/luet-packages.yml
+
+        nodes:
+          - name: mm-server
+            image_remote_server: "macaroni"
+            image_source: "macaroni/funtoo-systemd-minimal"
+            wait_ip: 100
+
+            # List of commands executed just after the creation of the
+            # container.
+            hooks:
+              {{- if not .Values.mattermost.luet_install }}
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    eval 'mkdir -p /root || true' &&
+                    eval 'mkdir -p /opt || true' &&
+                    macaronictl env-update &&
+                    wget https://releases.mattermost.com/${mm_version}/mattermost-${mm_version}-linux-amd64.tar.gz &&
+                    tar -xvzf mattermost*.gz &&
+                    mv mattermost /opt &&
+                    mkdir /opt/mattermost/data
+                  - >-
+                    entities merge --specs-dir /usr/share/macaroni/
+                    -e mattermost &&
+                    chown -R mattermost:mattermost /opt/mattermost &&
+                    chmod -R g+w /opt/mattermost &&
+                    echo "${mm_systemd}" > /lib/systemd/system/mattermost.service
+              {{- end }}
+
+              - event: post-node-creation
+                flags:
+                  - setup
+                commands:
+                  - >-
+                    entities merge --specs-dir /usr/share/macaroni/
+                    -e mattermost &&
+                    chown -R mattermost:mattermost /opt/mattermost &&
+                    chmod -R g+w /opt/mattermost
+
+              - event: post-node-sync
+                flags:
+                  - config
+                commands:
+                  #echo "${mm_config}" | jq -r > /opt/mattermost/config/config.json &&
+
+                  - >-
+                    cp /opt/mattermost/config/config.json
+                    /opt/mattermost/config/config.json.bkp &&
+                    echo "${mm_config}" > /opt/mattermost/config/config.json &&
+                    chown mattermost:mattermost /opt/mattermost/config/config.json &&
+                    systemctl restart mattermost &&
+                    systemctl status mattermost

@@ -75,7 +75,7 @@ docker_registry:
   enable_mirror: false
   enable_webui: false
   privileged_containers: true
-  ubuntu_container: true
+  ubuntu_container: false
   host_binding: false
   basic_auth: false
 
@@ -94,7 +94,7 @@ luet:
 
   # Enable this if you use docker registry
   # with self-signed certificate
-  docker_registry: false
+  docker_registry: true
 
   # Enable the fetch of the artefacts generated.
   # locally under ./repo
@@ -104,15 +104,17 @@ luet:
 # MongoDB customization
 #-------------------------------------------#
 mongo:
-  replicaset_nodes: 3
+  use_lts: true
+  replicaset_nodes: 1
   enterprise: false
-  version: "4.4"
+  version: "5.0"
+  #version: "4.4"
 
 #-------------------------------------------#
 # MySQL 8 Cluster customization
 #-------------------------------------------#
 mysql8:
-  replicaset_nodes: 3
+  replicaset_nodes: 1
   router_nodes: 1
 
 #-------------------------------------------#
@@ -142,6 +144,17 @@ default_ubuntu_lts_image: "ubuntu/18.04"
 default_internal_domain: "mottainai.local"
 
 lxd_socket_path: "/var/lib/lxd/unix.socket"
+
+
+#-------------------------------------------#
+# Mattermost params
+#-------------------------------------------#
+mattermost:
+  # Set this to false to download mattermost
+  # tarball directly instead using the Macaroni
+  # package.
+  luet_install: true
+  persistence_data: false
 
 #-------------------------------------------#
 # LXD testing params
