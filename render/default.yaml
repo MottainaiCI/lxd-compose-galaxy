@@ -140,11 +140,10 @@ steam_user_gid: "1004"
 connection: "local"
 ephemeral: true
 default_ubuntu_image: "ubuntu/22.04"
-default_ubuntu_lts_image: "ubuntu/18.04"
+default_ubuntu_lts_image: "ubuntu/20.04"
 default_internal_domain: "mottainai.local"
 
 lxd_socket_path: "/var/lib/lxd/unix.socket"
-
 
 #-------------------------------------------#
 # Mattermost params
