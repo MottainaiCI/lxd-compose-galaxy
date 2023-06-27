@@ -39,6 +39,7 @@ projects:
 
           subpop_repo: "https://code.funtoo.org/bitbucket/scm/~drobbins/subpop.git"
           subpop_branch: "legacy"
+          sleep4mongo: 5
 
     hooks:
       - event: post-node-creation
@@ -50,8 +51,10 @@ projects:
         flags:
           - mongodb_config
         commands:
-          - chown mongodb:mongodb /var/lib/mongodb /var/log/mongodb
-          - /etc/init.d/mongodb start && sleep 2
+          - >-
+            eval 'mkdir /var/lib/mongodb || true' &&
+            chown mongodb:mongodb -R /var/lib/mongodb /var/log/mongodb
+          - /etc/init.d/mongodb start && sleep ${sleep4mongo}
 
       - event: pre-node-sync
         flags:
@@ -108,7 +111,7 @@ projects:
                 commands:
                   - >-
               {{- if .Values.setup_custom_hosts }}
-                    echo "{{ .Values.setup_custom_hosts }}" >> /etc/hosts
+                    echo "{{ .Values.setup_custom_hosts }}" >> /etc/hosts &&
               {{- end }}
                     echo "https://${user}:${pass}@${scm_url}" > ~/.git-credentials &&
                     git config --global credential.helper 'store'
