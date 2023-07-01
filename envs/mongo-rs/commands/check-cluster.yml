@@ -1,0 +1,10 @@
+name: mongo::check-status
+description: |
+  Show cluster status.
+
+project: mongo-replica-set
+skip_sync: true
+enable_flags:
+- status
+include_hooks_files:
+- hooks/mongo-cstatus.yml

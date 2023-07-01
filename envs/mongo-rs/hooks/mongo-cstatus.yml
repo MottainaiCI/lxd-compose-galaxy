@@ -1,0 +1,10 @@
+hooks:
+- event: post-node-sync
+  node: {{ .Values.mongo_node | default "mongo-rs1" }}
+  flags:
+    - status
+  commands:
+    - >-
+      user=$(echo ${mongodb_replica_set} | jq '.superuser.user' -r) &&
+      pass=$(echo ${mongodb_replica_set} | jq '.superuser.pwd' -r) &&
+      echo "printjson(rs.status())" | mongo -u "${user}" -p "${pass}" admin
