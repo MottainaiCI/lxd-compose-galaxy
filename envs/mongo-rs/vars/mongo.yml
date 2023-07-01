@@ -1,10 +1,10 @@
 envs:
 
 {{ if .Values.mongo.enterprise }}
-  mongo_repo_url: "http://repo.mongodb.com/apt/ubuntu bionic/mongodb-enterprise/"
+  mongo_repo_url: "http://repo.mongodb.com/apt/ubuntu focal/mongodb-enterprise/"
   mongo_repo_file: "/etc/apt/sources.list.d/mongodb-enterprise.list"
 {{ else }}
-  mongo_repo_url: "https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/"
+  mongo_repo_url: "https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/"
   mongo_repo_file: "/etc/apt/sources.list.d/mongodb-org-{{ .Values.mongo.version }}.list"
 {{ end }}
 
