@@ -38,6 +38,8 @@ projects:
             - rsyslog
             - vim
             - net-tools
+            # hostname is used by /usr/libexec/mysql-scripts-common
+            - hostname
             # Mysql stuff
             - mysql-shell
             - mysql-router
