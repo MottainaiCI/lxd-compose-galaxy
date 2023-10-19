@@ -20,7 +20,7 @@ hooks:
       " > /lib/systemd/system/node_exporter.service
 
     - >-
-      systemctl daemon-reaload &&
+      systemctl daemon-reload &&
       entities merge --specs-dir /usr/share/macaroni/entities -e node_exporter
 
     - >-
