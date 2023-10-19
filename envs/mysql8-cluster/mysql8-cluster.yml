@@ -130,6 +130,8 @@ projects:
             - mysql-shell
             - mysql-router
             - mysql-server
+            # hostname is used by /usr/libexec/mysql-scripts-common
+            - hostname
 
 {{ $nodes := .Values.mysql8.replicaset_nodes|int }}
 
