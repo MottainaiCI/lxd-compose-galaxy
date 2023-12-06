@@ -3,12 +3,18 @@ envs:
   lxc_subuids:
     - user: root
       home: /root
-      map: 1000000-1000000000
+      # NOTE: When usermod (shadow-4.7) is used the second value is elaborated,
+      #       not clear how atm, but it sum a bitmask and the
+      #       value 1000999999 means 1000000000
+      map: 1000000-1000999999
 
   lxc_subgids:
     - user: root
       home: /root
-      map: 1000000-1000000000
+      # NOTE: When usermod (shadown-4.7) is used the second value is elaborated,
+      #       not clear how atm, but it sum a bitmask and the
+      #       value 1000999999 means 1000000000
+      map: 1000000-1000999999
 
   # Create LXD cluster node (true) or standalone node (false)
   lxd_cluster: false
