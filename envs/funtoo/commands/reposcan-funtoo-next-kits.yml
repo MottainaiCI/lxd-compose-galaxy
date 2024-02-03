@@ -137,6 +137,11 @@ envs:
         branch: "next"
         kind: "independent"
 
+      - name: "i18n-kit"
+        url: "https://github.com/funtoo/i18n-kit"
+        branch: "next"
+        kind: "independent"
+
       - name: "qt-kit"
         url: "https://github.com/funtoo/qt-kit"
         branch: "next-5.15.2-release"
