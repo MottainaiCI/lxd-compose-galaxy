@@ -4,13 +4,17 @@ Ready to go environement files for `lxd-compose`.
 
 In particular, under the directory:
 
-  * **simplestreams**: The tree and sources file
-    for [simplestreams-builder](https://github.com/MottainaiCI/simplestreams-builder) project.
-
   * **envs**: The tree with all environments for `lxd-compose`
 
-> Note: Currently, this repository is a ready to go lxd-compose tree but will be soon
->       integrated witih the lxd-compose galaxy integration.
+
+> Note: Keep things always updated and correct needs effort.
+>       If you :heart: LXD Compose, help us on testing and to maintain projects.
+>       Thanks in advance.
+
+To organize things and share more stable specs, we will organize the tree in
+two parts: one directory with `Grade A` (`stable`) containing the project's specs more
+stable and another with `Grade B` (`community`) less maintained and validated.
+
 
 ## Getting Started
 
@@ -32,7 +36,13 @@ $> lxd-compose c list
 Configure your LXD Configuration directory or add the remote with this command:
 
 ```shell
-$> lxc remote add macaroni https://images.macaronios.org/lxd-images --protocol simplestreams --public --accept-certificate
+$> lxc remote add macaroni https://macaronios.mirror.garr.it/images/lxd-images --protocol simplestreams --public --accept-certificate
+```
+
+or for Incus:
+
+```shell
+$> incus remote add macaroni https://macaronios.mirror.garr.it/images/lxd-images --protocol simplestreams --public --accept-certificate
 ```
 
 The lxc config is already available under the `lxd-conf` directory and you can use with `lxc` with this command:
@@ -40,7 +50,6 @@ The lxc config is already available under the `lxd-conf` directory and you can u
 $> # under lxd-compose-galaxy directory
 $> export LXD_CONF=./lxd-conf
 $> lxc remote list
-$ lxc remote list
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
 |      NAME       |                      URL                      |   PROTOCOL    |  AUTH TYPE  | PUBLIC | STATIC | GLOBAL |
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
@@ -50,7 +59,7 @@ $ lxc remote list
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
 | local-snapd     | unix:///var/snap/lxd/common/lxd/unix.socket   | lxd           | tls         | NO     | NO     | NO     |
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
-| macaroni        | https://images.macaronios.org/lxd-images      | simplestreams | none        | YES    | NO     | NO     |
+| macaroni        | https://macaronios.mirror.garr.it/lxd-images  | simplestreams | none        | YES    | NO     | NO     |
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
 | ubuntu          | https://cloud-images.ubuntu.com/releases      | simplestreams | none        | YES    | YES    | NO     |
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
@@ -58,6 +67,10 @@ $ lxc remote list
 +-----------------+-----------------------------------------------+---------------+-------------+--------+--------+--------+
 ```
 
-NOTE: Exporting LXD_CONF on lxc command supplied by snapd doesn't work correctly. In this case just copy the config.yml under the
-      snapd comman directory.
-
+For Incus:
+```shell
+$> # under lxd-compose-galaxy directory
+$> export INCUS_CONF=./lxd-conf
+$> incus remote list
+...
+```
