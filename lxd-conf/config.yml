@@ -12,6 +12,9 @@ remotes:
     addr: https://macaronios.mirror.garr.it/images/lxd-images
     protocol: simplestreams
     public: true
+  local-incus:
+    addr: unix:///var/lib/incus/unix.socket
+    public: false
   local:
     addr: unix://
     public: false
