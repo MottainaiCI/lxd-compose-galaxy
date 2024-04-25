@@ -172,6 +172,11 @@ envs:
         branch: "next-4.16-release"
         kind: "independent"
 
+      - name: "i18n-kit"
+        url: "https://github.com/funtoo/i18n-kit"
+        branch: "next"
+        kind: "independent"
+
       - name: "geaaru-kit"
         url: "https://github.com/geaaru/geaaru_overlay.git"
         branch: "funtoo"
