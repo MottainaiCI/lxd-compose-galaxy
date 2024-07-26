@@ -34,10 +34,10 @@ projects:
           LUET_NOLOCK: "true"
           LUET_YES: "true"
           METATOOLS_WORKSPACE: "/reposcan"
-          repo: "https://code.funtoo.org/bitbucket/scm/~geaaru/funtoo-metatools.git"
-          repo_branch: "master"
+          repo: "https://github.com/macaroni-os/funtoo-metatools.git"
+          repo_branch: "geaaru"
 
-          subpop_repo: "https://code.funtoo.org/bitbucket/scm/~drobbins/subpop.git"
+          subpop_repo: "https://github.com/macaroni-os/subpop.git"
           subpop_branch: "legacy"
           sleep4mongo: 5
 
