@@ -1,0 +1,126 @@
+# Author: Daniele Rondina, geaaru@macaronios.org
+# Description: Setup a local Funtoo Infrastructure for FUN
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+projects:
+
+- name: "funtoo::metro"
+  description: |
+    Setup metro container to build stage3 tarballs.
+
+  vars:
+    - envs:
+
+        metro_git_url: "https://github.com/macaroni-os/metro.git"
+        anise_packages:
+          - ego
+          - lxml
+          - dev-python/requests
+          - sys-apps/fchroot
+          - cronie
+          - git
+          - nginx
+          - tar
+          - vim
+          - vim-core
+          - findutils
+
+        emerge_packages:
+          - ego
+          - lxml
+          - dev-python/requests
+          - sys-apps/fchroot
+          - cronie
+          - git
+          - nginx
+
+        # Metro build options that could be override with --env
+        METRO_BUILD_RELEASE: "next"
+        METRO_BUILD_ARCH: "x86-64bit"
+        METRO_BUILD_SUBARCH: "generic_64"
+
+        ezbuild_mode: "freshen"
+        #ezbuild_mode: "freshen+gnome"
+
+        # LXD/Incus by default set HOME=/
+        HOME: "/root"
+
+  groups:
+    - name: "funtoo-metro-builder"
+      description: "Funtoo Metro Builder"
+
+      connection: "{{ .Values.connection }}"
+      common_profiles:
+        - default
+        - net-mottainai0
+
+      ephemeral: {{ .Values.ephemeral }}
+
+      include_hooks_files:
+        {{- if .Values.funtoo_infra.macaronios }}
+        - ../common/hooks/anise-packages.yml
+        {{- else }}
+        - ../common/hooks/emerge-packages.yml
+        {{- end }}
+
+      nodes:
+        - name: metro
+          image_remote_server: "macaroni"
+          {{- if .Values.funtoo_infra.macaronios }}
+          image_source: "macaroni/terragon-minimal-devel"
+          {{- else }}
+          image_source: "funtoo/next-stage3"
+          {{- end }}
+
+          # Wait 2 seconds for DHCP and initial setup
+          wait_ip: 2
+
+          hooks:
+            - event: post-node-creation
+              flags:
+                - setup
+              commands:
+                - >-
+                  eval 'mkdir /root || true' &&
+                  git clone ${metro_git_url} /root/metro
+
+                # Using metro.conf from repo but we can
+                # write this from var in the near future.
+                - >-
+                  cp /root/metro/metro.conf /root/.metro
+
+            - event: post-node-sync
+              flags:
+                - build_setup
+              commands:
+                - >-
+                  echo "Setup and download stage3 tarball used
+                  by metro to build specific stage3 tarball to share" &&
+                  /root/metro/scripts/setup
+
+            - event: post-node-sync
+              flags:
+                - build_tarball
+              commands:
+                - >-
+                  /root/metro/scripts/ezbuild.sh
+                  ${METRO_BUILD_RELEASE}
+                  ${METRO_BUILD_ARCH}
+                  ${METRO_BUILD_SUBARCH}
+                  ${ezbuild_mode}
+

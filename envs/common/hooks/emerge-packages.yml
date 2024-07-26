@@ -1,0 +1,9 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - >-
+      ego sync &&
+      emerge jq app-misc/yq-go -j
+      emerge -j $(echo ${emerge_packages} | jq '.[]' -r)
