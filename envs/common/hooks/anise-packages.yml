@@ -1,0 +1,12 @@
+hooks:
+- event: post-node-creation
+  flags:
+    - setup
+  commands:
+    - >-
+      anise repo update &&
+      anise upgrade -y --skip-config-protect &&
+      anise repo update --force &&
+      anise i -y utils/jq utils/yq macaroni/ctl &&
+      anise i -y $(echo ${anise_packages} | jq '.[]' -r) --skip-config-protect &&
+      anise cleanup --purge-repos ;
