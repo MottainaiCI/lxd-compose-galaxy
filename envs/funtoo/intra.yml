@@ -1,5 +1,7 @@
 # Author: Daniele Rondina, geaaru@macaronios.org
 # Description: Setup a local Funtoo Infrastructure for FUN
+#              This project is based on the wonderful work
+#              done on https://github.com/org-tekeli-borisp/ansible-funtoo
 
 version: "1"
 
@@ -124,3 +126,262 @@ projects:
                   ${METRO_BUILD_SUBARCH}
                   ${ezbuild_mode}
 
+
+- name: "funtoo::gitea"
+  description: |
+    Setup Gitea container to expose git repositories
+    for projects and kits.
+
+  include_env_files:
+    - vars/gitea-cert.yml
+    - vars/gitea-secrets.yml
+    #- vars/gitea-conf.yml
+
+  vars:
+    - envs:
+
+        net_domain: "mottainai.local"
+        mypublic_domain: "gitea.mottainai.local"
+        gitea_cert_days: 3000
+
+        anise_packages:
+          - dev-python/requests
+          - cronie
+          - git
+          - nginx
+          - tar
+          - vim
+          - vim-core
+          - findutils
+          - dbus
+          - gitea
+
+        emerge_packages:
+          - ego
+          - lxml
+          - dev-python/requests
+          - cronie
+          - git
+          - nginx
+          - gitea
+
+        # Temporary entities for gitea until macaroni/entities-catalog-0.20240728
+        # will be on stable repo.
+        entities_user:
+          uid: 535
+          gid: 535
+          homedir: /var/lib/gitea
+          shell: /bin/sh
+          password: x
+          kind: user
+          username: gitea
+        entities_group:
+          kind: group
+          group_name: gitea
+          gid: 535
+          password: x
+        entities_gshadow:
+          password: '!'
+          kind: gshadow
+          name: gitea
+        entities_shadow:
+          password: '!'
+          kind: shadow
+          username: gitea
+
+
+
+  groups:
+    - name: "funtoo-gitea-server"
+      description: "Funtoo Gitea Server"
+
+      connection: "{{ .Values.connection }}"
+      common_profiles:
+        - default
+        - net-mottainai0
+
+      ephemeral: {{ .Values.ephemeral }}
+
+      include_hooks_files:
+        {{- if .Values.funtoo_infra.macaronios }}
+        - ../common/hooks/anise-packages.yml
+        {{- else }}
+        - ../common/hooks/emerge-packages.yml
+        {{- end }}
+        - hooks/selfsigned_cert.yml
+
+      nodes:
+        - name: gitea
+          image_remote_server: "macaroni"
+          {{- if .Values.funtoo_infra.macaronios }}
+          image_source: "macaroni/terragon-minimal-devel"
+          {{- else }}
+          image_source: "funtoo/next-stage3"
+          {{- end }}
+
+          # Wait 2 seconds for DHCP and initial setup
+          wait_ip: 2
+
+
+          # List of templates files to compiles before push the
+          # result inside container.
+          config_templates:
+            - source: files/app.ini.tmpl
+              dst: /tmp/funtoo/gitea/app.ini
+
+          sync_resources:
+            - source: files/certs/gitea.key
+              dst: /etc/gitea/server.key
+            - source: files/certs/gitea.crt
+              dst: /etc/gitea/server.crt
+            - source: /tmp/funtoo/gitea/app.ini
+              dst: /etc/gitea/app.ini
+
+          hooks:
+
+            - event: post-node-creation
+              flags:
+                - gitea_setup
+              commands:
+                - /usr/bin/gitea generate secret INTERNAL_TOKEN
+              out2var: "gitea_token"
+
+            - event: post-node-creation
+              flags:
+                - gitea_setup
+              commands:
+                - /usr/bin/gitea generate secret JWT_SECRET
+              out2var: "gitea_jwt_secret"
+
+            - event: post-node-creation
+              flags:
+                - gitea_setup
+              commands:
+                - /usr/bin/gitea generate secret LFS_JWT_SECRET
+              out2var: "gitea_lfs_jwt_secret"
+
+            - event: post-node-creation
+              flags:
+                - gitea_setup
+              commands:
+                # Avoid to generate extra LF
+                - p=$(/usr/bin/openssl rand -base64 12) && echo -n ${p}
+              out2var: "gitea_repo_user_pwd"
+
+            # Store locally gitea credentials
+            - event: post-node-creation
+              node: host
+              flags:
+                - gitea_setup
+              commands:
+                - >-
+                  f=${secretfile:-envs/funtoo/vars/gitea-secrets.yml} ;
+                  yq w -i ${f} envs.gitea_token "${gitea_token}" &&
+                  yq w -i ${f} envs.gitea_jwt_secret "${gitea_jwt_secret}" &&
+                  yq w -i ${f} envs.gitea_lfs_jwt_secret "${gitea_lfs_jwt_secret}" &&
+                  yq w -i ${f} envs.gitea_repo_user_pwd "${gitea_repo_user_pwd}"
+
+            - event: post-node-creation
+              flags:
+                - gitea_setup
+              commands:
+                {{- if .Values.funtoo_infra.macaronios }}
+                - >-
+                  mkdir -p /root/entities/groups
+                  /root/entities/users
+                  /root/entities/gshadows
+                  /root/entities/shadows &&
+                  echo "${entities_user}" | yq r -P - > /root/entities/users/gitea_user.yml &&
+                  echo "${entities_group}" | yq r -P - > /root/entities/groups/gitea_group.yml &&
+                  echo "${entities_shadow}" | yq r -P - > /root/entities/shadows/gitea_shadow.yml &&
+                  echo "${entities_gshadow}" | yq r -P - > /root/entities/gshadows/gitea_gshadow.yml &&
+                  entities merge -e gitea --specs-dir /root/entities
+                {{- else }}
+                - >-
+                  groupadd gitea &&
+                  useradd -m -d /var/lib/gitea -s /bin/bash -g gitea gitea
+                {{- end }}
+                # Permit to start gitea to port 443 as git user
+                - >-
+                  sed -e 's|^GITEA_USER.*|GITEA_USER=gitea|g'
+                  -e 's|^GITEA_GROUP.*|GITEA_GROUP=gitea|g' -i
+                  /etc/conf.d/gitea &&
+                  setcap cap_net_bind_service=+ep /usr/bin/gitea
+                - >-
+                  chown gitea:gitea -R
+                  /var/log/gitea/
+                  /etc/gitea/
+                  /var/lib/gitea/
+
+                - >-
+                  rc-update add gitea &&
+                  rc-update add cronie &&
+                  /etc/init.d/cronie start
+
+            - event: post-node-sync
+              flags:
+                - gitea_conf_update
+              commands:
+                - >-
+                  chown gitea:gitea /etc/gitea/server.key &&
+                  chown gitea:gitea /etc/gitea/server.crt &&
+                  chown root:gitea /etc/gitea/app.ini &&
+                  chmod 0600 /etc/gitea/server.key /etc/gitea/server.crt &&
+                  chmod 0640 /etc/gitea/app.ini
+
+                - >-
+                  /etc/init.d/gitea start &&
+                  bootstrap=true ;
+                  while $bootstrap ; do
+                  started=$(cat /var/lib/gitea/log/gitea.log | grep Starting | wc -l);
+                  if [ "${started}" = "1" ] ; then
+                  bootstrap=false ;
+                  else
+                  echo "Waiting Gitea bootstrap...💤" ;
+                  sleep 3 ;
+                  fi ;
+                  done
+
+            - event: post-node-sync
+              flags:
+                - gitea_conf_update
+              commands:
+                - >-
+                  if [ -n "$DEBUG" ] ; then set -x ; fi ;
+                  if [ ! -e /.user_created ] ; then
+                  echo "Creating gitea ${gitea_repo_user} user..." ;
+                  su gitea -c "/usr/bin/gitea admin user create
+                  --username ${gitea_repo_user}
+                  --password ${gitea_repo_user_pwd}
+                  --email ${gitea_repo_user_email}
+                  --admin" || exit 1 ;
+                  touch /.user_created ;
+                  fi
+
+            - event: post-node-sync
+              flags:
+                - gitea_conf_update
+              commands:
+                - >-
+                  if [ ! -e /.user_token ] ; then
+                  su gitea -c "/usr/bin/gitea admin user
+                  generate-access-token
+                  --username ${gitea_repo_user}
+                  --raw --scopes all" || exit 1 ;
+                  touch /.user_created ;
+                  fi
+              out2var: "gitea_repo_user_token"
+
+            - event: post-node-sync
+              node: host
+              flags:
+                - gitea_setup
+              commands:
+                - >-
+                  if [ -n "$DEBUG" ] ; then set -x ; fi ;
+                  f=${secretfile:-envs/funtoo/vars/gitea-secrets.yml} ;
+                  token=$(yq r envs/funtoo/vars/gitea-secrets.yml envs.gitea_repo_user_token) ;
+                  if [ -z "${token}" ] ; then
+                  gitea_repo_user_token=$(echo -n ${gitea_repo_user_token/\\n/}) ;
+                  yq w -i ${f} envs.gitea_repo_user_token "${gitea_repo_user_token}" ;
+                  fi

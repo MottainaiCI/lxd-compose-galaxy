@@ -1,0 +1,36 @@
+hooks:
+
+- event: pre-group
+  flags:
+    - certificate
+  node: host
+  commands:
+    - mkdir -p envs/funtoo/files/certs/ -p || true
+    - >-
+      dhfile=envs/funtoo/files/certs/dhparam.pem ;
+      if [ ! -e ${dhfile} ] ; then openssl dhparam -out ${dhfile} 4096 ; fi
+
+- event: pre-group
+  flags:
+    - certificate_selfsigned_creation
+  node: host
+  commands:
+    - >-
+      eval 'mkdir -p envs/funtoo/files/certs/ -p || true' &&
+      echo "${gitea_ssl_cert_conf}" > /tmp/openssl.cnf &&
+      sed -i -e "s:COMMON_NAME:${mypublic_domain}:g" /tmp/openssl.cnf
+
+    - openssl rand -out /tmp/rnd -writerand /tmp/rnd
+
+    - >-
+      keyfile=envs/funtoo/files/certs/gitea.key ;
+      crtfile=envs/funtoo/files/certs/gitea.crt ;
+      if [ ! -e ${keyfile} ] ; then
+      openssl req -newkey rsa:4096 -nodes -sha256
+      -keyout ${keyfile}
+      -x509 -days ${gitea_cert_days}
+      -out ${crtfile}
+      -config /tmp/openssl.cnf ;
+      fi ;
+      openssl x509 -in ${crtfile} -text -noout
+
