@@ -41,11 +41,48 @@ projects:
           subpop_branch: "legacy"
           sleep4mongo: 5
 
+          # List of packages installed on macaroni/phoenix-metatools image
+          # for testing new release.
+          luet_packages:
+            - binutils
+            - gcc-config
+            - git
+            - mottainai-cli
+            - replicant
+            - ego
+            - portage
+            - elt-patches
+            - gentoolkit
+            - portage-utils
+            - metatools
+            - mongodb
+
     hooks:
+
+
       - event: post-node-creation
         commands:
           # DHCP seems slow
           - sleep 5
+
+      - event: post-node-creation
+        disable: true
+        flags:
+          - setup
+        commands:
+          - >-
+            [ -n "${sleep}" ] && sleep ${sleep} ;
+            if [ -e /etc/os-release ] ; then
+            ubuntu=$(cat /etc/os-release | grep ID| grep ubuntu | wc -l) ;
+            else
+            ubuntu="0" ;
+            fi &&
+            luet repo update &&
+            luet upgrade -y --skip-config-protect &&
+            luet repo update --force &&
+            luet i -y utils/jq utils/yq macaroni/ctl &&
+            luet i -y $(echo ${luet_packages} | jq '.[]' -r) --skip-config-protect &&
+            luet cleanup --purge-repos ;
 
       - event: post-node-creation
         flags:
@@ -97,9 +134,13 @@ projects:
         ephemeral: {{ .Values.ephemeral }}
         connection: "{{ .Values.connection }}"
 
+          #include_hooks_files:
+          #- ../common/hooks/luet-packages.yml
+
         nodes:
           - name: reposcan
-            image_source: "macaroni/funtoo-metatools"
+            #image_source: "macaroni/funtoo-metatools"
+            image_source: "macaroni/funtoo-testing-minimal"
             image_remote_server: "macaroni"
 
             hooks:
@@ -152,6 +193,7 @@ projects:
                     if [ -n "${overlay_specs}" ] ; then
                     REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/overlay.yml" ;
                     fi &&
+                    echo "Running reposcan $REPOSCAN_OPTS..." &&
                     PYTHONPATH=/subpop:. ./bin/reposcan $REPOSCAN_OPTS
 
               - event: post-node-sync
@@ -178,11 +220,14 @@ projects:
         ephemeral: {{ .Values.ephemeral }}
         connection: "{{ .Values.connection }}"
 
+        #include_hooks_files:
+        #  - ../common/hooks/luet-packages.yml
+
         nodes:
           - name: reposcan-funtoo
             image_source: "macaroni/funtoo-metatools"
+            #image_source: "macaroni/funtoo-testing-minimal"
             image_remote_server: "macaroni"
-
             hooks:
 
               {{- if eq .Values.setup_git_credentials "true" }}
@@ -223,6 +268,7 @@ projects:
                     name=$(echo $i | jq '.name' -r) ;
                     REPOSCAN_OPTS="$REPOSCAN_OPTS /reposcan/specs/${name}.yml" ;
                     done &&
+                    echo "Running reposcan $REPOSCAN_OPTS..." &&
                     PYTHONPATH=/subpop:. ./bin/reposcan $REPOSCAN_OPTS
                   # Store git version of every kits used to generate specs.
                   - >-
