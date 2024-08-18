@@ -1,0 +1,187 @@
+# Author: Daniele Rondina, geaaru@macaronios.org
+
+name: reposcan-mark-testing-kits
+description: |
+  Generate the reposcan JSON file for the funtoo tree.
+
+  $> lxd-compose c r metatools-services reposcan-mark-testing-kits \
+     --destroy
+
+  The generated file is copy locally from the container to local
+  kit_cache directory.
+
+project: "metatools-services"
+apply_alias: true
+disable_flags:
+  - upgrade
+enable_groups:
+  - "metatools::reposcan-funtoo-kits"
+envs:
+  envs:
+    kits:
+
+      - name: "core-kit"
+        url: "https://github.com/macaroni-os/core-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "core-server-kit"
+        url: "https://github.com/macaroni-os/core-server-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+        #commit_sha1": None,  # You should be able to set commit SHA1 here.
+        #
+      - name: "core-gl-kit"
+        url: "https://github.com/macaroni-os/core-gl-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "core-hw-kit"
+        url: "https://github.com/macaroni-os/core-hw-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "net-kit"
+        url: "https://github.com/macaroni-os/net-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "llvm-kit"
+        url: "https://github.com/macaroni-os/llvm-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "perl-kit"
+        url: "https://github.com/macaroni-os/perl-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "python-kit"
+        url: "https://github.com/macaroni-os/python-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "python-modules-kit"
+        url: "https://github.com/macaroni-os/python-modules-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "desktop-kit"
+        url: "https://github.com/macaroni-os/desktop-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "dev-kit"
+        url: "https://github.com/macaroni-os/dev-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "editors-kit"
+        url: "https://github.com/macaroni-os/editors-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "games-kit"
+        url: "https://github.com/macaroni-os/games-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "gnome-kit"
+        url: "https://github.com/macaroni-os/gnome-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "haskell-kit"
+        url: "https://github.com/macaroni-os/haskell-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "browser-kit"
+        url: "https://github.com/macaroni-os/browser-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "java-kit"
+        url: "https://github.com/macaroni-os/java-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "kde-kit"
+        url: "https://github.com/macaroni-os/kde-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "lang-kit"
+        url: "https://github.com/macaroni-os/lang-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "lisp-scheme-kit"
+        url: "https://github.com/macaroni-os/lisp-scheme-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "mate-kit"
+        url: "https://github.com/macaroni-os/mate-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "media-kit"
+        url: "https://github.com/macaroni-os/media-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "ml-lang-kit"
+        url: "https://github.com/macaroni-os/ml-lang-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "i18n-kit"
+        url: "https://github.com/macaroni-os/i18n-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "qt-kit"
+        url: "https://github.com/macaroni-os/qt-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "ruby-kit"
+        url: "https://github.com/macaroni-os/ruby-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "science-kit"
+        url: "https://github.com/macaroni-os/science-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "security-kit"
+        url: "https://github.com/macaroni-os/security-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "text-kit"
+        url: "https://github.com/macaroni-os/text-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "xfce-kit"
+        url: "https://github.com/macaroni-os/xfce-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "i18n-kit"
+        url: "https://github.com/macaroni-os/i18n-kit"
+        branch: "mark-testing"
+        kind: "independent"
+
+      - name: "geaaru-kit"
+        url: "https://github.com/geaaru/geaaru_overlay.git"
+        branch: "funtoo"
+        kind: "independent"
+
+    TMPDIR: "/luettmp"
+    HTTP_TIMEOUT: 0
+    LUET_GENERAL__CONCURRENCY: "1"

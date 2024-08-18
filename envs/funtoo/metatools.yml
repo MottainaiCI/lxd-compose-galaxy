@@ -22,6 +22,7 @@ include_commands_files:
 - commands/reposcan-geaaru-overlay.yml
 - commands/reposcan-funtoo-kits.yml
 - commands/reposcan-funtoo-next-kits.yml
+- commands/reposcan-mark-testing-kits.yml
 
 projects:
 
@@ -294,6 +295,11 @@ projects:
                 commands:
                   - >-
                     eval 'rm -rf kit_cache || true' &&
+                    if [[ "{{ .Values.connection }}" =~ incus ]] ; then
+                    incus file pull {{ .Values.connection }}:reposcan-funtoo/reposcan/repo_tmp/tmp/kit_cache/ .
+                    --recursive ;
+                    else
                     lxc file pull {{ .Values.connection }}:reposcan-funtoo/reposcan/repo_tmp/tmp/kit_cache/ .
-                    --recursive
+                    --recursive ;
+                    fi
 
