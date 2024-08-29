@@ -4,22 +4,27 @@ remotes:
     addr: https://images.linuxcontainers.org
     protocol: simplestreams
     public: true
+  images-canonical:
+    addr: https://images.lxd.canonical.com
+    protocol: simplestreams
+    public: true
   keybase-geaaru:
     addr: https://geaaru.keybase.pub/lxd-images
     protocol: simplestreams
     public: true
-  macaroni:
-    addr: https://macaronios.mirror.garr.it/images/lxd-images
-    protocol: simplestreams
-    public: true
-  local-incus:
-    addr: unix:///var/lib/incus/unix.socket
-    public: false
   local:
     addr: unix://
+    public: false
+  local-incus:
+    addr: unix:///var/lib/incus/unix.socket
+    auth_type: tls
     public: false
   local-snapd:
     addr: unix:///var/snap/lxd/common/lxd/unix.socket
     auth_type: tls
     public: false
+  macaroni:
+    addr: https://macaronios.mirror.garr.it/images/lxd-images
+    protocol: simplestreams
+    public: true
 aliases: {}
