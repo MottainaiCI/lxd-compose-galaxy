@@ -9,6 +9,7 @@ logging:
 
 render_default_file: render/default.yaml
 
+
 # Define the directories list where load
 # environments.
 env_dirs:
@@ -24,7 +25,7 @@ env_dirs:
 - ./envs/devs
 - ./envs/simplestreams-builder
 - ./envs/mqtt
-- ./envs/funtoo
+- ./envs/mark
 - ./envs/steam
 - ./envs/lxd-setup
 - ./envs/lxd-testing

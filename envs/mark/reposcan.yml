@@ -1,0 +1,171 @@
+# Author: Daniele Rondina, geaaru@macaronios.org
+# Description: MARK Development Kit Tasks / Activities
+
+version: "1"
+
+template_engine:
+  engine: "mottainai"
+
+include_profiles_files:
+- ../common/profiles/net-mottainai0.yml
+- ../common/profiles/default.yml
+- ../common/profiles/flavor-medium.yml
+- ../common/profiles/loop.yml
+- ../common/profiles/docker.yml
+- ../common/profiles/privileged.yml
+
+include_networks_files:
+- ../common/networks/mottainai0.yml
+
+include_commands_files:
+- commands/reposcan-mark-testing-kits.yml
+- commands/reposcan-mark-xl-kits.yml
+
+projects:
+
+  - name: "mark-services"
+    description: |
+      Run MARK tasks inside containers.
+
+    vars:
+      - envs:
+          LUET_NOLOCK: "true"
+          LUET_YES: "true"
+          METATOOLS_WORKSPACE: "/reposcan"
+
+          markdevkit_repo: "https://github.com/macaroni-os/mark-devkit.git"
+          markdevkit_branch: "master"
+          markdevkit_clone_opts: "--generate-reposcan-files --write-summary-file /kit-cache/kits.yaml"
+
+          aniseportage_repo: "https://github.com/macaroni-os/anise-portage-converter.git"
+          aniseportage_branch: "master"
+          concurrency: 20
+
+          # This variable is overridden in the command.
+          kits:
+            sources:
+            - name: "core-kit"
+              url: "https://github.com/macaroni-os/core-kit"
+              branch: "mark-xl"
+              kind: "independent"
+
+          # List of packages installed on macaroni/phoenix-metatools image
+          # for testing new release.
+          luet_packages:
+            - binutils
+            - gcc-config
+            - git
+            - mottainai-cli
+            - replicant
+            - ego
+            - portage
+            - elt-patches
+            - gentoolkit
+            - portage-utils
+            - go
+            - make
+
+    hooks:
+
+      - event: post-node-creation
+        flags:
+          - setup
+        commands:
+          - >-
+            anise repo update &&
+            anise upgrade -y --skip-config-protect &&
+            anise repo update --force &&
+            anise i -y utils/jq utils/yq macaroni/ctl &&
+            anise i -y $(echo ${luet_packages} | jq '.[]' -r) --skip-config-protect &&
+            anise cleanup --purge-repos ;
+
+      - event: pre-node-sync
+        flags:
+          - upgrade
+        commands:
+          - anise repo update && anise upgrade && anise cleanup
+
+      - event: pre-node-sync
+        flags:
+          - markdevkit_sync
+        commands:
+          - >-
+            if [ ! -d /mark-devkit ] ; then
+            echo "Cloning ${markdevkit_repo} for branch ${markdevkit_branch}..." &&
+            git clone ${markdevkit_repo} -b ${markdevkit_branch} /mark-devkit || exit 1 ;
+            else
+            cd /mark-devkit ; git pull -ff ;
+            fi
+          - cd /mark-devkit &&
+            make build &&
+            cp -v mark-devkit /usr/bin/
+
+      - event: pre-node-sync
+        flags:
+          - aniseportage_sync
+        commands:
+          - >-
+            if [ ! -d /anise-portage-converter ] ; then
+            echo "Cloning ${aniseportage_repo} for branch ${aniseportage_branch}..." &&
+            git clone ${aniseportage_repo} -b ${aniseportage_branch} /anise-portage-converter || exit 1 ;
+            else
+            cd /anise-portage-converter ; git pull -ff ;
+            fi
+          - cd /anise-portage-converter &&
+            make build &&
+            cp -v anise-portage-converter /usr/bin/
+
+    groups:
+      - name: "mark::reposcan"
+        description: "Run container where generate Reposcan files."
+
+        common_profiles:
+          - default
+          - net-mottainai0
+          - docker
+          - privileged
+          - loop
+
+        # Create the environment container as ephemeral or not.
+        ephemeral: {{ .Values.ephemeral }}
+        connection: "{{ .Values.connection }}"
+
+          #include_hooks_files:
+          #- ../common/hooks/luet-packages.yml
+
+        nodes:
+          - name: mark-reposcan
+            image_source: "macaroni/terragon-minimal-devel"
+            image_remote_server: "macaroni"
+
+            wait_ip: 5
+
+            hooks:
+
+              - event: post-node-sync
+                flags:
+                  - generate-reposcan
+                commands:
+                  # Write specfile
+                  - >-
+                    echo "${kits}" | yq r -P - > /tmp/kits.yml
+
+                  - >-
+                    mark-devkit kit clone --specfile /tmp/kits.yml ${markdevkit_clone_opts}
+                    --concurrency ${concurrency} --kit-cache-dir /kit-cache/
+
+              - event: post-node-sync
+                node: host
+                flags:
+                  - pull_jsons
+                commands:
+                  - >-
+                    eval 'rm -rf kit-cache || true' &&
+                    if [[ "{{ .Values.connection }}" =~ incus ]] ; then
+                    incus file pull {{ .Values.connection }}:mark-reposcan/kit-cache/ .
+                    --recursive ;
+                    else
+                    lxc file pull {{ .Values.connection }}:mark-reposcan/kit-cache/ .
+                    --recursive ;
+                    fi
+
